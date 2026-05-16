@@ -217,17 +217,18 @@
 
     if (loading) {
       return (
-        <PrintTemplate title="Vehicle Control Form ( VCF )" subtitle={`No. ${vcf.nomor_urut}`} onClose={onClose} settings={printSettings}>
+        <PrintTemplate title="Vehicle Control Form ( VCF )" subtitle={`No. ${vcf.nomor_urut}`} onClose={onClose} isLoading={true} settings={printSettings}>
           <PrintSkeleton />
         </PrintTemplate>
       );
     }
 
     return (
-      <PrintTemplate 
-        title="Vehicle Control Form ( VCF )" 
-        subtitle={`No. ${vcf.nomor_urut}`} 
+      <PrintTemplate
+        title="Vehicle Control Form ( VCF )"
+        subtitle={`No. ${vcf.nomor_urut}`}
         onClose={onClose}
+        isLoading={false}
         settings={printSettings}
       >
         {/* ── INFO UMUM ── */}

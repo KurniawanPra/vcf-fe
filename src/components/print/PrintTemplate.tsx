@@ -12,6 +12,7 @@ interface PrintTemplateProps {
   effDate?: string;
   onClose: () => void;
   children: React.ReactNode;
+  isLoading?: boolean;
   settings?: {
     company_name?: string;
     company_address?: string;
@@ -29,6 +30,7 @@ export default function PrintTemplate({
   effDate = "13-Mar-25",
   onClose,
   children,
+  isLoading = false,
   settings = {},
 }: PrintTemplateProps) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -102,7 +104,7 @@ export default function PrintTemplate({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-y-auto py-10">
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-10">
       <div style={{ width: "210mm", height: "fit-content", background: "#fff", flexShrink: 0 }}>
         
         {/* Toolbar (Hidden in Print) */}
@@ -119,9 +121,19 @@ export default function PrintTemplate({
             {subtitle && <div style={{ fontSize: 10, opacity: 0.7 }}>{subtitle}</div>}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button 
-              onClick={handlePrint} 
-              style={{ padding: "8px 24px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}
+            <button
+              onClick={handlePrint}
+              disabled={isLoading}
+              style={{
+                padding: "8px 24px",
+                background: isLoading ? "#6b7280" : "#8b5cf6",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                fontWeight: 700,
+                cursor: isLoading ? "not-allowed" : "pointer",
+                opacity: isLoading ? 0.5 : 1
+              }}
             >
               PRINT
             </button>
