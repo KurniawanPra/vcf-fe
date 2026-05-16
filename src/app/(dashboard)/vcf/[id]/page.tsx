@@ -9,12 +9,11 @@ import { exportToPDF, exportToDocx } from "@/lib/exportUtils";
 import GuideSection from "@/components/GuideSection";
 
 // Lazy load heavy components for better performance
-const Bagian2Form = lazy(() => import("@/components/vcf/Bagian2Form"));
-const Bagian3Form = lazy(() => import("@/components/vcf/Bagian3Form"));
-const Bagian4Form = lazy(() => import("@/components/vcf/Bagian4Form"));
-const PrintVCF = lazy(() => import("@/components/vcf/PrintVCF"));
-const Bagian1EditModal = lazy(() => import("@/components/vcf/Bagian1EditModal"));
-import { VCF_STATUS } from "@/constants/vcfStatus";
+const Bagian2Form = lazy(() => import("./Bagian2Form"));
+const Bagian3Form = lazy(() => import("./Bagian3Form"));
+const Bagian4Form = lazy(() => import("./Bagian4Form"));
+const PrintVCF = lazy(() => import("./PrintVCF"));
+const Bagian1EditModal = lazy(() => import("./Bagian1EditModal"));
 
 // Form loading skeleton
 function FormSkeleton() {
@@ -33,7 +32,7 @@ function FormSkeleton() {
         <div className="h-10 rounded-lg" style={{ background: "var(--border)" }} />
         <div className="h-5 w-36 rounded-lg" style={{ background: "var(--border)" }} />
         <div className="grid grid-cols-3 gap-3">
-          {[1,2,3].map(i => <div key={i} className="h-14 rounded-xl" style={{ background: "var(--border)" }} />)}
+          {[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl" style={{ background: "var(--border)" }} />)}
         </div>
         <div className="h-20 rounded-lg" style={{ background: "var(--border)" }} />
       </div>
@@ -80,11 +79,13 @@ interface VcfDetail {
 }
 
 const STEPS = [
-  { key: VCF_STATUS.BAGIAN1_SELESAI, label: "Weighbridge Masuk", n: 2 },
-  { key: VCF_STATUS.BAGIAN2_SELESAI, label: "Weighbridge Keluar", n: 3 },
-  { key: VCF_STATUS.BAGIAN3_SELESAI, label: "Main Gate Keluar", n: 4 },
-  { key: VCF_STATUS.BAGIAN4_PROSES, label: "Main Gate Keluar", n: 4 },
-  { key: VCF_STATUS.SELESAI, label: "Selesai", n: 4 },
+  { key: "pendaftaran", label: "Pendaftaran", n: 1 },
+  { key: "bagian1_selesai", label: "Weighbridge Masuk", n: 2 },
+  { key: "bagian2_selesai", label: "Weighbridge Keluar", n: 3 },
+  { key: "loading_unloading_proses", label: "Weighbridge Keluar", n: 3 },
+  { key: "loading_unloading_selesai", label: "Weighbridge Keluar", n: 3 },
+  { key: "bagian3_selesai", label: "Main Gate Keluar", n: 4 },
+  { key: "selesai", label: "Selesai", n: 4 },
 ];
 
 function getStepNumber(vcf: VcfDetail | null): number {
@@ -120,11 +121,11 @@ export default function VcfDetailPage() {
 
       // Auto-set tab based on status only once on initial load
       if (!hasInitializedTab) {
-        if (data.status === VCF_STATUS.BAGIAN1_SELESAI) {
+        if (data.status === "bagian1_selesai") {
           setActiveTab("bagian2");
-        } else if (data.status === VCF_STATUS.BAGIAN2_SELESAI) {
+        } else if (["bagian2_selesai", "loading_unloading_selesai"].includes(data.status)) {
           setActiveTab("bagian3");
-        } else if ([VCF_STATUS.BAGIAN3_SELESAI, VCF_STATUS.BAGIAN4_PROSES].includes(data.status)) {
+        } else if (data.status === "bagian3_selesai") {
           setActiveTab("bagian4");
         }
         setHasInitializedTab(true);
@@ -134,11 +135,11 @@ export default function VcfDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [vcfId]);
+  }, [vcfId, hasInitializedTab]);
 
   const handleExport = async (format: 'pdf' | 'docx') => {
     if (!vcf) return;
-    
+
     const headers = ["Item", "Detail"];
     const data = [
       ["No. Urut", vcf.nomor_urut],
@@ -207,9 +208,9 @@ export default function VcfDetailPage() {
   const canEditBagian4 = userIsAdmin;
 
   // Fill permissions (for creating new entries) remain based on status
-  const canFillBagian2 = vcf.status === VCF_STATUS.BAGIAN1_SELESAI;
-  const canFillBagian3 = vcf.status === VCF_STATUS.BAGIAN2_SELESAI;
-  const canFillBagian4 = [VCF_STATUS.BAGIAN3_SELESAI, VCF_STATUS.BAGIAN4_PROSES].includes(vcf.status);
+  const canFillBagian2 = vcf.status === "bagian1_selesai";
+  const canFillBagian3 = ["bagian2_selesai", "loading_unloading_selesai"].includes(vcf.status);
+  const canFillBagian4 = ["bagian3_selesai", "weighbridge_keluar"].includes(vcf.status);
 
   // Admin can always edit all sections regardless of status or data existence
   const canEditBagian2Always = userIsAdmin;
@@ -225,12 +226,12 @@ export default function VcfDetailPage() {
           className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
           title="Kembali"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="page-title font-mono">VCF #{vcf.nomor_urut}</h1>
-            <span 
+            <span
               className={`status-badge ${getStatusColor(vcf.status)}`}
               style={isRejected ? { background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" } : {}}
             >
@@ -260,7 +261,7 @@ export default function VcfDetailPage() {
             title="Buka Panduan"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
             </svg>
             PANDUAN
           </button>
@@ -272,9 +273,9 @@ export default function VcfDetailPage() {
               title="Cetak Formulir VCF"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="6 9 6 2 18 2 18 9"/>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                <rect x="6" y="14" width="12" height="8"/>
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
               </svg>
               CETAK
             </button>
@@ -282,9 +283,9 @@ export default function VcfDetailPage() {
         </div>
 
         {/* Finalize logic now moved to Bagian4Form */}
-        
+
       </div>
-      
+
       {/* Guide Modal */}
       {showGuide && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowGuide(false)}>
@@ -293,7 +294,7 @@ export default function VcfDetailPage() {
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-primary)", color: "white" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                   </svg>
                 </div>
                 <h2 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Panduan Operasional</h2>
@@ -346,10 +347,10 @@ export default function VcfDetailPage() {
                     step.n < currentStep || isDone
                       ? { borderColor: "#10b981", background: "rgba(16,185,129,0.2)", color: "#10b981" }
                       : step.n === currentStep
-                      ? (isRejected
-                        ? { borderColor: "#ef4444", background: "rgba(239,68,68,0.2)", color: "#f87171" }
-                        : { borderColor: "#3b82f6", background: "rgba(59,130,246,0.2)", color: "#60a5fa" })
-                      : {}
+                        ? (isRejected
+                          ? { borderColor: "#ef4444", background: "rgba(239,68,68,0.2)", color: "#f87171" }
+                          : { borderColor: "#3b82f6", background: "rgba(59,130,246,0.2)", color: "#60a5fa" })
+                        : {}
                   }
                 >
                   {step.n < currentStep || isDone ? "●" : (isRejected && step.n === currentStep) ? "×" : step.n}
@@ -371,15 +372,15 @@ export default function VcfDetailPage() {
           ))}
         </div>
       </div>
-        
-        {/* Baner reject */}
+
+      {/* Baner reject */}
       {isRejected && (
         <div className="mb-6 rounded-xl border border-red-200 dark:border-red-900/40 overflow-hidden">
 
           <div className="flex items-start gap-4 px-5 py-4 bg-red-50 dark:bg-red-950/20">
             <div className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-red-200 dark:border-red-800/40 flex items-center justify-center flex-shrink-0 mt-0.5">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
               </svg>
             </div>
 
@@ -432,108 +433,108 @@ export default function VcfDetailPage() {
             </button>
           ))}
       </div>
-    {activeTab === "reject_detail" && (
-      <div className="p-6">
-        <div className="border border-red-200 dark:border-red-900/40 rounded-xl overflow-hidden bg-white dark:bg-transparent">
+      {activeTab === "reject_detail" && (
+        <div className="p-6">
+          <div className="border border-red-200 dark:border-red-900/40 rounded-xl overflow-hidden bg-white dark:bg-transparent">
 
-          {/* Header */}
-          <div className="px-6 py-4 flex items-center gap-3 border-b border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20">
-            <div className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-red-200 dark:border-red-800/40 flex items-center justify-center flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-red-600 dark:text-red-400 m-0">Informasi penolakan</p>
-              <p className="text-xs text-red-400 dark:text-red-500 m-0">Dokumen ini ditolak pada tahap berikut</p>
-            </div>
-            <div className="ml-auto">
-              <span className="text-xs font-medium px-3 py-1 rounded-full bg-white dark:bg-white/5 text-red-500 border border-red-200 dark:border-red-800/40">
-                Ditolak
-              </span>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Kiri: Tahap penolakan */}
-            <div>
-              <p className="text-xs text-text-secondary uppercase tracking-wider mb-2">Tahap penolakan</p>
-              <div className="flex items-center gap-2 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/>
+            {/* Header */}
+            <div className="px-6 py-4 flex items-center gap-3 border-b border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20">
+              <div className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-red-200 dark:border-red-800/40 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
-                <p className="text-sm font-medium text-text-primary">
-                  {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Weighbridge Keluar" : "Pendaftaran"}
-                </p>
               </div>
-
-              {/* Progress steps */}
-              <div className="flex flex-col gap-2">
-                {/* Step 1: Pendaftaran */}
-                <div className={`flex items-center gap-2 ${currentStep > 1 || currentStep === 1 ? "opacity-100" : "opacity-35"}`}>
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 1 ? "bg-green-500" : currentStep === 1 ? "bg-red-500" : "bg-gray-400"}`} />
-                  <span className={`text-xs ${currentStep === 1 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Pendaftaran</span>
-                  {currentStep > 1 && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                  {currentStep === 1 && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  )}
-                </div>
-
-                {/* Step 2: Weighbridge Masuk */}
-                <div className={`flex items-center gap-2 ${currentStep >= 2 ? "opacity-100" : "opacity-35"}`}>
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 2 ? "bg-green-500" : currentStep === 2 ? "bg-red-500" : "bg-gray-400"}`} />
-                  <span className={`text-xs ${currentStep === 2 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Weighbridge Masuk</span>
-                  {currentStep > 2 && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                  {currentStep === 2 && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  )}
-                </div>
-
-                {/* Step 3: Weighbridge Keluar */}
-                <div className={`flex items-center gap-2 ${currentStep >= 3 ? "opacity-100" : "opacity-35"}`}>
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 3 ? "bg-green-500" : currentStep === 3 ? "bg-red-500" : "bg-gray-400"}`} />
-                  <span className={`text-xs ${currentStep === 3 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Weighbridge Keluar</span>
-                  {currentStep === 3 && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  )}
-                </div>
+              <div>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400 m-0">Informasi penolakan</p>
+                <p className="text-xs text-red-400 dark:text-red-500 m-0">Dokumen ini ditolak pada tahap berikut</p>
+              </div>
+              <div className="ml-auto">
+                <span className="text-xs font-medium px-3 py-1 rounded-full bg-white dark:bg-white/5 text-red-500 border border-red-200 dark:border-red-800/40">
+                  Ditolak
+                </span>
               </div>
             </div>
 
-            {/* Kanan: Alasan penolakan */}
-            <div className="md:border-l border-border/40 md:pl-6">
-              <p className="text-xs text-text-secondary uppercase tracking-wider mb-2">Alasan penolakan</p>
-              <div className="flex gap-2 items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <p className="text-sm text-text-primary leading-relaxed">
-                  {vcf.catatan || "Alasan tidak dicatat."}
-                </p>
-              </div>
-            </div>
+            {/* Body */}
+            <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6">
 
+              {/* Kiri: Tahap penolakan */}
+              <div>
+                <p className="text-xs text-text-secondary uppercase tracking-wider mb-2">Tahap penolakan</p>
+                <div className="flex items-center gap-2 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3" />
+                  </svg>
+                  <p className="text-sm font-medium text-text-primary">
+                    {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Weighbridge Keluar" : "Pendaftaran"}
+                  </p>
+                </div>
+
+                {/* Progress steps */}
+                <div className="flex flex-col gap-2">
+                  {/* Step 1: Pendaftaran */}
+                  <div className={`flex items-center gap-2 ${currentStep > 1 || currentStep === 1 ? "opacity-100" : "opacity-35"}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 1 ? "bg-green-500" : currentStep === 1 ? "bg-red-500" : "bg-gray-400"}`} />
+                    <span className={`text-xs ${currentStep === 1 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Pendaftaran</span>
+                    {currentStep > 1 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                    {currentStep === 1 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Step 2: Weighbridge Masuk */}
+                  <div className={`flex items-center gap-2 ${currentStep >= 2 ? "opacity-100" : "opacity-35"}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 2 ? "bg-green-500" : currentStep === 2 ? "bg-red-500" : "bg-gray-400"}`} />
+                    <span className={`text-xs ${currentStep === 2 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Weighbridge Masuk</span>
+                    {currentStep > 2 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                    {currentStep === 2 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Step 3: Weighbridge Keluar */}
+                  <div className={`flex items-center gap-2 ${currentStep >= 3 ? "opacity-100" : "opacity-35"}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 3 ? "bg-green-500" : currentStep === 3 ? "bg-red-500" : "bg-gray-400"}`} />
+                    <span className={`text-xs ${currentStep === 3 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Weighbridge Keluar</span>
+                    {currentStep === 3 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Kanan: Alasan penolakan */}
+              <div className="md:border-l border-border/40 md:pl-6">
+                <p className="text-xs text-text-secondary uppercase tracking-wider mb-2">Alasan penolakan</p>
+                <div className="flex gap-2 items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    <line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <p className="text-sm text-text-primary leading-relaxed">
+                    {vcf.catatan || "Alasan tidak dicatat."}
+                  </p>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
       {activeTab === "info" && (
         <div className="space-y-6">
@@ -542,8 +543,8 @@ export default function VcfDetailPage() {
             <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-primary)", color: "white" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/>
-                  <path d="M2 20c0-2.2 2.69-4 6-4s6 1.8 6 4"/>
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
+                  <path d="M2 20c0-2.2 2.69-4 6-4s6 1.8 6 4" />
                 </svg>
               </div>
               <div>
@@ -569,8 +570,8 @@ export default function VcfDetailPage() {
               <div className="flex items-center gap-4 p-4 rounded-xl border border-border/50" style={{ background: "rgba(var(--accent-primary-rgb, 74 222 128), 0.05)" }}>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--accent-primary)" }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
                 <div>
@@ -584,8 +585,8 @@ export default function VcfDetailPage() {
               <div>
                 <h4 className="text-xs uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="7" width="20" height="14" rx="2"/>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                    <rect x="2" y="7" width="20" height="14" rx="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                   </svg>
                   Informasi Logistik
                 </h4>
@@ -607,10 +608,10 @@ export default function VcfDetailPage() {
               <div>
                 <h4 className="text-xs uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
-                    <path d="M6 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
-                    <path d="M6 13.5v-3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/>
-                    <path d="M18 13.5V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v.5"/>
+                    <path d="M18 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                    <path d="M6 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                    <path d="M6 13.5v-3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" />
+                    <path d="M18 13.5V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v.5" />
                   </svg>
                   Kendaraan & Supir
                 </h4>
@@ -619,10 +620,10 @@ export default function VcfDetailPage() {
                   <InfoField label="Jenis Kendaraan" value={vcf.tipe_kendaraan?.replace(/_/g, " ").toUpperCase() || vcf.jenis_kendaraan?.nama || "—"} />
                   <InfoField label="Transporter" value={vcf.transporter?.nama_transporter || "—"} />
                   <InfoField label="Nama Supir" value={vcf.driver?.nama_supir || "—"} />
-                  <InfoField 
-                    label="SIM Supir" 
-                    value={`${vcf.driver?.no_sim || "—"} (${vcf.driver?.jenis_sim || ""}) ${vcf.driver?.tgl_berlaku_sim ? "— s/d " + vcf.driver.tgl_berlaku_sim.split('T')[0] : ""}`} 
-                    mono 
+                  <InfoField
+                    label="SIM Supir"
+                    value={`${vcf.driver?.no_sim || "—"} (${vcf.driver?.jenis_sim || ""}) ${vcf.driver?.tgl_berlaku_sim ? "— s/d " + vcf.driver.tgl_berlaku_sim.split('T')[0] : ""}`}
+                    mono
                   />
                 </div>
               </div>
@@ -632,8 +633,8 @@ export default function VcfDetailPage() {
                 <div className="p-4 rounded-xl border-l-4" style={{ background: "rgba(59, 130, 246, 0.05)", borderColor: "#60a5fa" }}>
                   <h4 className="text-xs uppercase tracking-wider font-bold mb-2 flex items-center gap-2" style={{ color: "#60a5fa" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9"/>
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                     </svg>
                     Keterangan dari Petugas Registrasi
                   </h4>
@@ -643,8 +644,8 @@ export default function VcfDetailPage() {
                 <div className="p-4 rounded-xl border-l-4" style={{ background: "rgba(148, 163, 184, 0.05)", borderColor: "#94a3b8" }}>
                   <h4 className="text-xs uppercase tracking-wider font-bold mb-2 flex items-center gap-2" style={{ color: "#94a3b8" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9"/>
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                     </svg>
                     Keterangan Petugas
                   </h4>
@@ -659,7 +660,7 @@ export default function VcfDetailPage() {
             <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#60a5fa", color: "white" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 20v-6M6 20V10M18 20V4"/>
+                  <path d="M12 20v-6M6 20V10M18 20V4" />
                 </svg>
               </div>
               <div>
@@ -684,12 +685,12 @@ export default function VcfDetailPage() {
 
                 {/* Weighbridge Masuk - Tampil jika sudah melewati bagian 1 */}
                 {(() => {
-                  const petugasWB = vcf.nama_petugas_wb_masuk 
-                    || vcf.pemeriksaan_masuk?.[0]?.petugas?.nama 
+                  const petugasWB = vcf.nama_petugas_wb_masuk
+                    || vcf.pemeriksaan_masuk?.[0]?.petugas?.nama
                     || vcf.segel_masuk?.petugas?.nama;
-                  const timestampWB = vcf.pemeriksaan_masuk?.[0]?.waktu_input 
-                    || vcf.pemeriksaan_masuk?.[0]?.created_at 
-                    || vcf.segel_masuk?.waktu_input 
+                  const timestampWB = vcf.pemeriksaan_masuk?.[0]?.waktu_input
+                    || vcf.pemeriksaan_masuk?.[0]?.created_at
+                    || vcf.segel_masuk?.waktu_input
                     || vcf.segel_masuk?.created_at;
                   const formatTanggal = (ts?: string) => {
                     if (!ts) return null;
@@ -718,7 +719,7 @@ export default function VcfDetailPage() {
                         )}
                         {vcf.vcf_bagian2?.keterangan && (
                           <p className="text-[10px] mt-1 italic" style={{ color: "#60a5fa" }}>
-                            "{vcf.vcf_bagian2.keterangan}"
+                            &quot;{vcf.vcf_bagian2.keterangan}&quot;
                           </p>
                         )}
                       </div>
@@ -728,12 +729,12 @@ export default function VcfDetailPage() {
 
                 {/* Weighbridge Keluar - Tampil jika sudah melewati bagian 2 */}
                 {(() => {
-                  const petugasWBK = vcf.nama_petugas_wb_keluar 
-                    || vcf.pemeriksaan_keluar?.[0]?.petugas?.nama 
+                  const petugasWBK = vcf.nama_petugas_wb_keluar
+                    || vcf.pemeriksaan_keluar?.[0]?.petugas?.nama
                     || vcf.segel_keluar?.petugas?.nama;
-                  const timestampWBK = vcf.pemeriksaan_keluar?.[0]?.waktu_input 
-                    || vcf.pemeriksaan_keluar?.[0]?.created_at 
-                    || vcf.segel_keluar?.waktu_input 
+                  const timestampWBK = vcf.pemeriksaan_keluar?.[0]?.waktu_input
+                    || vcf.pemeriksaan_keluar?.[0]?.created_at
+                    || vcf.segel_keluar?.waktu_input
                     || vcf.segel_keluar?.created_at;
                   const formatTanggal = (ts?: string) => {
                     if (!ts) return null;
@@ -762,7 +763,7 @@ export default function VcfDetailPage() {
                         )}
                         {vcf.vcf_bagian3?.keterangan && (
                           <p className="text-[10px] mt-1 italic" style={{ color: "#60a5fa" }}>
-                            "{vcf.vcf_bagian3.keterangan}"
+                            &quot;{vcf.vcf_bagian3.keterangan}&quot;
                           </p>
                         )}
                       </div>
@@ -772,9 +773,9 @@ export default function VcfDetailPage() {
 
                 {/* Main Gate Keluar - Tampil jika sudah melewati bagian 3 */}
                 {(() => {
-                  const petugasMGK = vcf.nama_petugas_main_gate_keluar 
+                  const petugasMGK = vcf.nama_petugas_main_gate_keluar
                     || vcf.vcf_keluar?.petugas?.nama;
-                  const timestampMGK = vcf.vcf_keluar?.waktu_input 
+                  const timestampMGK = vcf.vcf_keluar?.waktu_input
                     || vcf.vcf_keluar?.created_at;
                   const formatTanggal = (ts?: string) => {
                     if (!ts) return null;
@@ -802,7 +803,7 @@ export default function VcfDetailPage() {
                         )}
                         {vcf.vcf_keluar?.keterangan && (
                           <p className="text-[10px] mt-1 italic" style={{ color: "#60a5fa" }}>
-                            "{vcf.vcf_keluar.keterangan}"
+                            &quot;{vcf.vcf_keluar.keterangan}&quot;
                           </p>
                         )}
                       </div>
@@ -819,8 +820,8 @@ export default function VcfDetailPage() {
               <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f59e0b", color: "white" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </div>
                 <div>
@@ -845,12 +846,12 @@ export default function VcfDetailPage() {
                         >
                           {ks.nilai ? (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
-                              <polyline points="20 6 9 17 4 12"/>
+                              <polyline points="20 6 9 17 4 12" />
                             </svg>
                           ) : (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                              <line x1="18" y1="6" x2="6" y2="18"/>
-                              <line x1="6" y1="6" x2="18" y2="18"/>
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                           )}
                         </div>
@@ -879,16 +880,16 @@ export default function VcfDetailPage() {
               </div>
             </div>
           )}
-          
+
           {/* Muatan */}
           {((vcf as any).muatan_dibawa?.length > 0 || (vcf as any).muatan_diisi?.length > 0) && (
             <div className="glass-card overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#8b5cf6", color: "white" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
                   </svg>
                 </div>
                 <div>
@@ -902,9 +903,9 @@ export default function VcfDetailPage() {
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                          <path d="M2 17l10 5 10-5"/>
-                          <path d="M2 12l10 5 10-5"/>
+                          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                          <path d="M2 17l10 5 10-5" />
+                          <path d="M2 12l10 5 10-5" />
                         </svg>
                         Muatan Dibawa
                       </h4>
@@ -912,17 +913,16 @@ export default function VcfDetailPage() {
                         {(vcf as any).muatan_dibawa.map((m: any) => (
                           m.item_muatan_id && (
                             <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                              style={{ 
+                              style={{
                                 background: m.nilai === '1' ? "rgba(16,185,129,0.05)" : m.nilai === '0' ? "rgba(239,68,68,0.05)" : "var(--bg-secondary)",
                                 borderColor: m.nilai === '1' ? "rgba(16,185,129,0.2)" : m.nilai === '0' ? "rgba(239,68,68,0.2)" : "var(--border)"
                               }}
                             >
                               <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{m.item_muatan?.nama_item}</span>
-                              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                                m.nilai === '1' ? 'bg-emerald-500/15 text-emerald-500' : 
-                                m.nilai === '0' ? 'bg-rose-500/15 text-rose-500' : 
-                                'bg-blue-500/15 text-blue-500'
-                              }`}>
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${m.nilai === '1' ? 'bg-emerald-500/15 text-emerald-500' :
+                                  m.nilai === '0' ? 'bg-rose-500/15 text-rose-500' :
+                                    'bg-blue-500/15 text-blue-500'
+                                }`}>
                                 {m.nilai === "1" ? "YA" : m.nilai === "0" ? "TIDAK" : m.nilai}
                               </span>
                             </div>
@@ -931,7 +931,7 @@ export default function VcfDetailPage() {
                         {/* Lainnya - entries without item_muatan_id */}
                         {(vcf as any).muatan_dibawa?.some((m: any) => (!m.item_muatan_id || m.item_muatan_id === null) && m.nilai && m.nilai !== "0") && (
                           <div className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                            style={{ 
+                            style={{
                               background: "rgba(59,130,246,0.05)",
                               borderColor: "rgba(59,130,246,0.2)"
                             }}
@@ -949,8 +949,8 @@ export default function VcfDetailPage() {
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9"/>
-                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                         </svg>
                         Muatan Diisi
                       </h4>
@@ -958,17 +958,16 @@ export default function VcfDetailPage() {
                         {(vcf as any).muatan_diisi.map((m: any) => (
                           m.item_muatan_id && (
                             <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                              style={{ 
+                              style={{
                                 background: m.nilai === '1' ? "rgba(16,185,129,0.05)" : m.nilai === '0' ? "rgba(239,68,68,0.05)" : "var(--bg-secondary)",
                                 borderColor: m.nilai === '1' ? "rgba(16,185,129,0.2)" : m.nilai === '0' ? "rgba(239,68,68,0.2)" : "var(--border)"
                               }}
                             >
                               <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{m.item_muatan?.nama_item}</span>
-                              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                                m.nilai === '1' ? 'bg-emerald-500/15 text-emerald-500' : 
-                                m.nilai === '0' ? 'bg-rose-500/15 text-rose-500' : 
-                                'bg-blue-500/15 text-blue-500'
-                              }`}>
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${m.nilai === '1' ? 'bg-emerald-500/15 text-emerald-500' :
+                                  m.nilai === '0' ? 'bg-rose-500/15 text-rose-500' :
+                                    'bg-blue-500/15 text-blue-500'
+                                }`}>
                                 {m.nilai === "1" ? "YA" : m.nilai === "0" ? "TIDAK" : m.nilai}
                               </span>
                             </div>
@@ -977,7 +976,7 @@ export default function VcfDetailPage() {
                         {/* Lainnya - entries without item_muatan_id */}
                         {(vcf as any).muatan_diisi?.some((m: any) => (!m.item_muatan_id || m.item_muatan_id === null) && m.nilai && m.nilai !== "0") && (
                           <div className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                            style={{ 
+                            style={{
                               background: "rgba(59,130,246,0.05)",
                               borderColor: "rgba(59,130,246,0.2)"
                             }}

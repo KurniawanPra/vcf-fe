@@ -14,7 +14,6 @@ export const VCF_STATUS = {
   BAGIAN3_SELESAI: "bagian3_selesai",
   
   // Phase 4: Main Gate Keluar (Data filled, waiting for final exit)
-  // Note: Backend currently uses 'weighbridge_keluar' for this state
   BAGIAN4_PROSES: "weighbridge_keluar",
   
   // Final Stage: Completed (Main Gate Keluar - Finalized)
@@ -74,10 +73,10 @@ export const getVcfStatusColor = (status: string): string => {
  * Mapping for step numbers in the progress bar
  */
 export const VCF_STEP_MAP: Record<string, number> = {
-  [VCF_STATUS.BAGIAN1_SELESAI]: 2, // Next step is 2
-  [VCF_STATUS.BAGIAN2_SELESAI]: 3, // Next step is 3
-  [VCF_STATUS.BAGIAN3_SELESAI]: 4, // Next step is 4
-  [VCF_STATUS.BAGIAN4_PROSES]: 4,  // Still in step 4
-  [VCF_STATUS.SELESAI]: 4,         // Finished step 4
-  [VCF_STATUS.REJECT]: 0,          // Special case
+  [VCF_STATUS.BAGIAN1_SELESAI]: 2,
+  [VCF_STATUS.BAGIAN2_SELESAI]: 3,
+  [VCF_STATUS.BAGIAN3_SELESAI]: 4,
+  [VCF_STATUS.BAGIAN4_PROSES]: 4,
+  [VCF_STATUS.SELESAI]: 4,
+  [VCF_STATUS.REJECT]: 0,
 };

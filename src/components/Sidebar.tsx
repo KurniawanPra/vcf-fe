@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { getUser, clearSession, isAdmin } from "@/lib/auth";
 import { authApi } from "@/lib/api";
@@ -174,7 +175,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
           minHeight: 52,
         }}>
           {/* Logo — only when expanded */}
-          {!collapsed && <img src="/logo.svg" alt="VCF" style={{ width: 30, height: 30, objectFit: "contain" }} />}
+          {!collapsed && <Image src="/logo.svg" alt="VCF" width={30} height={30} style={{ objectFit: "contain" }} />}
 
           {/* Title — only when expanded */}
           {!collapsed && (

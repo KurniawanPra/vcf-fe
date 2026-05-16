@@ -92,7 +92,7 @@ export function getNextStage(status: string): string | null {
  */
 export function getErrorMessage(err: any, defaultMsg: string = "Terjadi kesalahan."): string {
   const data = err?.response?.data;
-  
+
   // If there are validation errors, show them
   if (data?.errors && typeof data.errors === "object") {
     const fieldErrors = Object.entries(data.errors)
@@ -104,7 +104,7 @@ export function getErrorMessage(err: any, defaultMsg: string = "Terjadi kesalaha
       .join("; ");
     return fieldErrors || defaultMsg;
   }
-  
+
   // Fallback to message or error field
   return data?.message || data?.error || defaultMsg;
 }

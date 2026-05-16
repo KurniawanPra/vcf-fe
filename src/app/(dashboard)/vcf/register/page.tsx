@@ -33,7 +33,7 @@ function ValidationSummary({ errors, onDismiss }: { errors: ValidationEntry[]; o
     const leaveTimer = setTimeout(() => setLeaving(true), 6500);
     const clearTimer = setTimeout(() => onDismiss(), 7000);
     return () => { clearTimeout(leaveTimer); clearTimeout(clearTimer); };
-  }, [errors]);
+  }, [errors, onDismiss]);
 
   const handleDismiss = () => {
     setLeaving(true);

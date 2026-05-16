@@ -8,6 +8,7 @@ import { getUser, isAdmin } from "@/lib/auth";
 import { generateQRSignature } from "@/lib/qrUtils";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import { useToast, ToastContainer } from "@/components/Toast";
+import { VCF_STATUS } from "@/constants/vcfStatus";
 
 interface SelectOption { id: number; nama?: string; nama_transporter?: string; nama_supir?: string; nama_item?: string; kode?: string; no_sim?: string; tgl_berlaku_sim?: string; jenis_sim?: string; is_active?: boolean | number | string; }
 interface ChecklistItem { id: number; nama_item: string; urutan: number; is_active?: boolean | number | string; }
@@ -248,7 +249,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
       }
     };
     init();
-  }, [vcfId, onClose]);
+  }, [vcfId, onClose, toast]);
 
   const isLoading = tipeKegiatan.startsWith("loading");
   const isUnloading = tipeKegiatan.startsWith("unloading");

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import Image from "next/image";
 import { PRINT_STYLES } from "./PrintElements";
 
 interface PrintMasterTableProps {
@@ -86,7 +87,7 @@ export default function PrintMasterTable({
               <tr>
                 <td rowSpan={4} style={{ ...PRINT_STYLES.CELL, padding: 0, position: "relative" }}>
                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img src="/logo.svg" style={{ width: 60, height: "auto", display: "block" }} alt="VCF Logo" />
+                    <Image src="/logo.svg" width={60} height={60} style={{ display: "block" }} alt="VCF Logo" />
                   </div>
                 </td>
                 <td rowSpan={3} style={{ ...PRINT_STYLES.CELL, textAlign: "center", verticalAlign: "middle", padding: "4px 6px" }}>

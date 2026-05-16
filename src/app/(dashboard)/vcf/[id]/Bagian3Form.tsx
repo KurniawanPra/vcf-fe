@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { vcfApi, masterApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
+import { VCF_STATUS } from "@/constants/vcfStatus";
 
 
 interface CheckItem {
@@ -37,26 +38,43 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [rejectReason, setRejectReason] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
-  useEffect(() => {
-    masterApi.getItemPemeriksaanKeluar().then((res) => {
-      const items = (res.data.data || res.data).filter(
-        (i: CheckItem & { is_active?: boolean }) => i.is_active !== false
-      );
-      setPemeriksaanItems(items);
-      const initial: Record<number, string> = {};
-      items.forEach((i: CheckItem) => { initial[i.id] = ""; });
-      setPemeriksaan(initial);
-    }).catch(console.error);
-  }, []);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  const handleEdit = () => {
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setDataLoading(true);
+        const res = await masterApi.getItemPemeriksaanKeluar();
+        const items = (res.data.data || res.data).filter(
+          (i: CheckItem & { is_active?: boolean }) => i.is_active !== false
+        );
+        setPemeriksaanItems(items);
+        
+        // Initial state
+        const initial: Record<number, string> = {};
+        items.forEach((i: CheckItem) => { initial[i.id] = ""; });
+        setPemeriksaan(initial);
+
+        // Map existing data if it exists
+        if (vcfData && (vcfData.pemeriksaan_keluar?.length > 0 || vcfData.status === VCF_STATUS.BAGIAN3_SELESAI || vcfData.status === 'weighbridge_keluar' || vcfData.status === 'selesai')) {
+          mapExistingData(items, vcfData);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setTimeout(() => setDataLoading(false), 500);
+      }
+    };
+    fetchItems();
+  }, [vcfId]);
+
+  const mapExistingData = (items: CheckItem[], data: any) => {
     // 1. Map existing pemeriksaan data
-    if (vcfData.pemeriksaan_keluar) {
+    if (data.pemeriksaan_keluar) {
       const initial: Record<number, string> = {};
-      // Pre-fill with empty to ensure all items exist in state
-      pemeriksaanItems.forEach(i => { initial[i.id] = ""; });
+      items.forEach(i => { initial[i.id] = ""; });
       
-      vcfData.pemeriksaan_keluar.forEach((pk: any) => {
+      data.pemeriksaan_keluar.forEach((pk: any) => {
         const val = pk.nilai?.toString().trim() || "";
         const itemId = Number(pk.item_id);
         if (!isNaN(itemId)) {
@@ -67,23 +85,27 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
     }
 
     // 2. Map beban tambahan detail
-    if (vcfData.beban_tambahan_keluar) {
-      setJenisBeban(vcfData.beban_tambahan_keluar.jenis_beban || "");
+    if (data.beban_tambahan_keluar) {
+      setJenisBeban(data.beban_tambahan_keluar.jenis_beban || "");
     }
 
     // 3. Map segel detail
-    if (vcfData.segel_keluar) {
-      setJumlahSegel(String(vcfData.segel_keluar.jumlah_segel || ""));
-      const nos = vcfData.segel_keluar.nomor_segel?.map((s: any) => s.nomor_segel) || [""];
-      setNomorSegel(nos.length > 0 ? nos : [""]);
+    if (data.segel_keluar) {
+      setJumlahSegel(data.segel_keluar.jumlah_segel?.toString() || "");
+      if (data.segel_keluar.nomor_segel) {
+        // Handle both object array and string (some APIs might return different formats)
+        if (typeof data.segel_keluar.nomor_segel === 'string') {
+          setNomorSegel(data.segel_keluar.nomor_segel.split(",").map((s: string) => s.trim()));
+        } else if (Array.isArray(data.segel_keluar.nomor_segel)) {
+          setNomorSegel(data.segel_keluar.nomor_segel.map((s: any) => s.nomor_segel || s));
+        }
+      }
     }
 
-    // 4. Map general notes
-    setKeteranganUmum(vcfData.segel_keluar?.keterangan || vcfData.vcf_bagian3?.keterangan || "");
-    
-    // 5. Enter edit mode
-    setIsEditing(true);
+    // 4. Map Keterangan Umum
+    setKeteranganUmum(data.segel_keluar?.keterangan || data.vcf_bagian3?.keterangan || "");
   };
+
 
   const validateForm = (): { valid: boolean; message?: string } => {
     const errors: Record<number, boolean> = {};
@@ -225,7 +247,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
             {/* Only admin can edit existing data */}
             {canEdit && (
               <button
-                onClick={handleEdit}
+                onClick={() => setIsEditing(true)}
                 className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 font-bold text-[10px] flex items-center gap-2 transition-all hover:bg-slate-100"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -546,6 +568,18 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
       )}
     </div>
   );
+
+  if (dataLoading) {
+    return (
+      <div className="glass-card p-12 flex flex-col items-center justify-center space-y-4">
+        <div className="spinner-accent w-10 h-10" style={{ borderColor: 'var(--accent-primary)' }} />
+        <div className="flex flex-col items-center">
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Memuat Data VCF...</p>
+          <p className="text-[11px] text-slate-500">Menyiapkan formulir pemeriksaan keluar</p>
+        </div>
+      </div>
+    );
+  }
 
   if (hasExistingData && !isEditing) return readOnlyView;
   

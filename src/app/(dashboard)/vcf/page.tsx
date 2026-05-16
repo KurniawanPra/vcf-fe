@@ -7,7 +7,6 @@ import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
 import { getStatusLabel, getStatusColor } from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
-import { VCF_STATUS } from "@/constants/vcfStatus";
 
 interface VcfSummary {
   id: number;
@@ -46,24 +45,27 @@ function RegisterButton() {
 
 const getActionLabel = (status: string) => {
   const map: Record<string, string> = {
-    [VCF_STATUS.BAGIAN1_SELESAI]: "Isi Bagian 2",
-    [VCF_STATUS.BAGIAN2_SELESAI]: "Isi Bagian 3",
-    [VCF_STATUS.BAGIAN3_SELESAI]: "Isi Bagian 4",
-    [VCF_STATUS.BAGIAN4_PROSES]: "Keluar Main Gate",
-    [VCF_STATUS.SELESAI]: "Lihat Detail",
-    [VCF_STATUS.REJECT]: "Lihat Detail",
+    bagian1_selesai: "Isi Bagian 2",
+    bagian2_selesai: "Isi Bagian 3",
+    loading_unloading_proses: "Lihat Operasional",
+    loading_unloading_selesai: "Isi Bagian 3",
+    bagian3_selesai: "Isi Bagian 4",
+    weighbridge_keluar: "Keluar Main Gate",
+    selesai: "Lihat Detail",
+    reject: "Lihat Detail",
   };
   return map[status] ?? "Detail";
 };
 
 const getActionButtonStyle = (status: string) => {
   switch (status) {
-    case VCF_STATUS.BAGIAN1_SELESAI: return "border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white shadow-sm hover:shadow-amber-500/20";
-    case VCF_STATUS.BAGIAN2_SELESAI: return "border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white shadow-sm hover:shadow-indigo-500/20";
-    case VCF_STATUS.BAGIAN3_SELESAI: return "border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white shadow-sm hover:shadow-purple-500/20";
-    case VCF_STATUS.BAGIAN4_PROSES: return "border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white shadow-sm hover:shadow-emerald-500/20";
-    case VCF_STATUS.SELESAI:
-    case VCF_STATUS.REJECT:
+    case "bagian1_selesai": return "border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white shadow-sm hover:shadow-amber-500/20";
+    case "bagian2_selesai": return "border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white shadow-sm hover:shadow-indigo-500/20";
+    case "loading_unloading_proses":
+    case "loading_unloading_selesai": return "border-violet-500 text-violet-500 hover:bg-violet-500 hover:text-white shadow-sm hover:shadow-violet-500/20";
+    case "bagian3_selesai": return "border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white shadow-sm hover:shadow-emerald-500/20";
+    case "selesai":
+    case "reject":
       return "border-slate-300 text-slate-500 hover:bg-slate-500 hover:text-white dark:border-white/20 dark:text-slate-400 dark:hover:bg-white/20 dark:hover:text-white";
     default:
       return "border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white shadow-sm hover:shadow-blue-500/20";
@@ -183,9 +185,9 @@ export default function VcfQuickAccessPage() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
         {[
           { label: "Semua Aktif", stage: "aktif", color: "var(--accent-primary)" },
-          { label: "WB Masuk", stage: VCF_STATUS.BAGIAN1_SELESAI, color: "#f59e0b" },
-          { label: "WB Keluar", stage: VCF_STATUS.BAGIAN2_SELESAI, color: "#6366f1" },
-          { label: "Main Gate Keluar", stage: VCF_STATUS.BAGIAN3_SELESAI, color: "#8b5cf6" },
+          { label: "WB Masuk", stage: "bagian1_selesai", color: "#f59e0b" },
+          { label: "Loading", stage: "bagian2_selesai", color: "#6366f1" },
+          { label: "WB Keluar", stage: "loading_unloading_selesai", color: "#8b5cf6" },
         ].map((tab) => (
           <button
             key={tab.stage}
