@@ -143,6 +143,7 @@ export const exportToDocx = async (filename: string, title: string, headers: str
       logoImageRun = new ImageRun({
         data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
         transformation: { width: 80, height: 60 },
+        type: 'png',
       });
     } catch (e) {
       console.error("Failed to load logo for docx", e);
