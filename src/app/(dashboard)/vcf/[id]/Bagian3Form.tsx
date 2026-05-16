@@ -637,7 +637,10 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="px-8 py-2.5 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all text-sm shadow-sm"
+                  className="px-8 py-2.5 rounded-xl font-bold text-white transition-all text-sm shadow-sm"
+                  style={{ background: 'var(--accent-primary, #22c55e)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                 >
                   {loading ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>

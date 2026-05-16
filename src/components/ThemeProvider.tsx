@@ -21,6 +21,7 @@ export const ACCENT_PRESETS = [
   { label: "Teal",            light: "#14b8a6", lightRgb: "20,184,166", dark: "#2dd4bf", darkRgb: "45,212,191" },
   { label: "Indigo",          light: "#6366f1", lightRgb: "99,102,241", dark: "#818cf8", darkRgb: "129,140,248" },
   { label: "Pink",            light: "#ec4899", lightRgb: "236,72,153", dark: "#f472b6", darkRgb: "244,114,182" },
+  { label: "RGB Neon", light: "#ff00ff", lightRgb: "255,0,255", dark: "#00ffff", darkRgb: "0,255,255", isRgbNeon: true },
 ];
 
 export const FONT_PRESETS = [
@@ -59,6 +60,7 @@ export function applyAppearance(isDark: boolean) {
     /* ── Accent color ── */
     let accentHex: string | null = null;
     let accentRgb: string | null = null;
+    let isRgbNeon = false;
     if (a.isCustomAccent && a.customAccentLight && a.customAccentDark) {
       accentHex = isDark ? a.customAccentDark : a.customAccentLight;
       accentRgb = hexToRgb(accentHex!);
@@ -67,12 +69,20 @@ export function applyAppearance(isDark: boolean) {
       if (p) {
         accentHex = isDark ? p.dark : p.light;
         accentRgb = isDark ? p.darkRgb : p.lightRgb;
+        isRgbNeon = !!p.isRgbNeon;
       }
     }
     if (accentHex) {
       setVar("--accent-primary", accentHex);
       setVar("--accent-secondary", darken(accentHex));
       setVar("--accent-primary-rgb", accentRgb!);
+    }
+
+    /* ── RGB Neon Animation ── */
+    if (isRgbNeon) {
+      startRgbNeonAnimation();
+    } else {
+      stopRgbNeonAnimation();
     }
 
     /* ── Semantic overrides ── */
@@ -134,6 +144,105 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       </div>
     </ThemeContext.Provider>
   );
+}
+
+/* ── RGB Neon Global Animation ─────────────────────────────────── */
+let rgbNeonInterval: ReturnType<typeof setInterval> | null = null;
+const RGB_NEON_COLORS = [
+  { hex: "#ff0000", rgb: "255,0,0" },
+  { hex: "#ff00ff", rgb: "255,0,255" },
+  { hex: "#0000ff", rgb: "0,0,255" },
+  { hex: "#00ffff", rgb: "0,255,255" },
+  { hex: "#00ff00", rgb: "0,255,0" },
+  { hex: "#ffff00", rgb: "255,255,0" },
+];
+
+export function startRgbNeonAnimation() {
+  // Clear existing interval if any
+  if (rgbNeonInterval) {
+    clearInterval(rgbNeonInterval);
+    rgbNeonInterval = null;
+  }
+
+  let colorIndex = 0;
+
+  const updateColor = () => {
+    const color = RGB_NEON_COLORS[colorIndex];
+    document.documentElement.style.setProperty("--accent-primary", color.hex);
+    document.documentElement.style.setProperty("--accent-secondary", darken(color.hex));
+    document.documentElement.style.setProperty("--accent-primary-rgb", color.rgb);
+    document.documentElement.style.setProperty("--rgb-neon-glow", color.rgb);
+    colorIndex = (colorIndex + 1) % RGB_NEON_COLORS.length;
+  };
+
+  updateColor(); // Set initial color
+  rgbNeonInterval = setInterval(updateColor, 800);
+
+  // Add liquid glow CSS if not present
+  if (!document.getElementById('rgb-neon-liquid')) {
+    const style = document.createElement('style');
+    style.id = 'rgb-neon-liquid';
+    style.textContent = `
+      body {
+        position: relative;
+        min-height: 100vh;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: -1;
+        animation: liquid-glow 3s ease-in-out infinite;
+      }
+      @keyframes liquid-glow {
+        0%, 100% {
+          box-shadow: 
+            0 0 60px rgba(var(--rgb-neon-glow), 0.3), 
+            0 0 120px rgba(var(--rgb-neon-glow), 0.2),
+            inset 0 0 60px rgba(var(--rgb-neon-glow), 0.1);
+        }
+        50% {
+          box-shadow: 
+            0 0 80px rgba(var(--rgb-neon-glow), 0.5), 
+            0 0 160px rgba(var(--rgb-neon-glow), 0.3),
+            inset 0 0 80px rgba(var(--rgb-neon-glow), 0.2);
+        }
+      }
+      .btn-primary, .glass-card {
+        animation: liquid-border 2s ease-in-out infinite;
+      }
+      @keyframes liquid-border {
+        0%, 100% {
+          box-shadow: 
+            0 0 20px rgba(var(--rgb-neon-glow), 0.4), 
+            0 0 40px rgba(var(--rgb-neon-glow), 0.2);
+        }
+        50% {
+          box-shadow: 
+            0 0 30px rgba(var(--rgb-neon-glow), 0.6), 
+            0 0 60px rgba(var(--rgb-neon-glow), 0.4);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+export function stopRgbNeonAnimation() {
+  if (rgbNeonInterval) {
+    clearInterval(rgbNeonInterval);
+    rgbNeonInterval = null;
+  }
+  const liquidStyle = document.getElementById('rgb-neon-liquid');
+  if (liquidStyle) liquidStyle.remove();
+  document.documentElement.style.removeProperty("--rgb-neon-glow");
 }
 
 export const useTheme = () => {

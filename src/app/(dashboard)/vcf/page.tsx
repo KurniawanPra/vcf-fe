@@ -235,10 +235,31 @@ export default function VcfQuickAccessPage() {
           />
         </div>
 
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex gap-3 w-full md:w-auto">
           <div className="glass-card flex-1 md:flex-none md:min-w-[120px] p-2 px-4 flex flex-col items-center justify-center text-center">
             <p className="text-[9px] font-bold text-secondary uppercase mb-0.5">Total</p>
             <p className="text-xl font-bold text-blue-500">{vcfs.length}</p>
+          </div>
+          <div className="glass-card flex-1 md:flex-none md:min-w-[100px] p-2 px-4 flex flex-col items-center justify-center text-center">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/10 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode("card")}
+                className={`p-1.5 rounded-md transition-all ${viewMode === "card" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+              </button>
+            </div>
           </div>
           <RegisterButton />
         </div>
@@ -252,34 +273,6 @@ export default function VcfQuickAccessPage() {
             <p className="text-[10px] text-secondary">Kendaraan yang sedang berada di dalam area pabrik INL</p>
           </div>
           <div className="flex items-center gap-3">
-            {/* View toggle */}
-            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
-              <button
-                onClick={() => setViewMode("table")}
-                title="Tampilan tabel"
-                className="p-2 transition-all"
-                style={viewMode === "table"
-                  ? { background: "rgba(59,130,246,0.15)", color: "#60a5fa" }
-                  : { color: "var(--text-muted)" }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode("card")}
-                title="Tampilan kartu"
-                className="p-2 transition-all"
-                style={viewMode === "card"
-                  ? { background: "rgba(59,130,246,0.15)", color: "#60a5fa" }
-                  : { color: "var(--text-muted)" }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-                </svg>
-              </button>
-            </div>
             <Link href="/vcf/list?stage=aktif" className="text-xs font-bold text-blue-500 hover:underline">
               Lihat Semua
             </Link>
@@ -318,8 +311,8 @@ export default function VcfQuickAccessPage() {
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
                         {vcf.tipe_kegiatan?.replace(/_/g, " ")}
                       </span>
-                      <span className="text-[10px] font-bold text-blue-400 group-hover:underline">
-                        {getActionLabel(vcf.status)} →
+                      <span className="text-[11px] font-bold text-white px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 transition-all border-2 border-blue-400 shadow-sm">
+                        {getActionLabel(vcf.status)}
                       </span>
                     </div>
                   </Link>

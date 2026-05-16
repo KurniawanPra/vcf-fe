@@ -12,7 +12,7 @@ import LogoutConfirmModal from "./LogoutConfirmModal";
 const ADMIN_NAV = [
   {
     group: "Utama",
-    collapsible: false,
+    collapsible: true,
     items: [
       {
         href: "/dashboard", label: "Dashboard",
@@ -48,6 +48,12 @@ const ADMIN_NAV = [
       { href: "/master/pemeriksaan-keluar", label: "Checklist Keluar", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg> },
       { href: "/master/vehicles", label: "Jenis Kendaraan", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3" /><circle cx="7.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg> },
       { href: "/master/users", label: "Pengguna", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
+    ],
+  },
+  {
+    group: "Sistem",
+    collapsible: true,
+    items: [
       { href: "/settings", label: "Pengaturan", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" /></svg>, adminOnly: true },
     ],
   },
@@ -278,7 +284,30 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                         title={collapsed ? item.label : undefined}
                         onClick={() => { if (!isActive) setNavigatingTo(item.href); if (isMobile) setMobileOpen?.(false); }}
                         className={`nav-item mb-0.5 ${isActive ? "active" : ""} ${isNav ? "opacity-70" : ""}`}
-                        style={collapsed ? { justifyContent: "center", padding: "9px" } : {}}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: collapsed ? "9px" : "10px 12px",
+                          borderRadius: 8,
+                          textDecoration: "none",
+                          transition: "all 0.2s",
+                          color: isActive ? "var(--accent-primary, #22c55e)" : "var(--text-muted)",
+                          background: isActive ? (theme === "dark" ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.1)") : "transparent",
+                          border: isActive ? `1px solid rgba(var(--accent-primary-rgb, 34,197,94), 0.3)` : "1px solid transparent",
+                          boxShadow: isActive ? `0 0 12px rgba(var(--accent-primary-rgb, 34,197,94), 0.2)` : "none",
+                          fontWeight: isActive ? 600 : 400,
+                        }}
+                        onMouseEnter={e => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
+                            e.currentTarget.style.borderColor = "rgba(var(--accent-primary-rgb, 34,197,94), 0.3)";
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = "transparent";
+                          }
+                        }}
                       >
                         {isNav ? (
                           <svg className="animate-spin flex-shrink-0" width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -286,7 +315,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
                         ) : item.icon}
-                        {!collapsed && <span>{item.label}</span>}
+                        {!collapsed && <span style={{ fontSize: 13 }}>{item.label}</span>}
                       </Link>
                     );
                   })}

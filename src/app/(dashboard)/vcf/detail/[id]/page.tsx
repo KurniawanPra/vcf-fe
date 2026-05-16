@@ -170,54 +170,53 @@ export default function VcfDetailAliasPage() {
   const canFillBagian4 = ["bagian3_selesai", "weighbridge_keluar"].includes(vcf.status);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-      <div className="space-y-6 sm:space-y-8">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-8">
+      <div className="space-y-5 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors shrink-0"
-            title="Kembali"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white font-mono truncate">VCF #{vcf.nomor_urut}</h1>
-              <span 
-                className={`status-badge text-[10px] sm:text-xs ${getStatusColor(vcf.status)}`}
-                style={isRejected ? { background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" } : {}}
-              >
-                {isRejected ? "Ditolak" : getStatusLabel(vcf.status)}
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-400 font-medium truncate mt-0.5">
-              {vcf.no_polisi} · {vcf.driver?.nama_supir}
-            </p>
-          </div>
+      <div className="flex items-center gap-3 mb-2">
+        <button
+          onClick={() => router.back()}
+          className="p-2.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors shrink-0"
+          title="Kembali"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base sm:text-2xl font-black text-slate-800 dark:text-white font-mono truncate">VCF #{vcf.nomor_urut}</h1>
+          <p className="text-[11px] sm:text-sm text-slate-400 font-medium truncate mt-1">
+            {vcf.no_polisi} · {vcf.driver?.nama_supir}
+          </p>
         </div>
+      </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowGuide(true)}
-              className="px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-              </svg>
-              PANDUAN
-            </button>
-            <button
-              onClick={() => setShowPrint(true)}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
-              </svg>
-              CETAK VCF
-            </button>
-          </div>
+      {/* Status badge and actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <span
+          className={`status-badge text-[10px] sm:text-xs ${getStatusColor(vcf.status)}`}
+          style={isRejected ? { background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" } : {}}
+        >
+          {isRejected ? "Ditolak" : getStatusLabel(vcf.status)}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGuide(true)}
+            className="px-3 py-2.5 sm:px-4 sm:py-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 sm:gap-2 hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <svg width="12" height="12" className="sm:w-14 sm:h-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            <span className="hidden sm:inline">PANDUAN</span>
+          </button>
+          <button
+            onClick={() => setShowPrint(true)}
+            className="px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-xl bg-slate-900 text-white font-bold text-[10px] sm:text-xs flex items-center gap-1.5 sm:gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20"
+          >
+            <svg width="12" height="12" className="sm:w-14 sm:h-14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            <span className="hidden sm:inline">CETAK VCF</span>
+          </button>
+        </div>
       </div>
 
       {/* Guide Modal */}
@@ -252,54 +251,44 @@ export default function VcfDetailAliasPage() {
       )}
 
       {/* Progress steps */}
-      <div className="bg-white dark:bg-bg-card border border-slate-100 dark:border-white/5 p-6 rounded-[32px] shadow-sm mb-6 overflow-x-auto scrollbar-none">
-        <div className="flex items-center min-w-[750px] lg:min-w-0 px-4">
+      <div className="bg-white dark:bg-bg-card border border-slate-100 dark:border-white/5 p-3 sm:p-6 rounded-2xl sm:rounded-[32px] shadow-sm mb-4 sm:mb-6">
+        <div className="grid grid-cols-4 gap-2 sm:gap-0 sm:flex sm:flex-row items-center">
           {[
-            { n: 1, label: "Main Gate\nMasuk" },
-            { n: 2, label: "Weighbridge\nMasuk" },
-            { n: 3, label: "Weighbridge\nKeluar" },
-            { n: 4, label: "Main Gate\nKeluar" },
+            { n: 1, label: "MG", sub: "Masuk" },
+            { n: 2, label: "WB", sub: "Masuk" },
+            { n: 3, label: "WB", sub: "Keluar" },
+            { n: 4, label: "MG", sub: "Keluar" },
           ].map((step, idx) => (
-            <div key={step.n} className={`flex items-center ${idx < 3 ? 'flex-1' : ''}`}>
-              <div className="flex flex-col items-center group">
-                <div
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border-2 flex items-center justify-center text-xs font-black transition-all duration-500 relative"
-                  style={
-                    step.n < currentStep || isDone
-                      ? { borderColor: "#10b981", background: "#10b981", color: "white", boxShadow: "0 8px 16px rgba(16,185,129,0.2)" }
-                      : step.n === currentStep
-                      ? (isRejected 
-                        ? { borderColor: "#ef4444", background: "rgba(239,68,68,0.1)", color: "#ef4444", transform: "scale(1.1)" }
-                        : { borderColor: "#3b82f6", background: "rgba(59,130,246,0.1)", color: "#3b82f6", transform: "scale(1.1)" })
-                      : { borderColor: "var(--border-light)", color: "var(--text-muted)" }
-                  }
-                >
-                  {step.n < currentStep || isDone ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
-                  ) : (isRejected && step.n === currentStep) ? "!" : step.n}
-                </div>
-                <span className="text-[10px] sm:text-[11px] font-black mt-3 text-center whitespace-pre-line leading-tight uppercase tracking-wider" style={{ color: step.n <= currentStep ? "var(--text-primary)" : "var(--text-muted)" }}>
-                  {step.label}
-                </span>
+            <div key={step.n} className="flex flex-col items-center">
+              <div
+                className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl border-2 flex items-center justify-center text-[10px] sm:text-xs font-black transition-all duration-500"
+                style={
+                  step.n < currentStep || isDone
+                    ? { borderColor: "#10b981", background: "#10b981", color: "white", boxShadow: "0 8px 16px rgba(16,185,129,0.2)" }
+                    : step.n === currentStep
+                    ? (isRejected
+                      ? { borderColor: "#ef4444", background: "rgba(239,68,68,0.1)", color: "#ef4444", transform: "scale(1.1)" }
+                      : { borderColor: "#3b82f6", background: "rgba(59,130,246,0.1)", color: "#3b82f6", transform: "scale(1.1)" })
+                    : { borderColor: "var(--border-light)", color: "var(--text-muted)" }
+                }
+              >
+                {step.n < currentStep || isDone ? (
+                  <svg width="12" height="12" className="sm:w-18 sm:h-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : (isRejected && step.n === currentStep) ? "!" : step.n}
               </div>
-              {idx < 3 && (
-                <div className="flex-1 px-4 sm:px-8">
-                  <div
-                    className="h-1 rounded-full transition-all duration-1000"
-                    style={{ 
-                      background: step.n < currentStep ? "linear-gradient(90deg, #10b981 0%, #34d399 100%)" : "var(--border-light)",
-                      opacity: step.n < currentStep ? 1 : 0.4
-                    }}
-                  />
-                </div>
-              )}
+              <span className="text-[8px] sm:text-[10px] sm:text-[11px] font-black mt-1 sm:mt-2 text-center uppercase tracking-wider leading-tight" style={{ color: step.n <= currentStep ? "var(--text-primary)" : "var(--text-muted)" }}>
+                {step.label}
+              </span>
+              <span className="text-[7px] hidden sm:block font-normal mt-0.5 text-center uppercase tracking-wider" style={{ color: step.n <= currentStep ? "var(--text-muted)" : "var(--text-muted)" }}>
+                {step.sub}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+      <div className="flex gap-2.5 mb-5 overflow-x-auto pb-2">
         {[
           { key: "info", label: "Data Registrasi VCF", always: true },
           { key: "reject_detail", label: "Detail Penolakan", always: isRejected },
@@ -311,9 +300,9 @@ export default function VcfDetailAliasPage() {
           .map((tab) => (
             <button
               key={tab.key}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
-                activeTab === tab.key 
-                  ? 'bg-slate-900 border-slate-900 text-white shadow-sm' 
+              className={`px-4 sm:px-5 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold whitespace-nowrap transition-all border shrink-0 ${
+                activeTab === tab.key
+                  ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                   : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-slate-300'
               }`}
               onClick={() => setActiveTab(tab.key as any)}

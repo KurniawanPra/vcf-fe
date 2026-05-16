@@ -31,48 +31,24 @@ const STAT_CARDS = [
     label: "Total VCF",
     sub: "Semua record hari ini",
     color: "#3b82f6",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-        <rect x="9" y="3" width="6" height="4" rx="1"/>
-      </svg>
-    ),
   },
   {
     key: "aktif" as keyof Stats,
     label: "Aktif",
     sub: "Kendaraan di area",
     color: "#f59e0b",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-    ),
   },
   {
     key: "selesai" as keyof Stats,
     label: "Selesai",
     sub: "Kendaraan keluar",
     color: "#10b981",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M20 6L9 17l-5-5"/>
-      </svg>
-    ),
   },
   {
     key: "hari_ini" as keyof Stats,
     label: "Hari Ini",
     sub: "Kendaraan masuk",
     color: "#8b5cf6",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    ),
   },
 ];
 
@@ -156,9 +132,9 @@ export default function DashboardPage() {
           style={{
             display: "inline-flex", alignItems: "center", gap: 8,
             padding: "11px 22px", borderRadius: 12, border: "none", cursor: registerLoading ? "not-allowed" : "pointer",
-            background: "linear-gradient(135deg, #16a34a, #22c55e)",
+            background: "var(--accent-primary)",
             color: "white", fontWeight: 700, fontSize: 14,
-            boxShadow: "0 4px 20px rgba(34,197,94,0.4)",
+            boxShadow: "0 4px 20px rgba(var(--accent-primary-rgb), 0.4)",
             opacity: registerLoading ? 0.75 : 1,
             transition: "all 0.2s",
           }}
@@ -170,36 +146,9 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* ── Stat Cards ─────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {loading ? [1,2,3,4].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => (
-          <div key={card.key} style={{
-            borderRadius: 12, padding: "16px", position: "relative", overflow: "hidden",
-            background: "var(--bg-card)", border: "1px solid var(--border)",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, background: `${card.color}15`,
-                display: "flex", alignItems: "center", justifyContent: "center", color: card.color,
-              }}>
-                {card.icon}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1, fontFamily: "'Plus Jakarta Sans',sans-serif", letterSpacing: "-0.5px" }}>
-                  {stats[card.key]}
-                </p>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginTop: 2 }}>{card.label}</p>
-                <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Quick Actions (Officer only) ─────── */}
+      {/* ── Quick Actions (Officer only, shown first on mobile) ─────── */}
       {!isAdmin() && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="order-1 lg:order-2 grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 lg:mb-8">
           {QUICK_ACTIONS.map(a => (
             <Link key={a.href} href={a.href} style={{
               display: "block", borderRadius: 16, padding: "18px 20px",
@@ -230,6 +179,24 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ── Stat Cards ─────────────────────────── */}
+      <div className="order-2 lg:order-1 grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {loading ? [1,2,3,4].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => (
+          <div key={card.key} style={{
+            borderRadius: 12, padding: "20px 16px", position: "relative", overflow: "hidden",
+            background: "var(--bg-card)", border: `2px solid ${card.color}`,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+          }}>
+            <p style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1, fontFamily: "'Plus Jakarta Sans',sans-serif", letterSpacing: "-0.5px" }}>
+              {stats[card.key]}
+            </p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginTop: 2 }}>{card.label}</p>
+            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</p>
+          </div>
+        ))}
+      </div>
+
       {/* ── Activity Feed ────────────────────── */}
       <div style={{
         borderRadius: 20, overflow: "hidden",
@@ -243,9 +210,6 @@ export default function DashboardPage() {
           background: "var(--bg-secondary)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div className="hidden md:flex" style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#3b82f6,#6366f1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Kendaraan Aktif</p>
               <p style={{ fontSize: 11, color: "var(--text-muted)" }}>

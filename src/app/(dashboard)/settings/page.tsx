@@ -5,7 +5,7 @@ import { settingsApi } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { clearMasterDataCache } from "@/lib/masterDataCache";
-import { ACCENT_PRESETS, FONT_PRESETS, applyAppearance } from "@/components/ThemeProvider";
+import { ACCENT_PRESETS, FONT_PRESETS, applyAppearance, startRgbNeonAnimation, stopRgbNeonAnimation } from "@/components/ThemeProvider";
 import GuideSection from "@/components/GuideSection";
 
 interface Setting {
@@ -179,12 +179,22 @@ export default function SettingsPage() {
     document.documentElement.style.setProperty("--accent-primary", hex);
     document.documentElement.style.setProperty("--accent-secondary", darken(hex));
     document.documentElement.style.setProperty("--accent-primary-rgb", rgb);
+
+    // Handle RGB neon animation using global functions
+    if (p.isRgbNeon) {
+      startRgbNeonAnimation();
+    } else {
+      stopRgbNeonAnimation();
+    }
+
     saveAppearance({ accentIdx: idx, isCustomAccent: false });
     showToast("success", "Warna aksen diterapkan");
   };
 
   const handleApplyCustomAccent = () => {
     setIsCustomAccent(true);
+    stopRgbNeonAnimation();
+
     const hex = isDarkNow() ? customAccentDark : customAccentLight;
     document.documentElement.style.setProperty("--accent-primary", hex);
     document.documentElement.style.setProperty("--accent-secondary", darken(hex));
@@ -223,6 +233,9 @@ export default function SettingsPage() {
     localStorage.removeItem(LOCAL_SETTINGS_KEY);
     setAccentIdx(0); setIsCustomAccent(false); setFontIdx(0); setBorderRadius(12); setAnimationsEnabled(true);
     setColorSuccess(""); setColorDanger(""); setColorWarning(""); setColorInfo("");
+
+    stopRgbNeonAnimation();
+
     ["--accent-primary","--accent-secondary","--accent-primary-rgb",
      "--color-success","--color-success-rgb","--color-danger","--color-danger-rgb",
      "--color-warning","--color-warning-rgb","--color-info","--color-info-rgb",
@@ -391,11 +404,33 @@ export default function SettingsPage() {
                   </button>
                 ))}
               </div>
-              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Kustom</p>
-              <div className="flex flex-wrap items-end gap-4 p-4 rounded-xl border border-dashed" style={{ borderColor: "var(--border)" }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Kustom (HEX)</p>
+              <div className="flex flex-wrap items-end gap-4 p-4 rounded-xl border border-dashed mb-5" style={{ borderColor: "var(--border)" }}>
                 <ColorPickerField label="Mode Terang" value={customAccentLight} onChange={setCustomAccentLight} />
                 <ColorPickerField label="Mode Gelap" value={customAccentDark} onChange={setCustomAccentDark} />
                 <button onClick={handleApplyCustomAccent} className="btn btn-primary text-sm">Terapkan</button>
+              </div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Kustom (RGB)</p>
+              <div className="flex flex-wrap items-center gap-4 p-4 rounded-xl border border-dashed" style={{ borderColor: "var(--border)" }}>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="form-label text-[10px]">RGB Color (R,G,B)</label>
+                  <input 
+                    type="text" 
+                    placeholder="34,197,94" 
+                    className="form-input w-full font-mono text-xs"
+                    onChange={(e) => {
+                      const rgb = e.target.value;
+                      const rgbValues = rgb.split(',').map(v => parseInt(v.trim()));
+                      if (rgbValues.length === 3 && rgbValues.every(v => !isNaN(v) && v >= 0 && v <= 255)) {
+                        const hex = '#' + rgbValues.map(v => v.toString(16).padStart(2, '0')).join('');
+                        setCustomAccentLight(hex);
+                        setCustomAccentDark(hex);
+                        setIsCustomAccent(true);
+                      }
+                    }}
+                  />
+                </div>
+                <button onClick={handleApplyCustomAccent} className="btn btn-primary text-sm">Terapkan RGB</button>
               </div>
             </div>
           </div>
