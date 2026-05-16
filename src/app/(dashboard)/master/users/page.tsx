@@ -372,9 +372,9 @@ export default function UsersPage() {
                   </td>
                 </tr>
               ) : (
-                data.map((item) => (
+                data.map((item, index) => (
                   <tr key={item.id}>
-                    <td className="text-center font-mono text-xs text-muted">{item.urutan}</td>
+                    <td className="text-center font-mono text-xs text-muted">{index + 1}</td>
                     <td className="font-medium">{item.nama}</td>
                     <td className="font-mono text-xs text-secondary">{item.username}</td>
                     <td>
