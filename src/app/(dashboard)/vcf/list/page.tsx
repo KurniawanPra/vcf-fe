@@ -33,11 +33,15 @@ const STAGE_FILTERS: Record<string, string> = {
   reject: "reject",
 };
 
-function VcfListContent() {
-  const router = useRouter();
+function VcfSearchParams({ children }: { children: (stageFilter: string) => JSX.Element }) {
   const searchParams = useSearchParams();
   const urlStage = searchParams.get("stage");
   const stageFilter = urlStage || "";
+  return <>{children(stageFilter)}</>;
+}
+
+function VcfListContent({ stageFilter }: { stageFilter: string }) {
+  const router = useRouter();
   const now = new Date();
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
@@ -432,7 +436,9 @@ function VcfListContent() {
 export default function VcfListPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="spinner" /></div>}>
-      <VcfListContent />
+      <VcfSearchParams>
+        {(stageFilter) => <VcfListContent stageFilter={stageFilter} />}
+      </VcfSearchParams>
     </Suspense>
   );
 }
