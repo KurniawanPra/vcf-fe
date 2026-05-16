@@ -63,7 +63,10 @@ export default function UsersPage() {
       if (filterRole) params.role = filterRole;
       
       const res = await masterApi.getUsers(params);
-      setData(res.data.data || res.data);
+      const allUsers = res.data.data || res.data;
+      // Filter out admin accounts from display to prevent accidental deletion
+      const filteredUsers = allUsers.filter((user: User) => user.role !== "admin");
+      setData(filteredUsers);
     } catch {
       /* ignore */
     } finally {
