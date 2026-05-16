@@ -104,8 +104,15 @@ export default function PrintTemplate({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-10">
-      <div style={{ width: "210mm", height: "fit-content", background: "#fff", flexShrink: 0 }}>
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-4 sm:py-10">
+      <div style={{ 
+        width: "210mm", 
+        height: "fit-content", 
+        background: "#fff", 
+        flexShrink: 0,
+        maxWidth: "100%"
+      }}
+      className="print-preview-container">
         
         {/* Toolbar (Hidden in Print) */}
         <div className="no-print" style={{ 

@@ -91,8 +91,9 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       if (search) params.search = search;
       const res = await vcfApi.getList(params);
       setVcfs(res.data.data || res.data);
-    } catch {
-      // ignore
+    } catch (err: any) {
+      console.error("Error fetching VCF list:", err);
+      alert("Gagal mengambil data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     ? {
       aktif: "Kendaraan di Area (Aktif)",
       bagian1_selesai: "Antrian Weighbridge Masuk",
-      bagian2_selesai: "Antrian Weighbridge Keluar",
+      bagian2_selesai: "Antrian Main Gate Keluar",
       bagian3_selesai: "Antrian Main Gate Keluar",
       selesai: "VCF Selesai",
       reject: "VCF Ditolak",
@@ -130,11 +131,11 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
   const getActionLabel = (vcf: Vcf) => {
     const map: Record<string, string> = {
-      bagian1_selesai: "Isi Bagian 2",
-      bagian2_selesai: "Isi Bagian 3",
+      bagian1_selesai: "WB Masuk",
+      bagian2_selesai: "WB Keluar",
       loading_unloading_proses: "Lihat Operasional",
-      loading_unloading_selesai: "Isi Bagian 3",
-      bagian3_selesai: "Isi Bagian 4",
+      loading_unloading_selesai: "WB Keluar",
+      bagian3_selesai: "MG Keluar",
       selesai: "Lihat Detail",
       reject: "Lihat Detail",
     };
@@ -143,16 +144,16 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
   const getActionButtonStyle = (status: string) => {
     switch (status) {
-      case "bagian1_selesai": return "bg-amber-500 text-white hover:bg-amber-600 shadow-sm";
-      case "bagian2_selesai": return "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm";
+      case "bagian1_selesai": return "border-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white";
+      case "bagian2_selesai": return "border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white";
       case "loading_unloading_proses":
-      case "loading_unloading_selesai": return "bg-violet-600 text-white hover:bg-violet-700 shadow-sm";
-      case "bagian3_selesai": return "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm";
+      case "loading_unloading_selesai": return "border-2 border-violet-600 text-violet-600 hover:bg-violet-600 hover:text-white";
+      case "bagian3_selesai": return "border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white";
       case "selesai":
       case "reject":
-        return "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10";
+        return "border-2 border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-400 hover:bg-slate-300 hover:text-white dark:hover:bg-slate-600";
       default:
-        return "bg-blue-600 text-white hover:bg-blue-700 shadow-sm";
+        return "border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white";
     }
   };
 
@@ -284,15 +285,15 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               <table className="data-table">
                 <thead className="sticky top-0 z-10 bg-bg-card">
                   <tr>
-                    <th className="w-24">No. Urut</th>
-                    <th>Tanggal</th>
-                    <th>No. Polisi</th>
-                    <th>Supir</th>
-                    <th>Transporter</th>
-                    <th>Produk</th>
-                    <th>Tipe</th>
-                    <th>Status</th>
-                    <th className="w-40">Aksi</th>
+                    <th className="w-24 text-center">No. Urut</th>
+                    <th className="text-center">Tanggal</th>
+                    <th className="w-32 min-w-32 text-center">No. Polisi</th>
+                    <th className="text-center">Supir</th>
+                    <th className="text-center">Transporter</th>
+                    <th className="text-center">Produk</th>
+                    <th className="text-center">Tipe</th>
+                    <th className="text-center">Status</th>
+                    <th className="w-40 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -300,7 +301,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                     <tr key={vcf.id}>
                       <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
                       <td className="text-xs">{vcf.tanggal}</td>
-                      <td className="font-bold text-text-primary dark:text-white">{vcf.no_polisi}</td>
+                      <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white">{vcf.no_polisi}</td>
                       <td className="text-xs">{vcf.driver?.nama_supir || "—"}</td>
                       <td className="text-xs">{vcf.transporter?.nama_transporter || "—"}</td>
                       <td>
@@ -308,19 +309,19 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{vcf.produk}</span>
                         ) : "—"}
                       </td>
-                      <td>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                      <td className="w-32 min-w-32">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-400" : "bg-emerald-500/10 text-emerald-400"}`}>
                           {vcf.tipe_kegiatan?.replace(/_/g, " ")}
                         </span>
                       </td>
-                      <td>
+                      <td className="w-32 min-w-32">
                         <span className={`status-badge ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/vcf/${vcf.id}`}
-                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${getActionButtonStyle(vcf.status)}`}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${getActionButtonStyle(vcf.status)}`}
                           >
                             {getActionLabel(vcf)}
                           </Link>

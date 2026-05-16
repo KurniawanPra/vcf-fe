@@ -79,13 +79,14 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const res = await vcfApi.getList({ tanggal: today, per_page: 100 });
+      const res = await vcfApi.getList({ per_page: 100 });
       const allData: VcfSummary[] = (res.data.data || res.data || []) as VcfSummary[];
+      console.log("Dashboard - All VCFs:", allData.map(v => ({ nomor_urut: v.nomor_urut, status: v.status, tanggal: v.tanggal })));
       const aktif = allData.filter(v => v.status !== "selesai" && v.status !== "reject" && v.status !== "ditolak").length;
       const selesai = allData.filter(v => v.status === "selesai").length;
-      const hari_ini = allData.filter(v => v.tanggal === today).length;
+      const hari_ini = allData.filter(v => v.tanggal === new Date().toISOString().split("T")[0]).length;
       const activeData = allData.filter(v => v.status !== "selesai" && v.status !== "reject" && v.status !== "ditolak");
+      console.log("Dashboard - Active VCFs:", activeData.map(v => ({ nomor_urut: v.nomor_urut, status: v.status })));
       setStats({ total: allData.length, aktif, selesai, hari_ini });
       setVcfs(activeData);
     } catch {
@@ -108,7 +109,7 @@ export default function DashboardPage() {
         v.nomor_urut?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : vcfs;
-
+  const [registerHover, setRegisterHover] = useState(false);
   return (
     <div style={{ maxWidth: 1400 }}>
       {/* ── Header ─────────────────────────────── */}
@@ -126,22 +127,32 @@ export default function DashboardPage() {
             <span style={{ marginLeft: 8 }}>{now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
           </p>
         </div>
+
         <button
           onClick={() => { setRegisterLoading(true); setTimeout(() => router.push("/vcf/register"), 600); }}
           disabled={registerLoading}
+          onMouseEnter={() => setRegisterHover(true)}
+          onMouseLeave={() => setRegisterHover(false)}
           style={{
             display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "11px 22px", borderRadius: 12, border: "none", cursor: registerLoading ? "not-allowed" : "pointer",
-            background: "var(--accent-primary)",
-            color: "white", fontWeight: 700, fontSize: 14,
-            boxShadow: "0 4px 20px rgba(var(--accent-primary-rgb), 0.4)",
+            padding: "11px 22px", borderRadius: 12, cursor: registerLoading ? "not-allowed" : "pointer",
+            background: registerHover && !registerLoading ? "var(--accent-primary)" : "transparent",
+            border: "2px solid var(--accent-primary)",
+            color: registerHover && !registerLoading ? "white" : "var(--accent-primary)",
+            fontWeight: 700, fontSize: 14,
             opacity: registerLoading ? 0.75 : 1,
             transition: "all 0.2s",
           }}
         >
           {registerLoading
-            ? <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"/><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>}
+            ? <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v8M8 12h8"/>
+              </svg>}
           {registerLoading ? "Memuat..." : "Registrasi VCF Baru"}
         </button>
       </div>
@@ -179,23 +190,42 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Stat Cards ─────────────────────────── */}
-      <div className="order-2 lg:order-1 grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {loading ? [1,2,3,4].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => (
-          <div key={card.key} style={{
-            borderRadius: 12, padding: "20px 16px", position: "relative", overflow: "hidden",
-            background: "var(--bg-card)", border: `2px solid ${card.color}`,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-            display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
-          }}>
-            <p style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1, fontFamily: "'Plus Jakarta Sans',sans-serif", letterSpacing: "-0.5px" }}>
-              {stats[card.key]}
-            </p>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginTop: 2 }}>{card.label}</p>
-            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</p>
-          </div>
-        ))}
-      </div>
+{/* ── Stat Cards ─────────────────────────── */}
+<div
+  data-stat-grid
+  className="order-2 lg:order-1 mb-8"
+  style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: "12px" }}
+>
+  <style>{`
+    @media (min-width: 480px) {
+      [data-stat-grid] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      [data-stat-grid] {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 16px !important;
+      }
+    }
+  `}</style>
+  {loading ? [1,2,3,4].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => (
+    <div key={card.key} style={{
+      borderRadius: 12, padding: "16px 12px", position: "relative", overflow: "hidden",
+      background: "var(--bg-card)", border: `2px solid ${card.color}`,
+      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+      display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+      minWidth: 0,
+    }}>
+      <p style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1, fontFamily: "'Plus Jakarta Sans',sans-serif", letterSpacing: "-0.5px" }}>
+        {stats[card.key]}
+      </p>
+      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginTop: 2 }}>{card.label}</p>
+      <p style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</p>
+    </div>
+  ))}
+</div>
 
       {/* ── Activity Feed ────────────────────── */}
       <div style={{
@@ -208,6 +238,8 @@ export default function DashboardPage() {
           padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
           borderBottom: "1px solid var(--border)",
           background: "var(--bg-secondary)",
+          flexWrap: "wrap",
+          gap: 12,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div>
@@ -217,7 +249,7 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div style={{ position: "relative" }}>
               <svg width="15" height="15" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input
@@ -226,7 +258,7 @@ export default function DashboardPage() {
                 style={{
                   paddingLeft: 32, paddingRight: 12, height: 34, borderRadius: 10, fontSize: 12,
                   background: "var(--bg-primary)", border: "1px solid var(--border)",
-                  color: "var(--text-primary)", outline: "none", width: 200,
+                  color: "var(--text-primary)", outline: "none", width: 240,
                 }}
               />
             </div>

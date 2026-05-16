@@ -26,6 +26,7 @@ export default function PrintMasterTable({
   effDate = "—",
 }: PrintMasterTableProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     const html = printRef.current?.innerHTML;
@@ -57,8 +58,17 @@ export default function PrintMasterTable({
   const now = new Date().toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-y-auto py-10">
-      <div style={{ width: "210mm", height: "fit-content", background: "#fff", flexShrink: 0 }}>
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-y-auto py-4 sm:py-10">
+      <div 
+        ref={containerRef}
+        style={{ 
+          width: "210mm", 
+          height: "fit-content", 
+          background: "#fff", 
+          flexShrink: 0,
+          maxWidth: "100%",
+        }}
+        className="print-preview-container">
 
         {/* Toolbar */}
         <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px", background: "#1e293b", color: "#fff" }}>

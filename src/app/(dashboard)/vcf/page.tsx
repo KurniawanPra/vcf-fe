@@ -7,6 +7,7 @@ import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
 import { getStatusLabel, getStatusColor } from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
+import { useToast, ToastContainer } from "@/components/Toast";
 
 interface VcfSummary {
   id: number;
@@ -45,12 +46,12 @@ function RegisterButton() {
 
 const getActionLabel = (status: string) => {
   const map: Record<string, string> = {
-    bagian1_selesai: "Isi Bagian 2",
-    bagian2_selesai: "Isi Bagian 3",
+    bagian1_selesai: "WB Masuk",
+    bagian2_selesai: "WB Keluar",
     loading_unloading_proses: "Lihat Operasional",
-    loading_unloading_selesai: "Isi Bagian 3",
-    bagian3_selesai: "Isi Bagian 4",
-    weighbridge_keluar: "Keluar Main Gate",
+    loading_unloading_selesai: "WB Keluar",
+    bagian3_selesai: "MG Keluar",
+    weighbridge_keluar: "MG Keluar",
     selesai: "Lihat Detail",
     reject: "Lihat Detail",
   };
@@ -105,6 +106,7 @@ function MobileCardSkeleton() {
 }
 
 export default function VcfQuickAccessPage() {
+  const { toasts, removeToast, toast } = useToast();
   const [vcfs, setVcfs] = useState<VcfSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("aktif");
@@ -131,8 +133,8 @@ export default function VcfQuickAccessPage() {
       });
       const items = res.data.data || res.data;
       setVcfs(items.filter((v: VcfSummary) => v.status !== "selesai" && v.status !== "reject"));
-    } catch {
-
+    } catch (err: any) {
+      console.error("Error fetching VCF data:", err);
     } finally {
       setLoading(false);
     }
@@ -153,6 +155,7 @@ export default function VcfQuickAccessPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {/* Header */}
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -186,8 +189,8 @@ export default function VcfQuickAccessPage() {
         {[
           { label: "Semua Aktif", stage: "aktif", color: "var(--accent-primary)" },
           { label: "WB Masuk", stage: "bagian1_selesai", color: "#f59e0b" },
-          { label: "Loading", stage: "bagian2_selesai", color: "#6366f1" },
           { label: "WB Keluar", stage: "loading_unloading_selesai", color: "#8b5cf6" },
+          { label: "MG Keluar", stage: "bagian3_selesai", color: "#10b981" },
         ].map((tab) => (
           <button
             key={tab.stage}

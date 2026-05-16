@@ -6,6 +6,7 @@ import { vcfApi, masterApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { VCF_STATUS } from "@/constants/vcfStatus";
+import { createPortal } from "react-dom";
 
 
 interface CheckItem {
@@ -195,7 +196,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
         toast.success("Berhasil", "Pemeriksaan keluar berhasil disimpan.");
         setTimeout(() => {
           setShowSuccess(false);
-          onSuccess();
+          router.push("/vcf");
         }, 1500);
       }
     } catch (err: unknown) {
@@ -534,17 +535,17 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
       </form>
 
       {/* Reject Modal Minimalist */}
-      {showRejectModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowRejectModal(false)}>
-          <div className="bg-white dark:bg-bg-card w-full max-w-md overflow-hidden rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
-            <div className="p-8 border-b border-slate-50 dark:border-white/5">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Reject VCF</h3>
-              <p className="text-slate-400 text-sm mt-1">Berikan alasan mengapa VCF ini ditolak.</p>
+      {showRejectModal && createPortal(
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-in fade-in duration-200" onClick={() => setShowRejectModal(false)}>
+          <div className="bg-white/95 dark:bg-bg-card/95 w-full max-w-md overflow-hidden rounded-2xl border-2 border-slate-200 dark:border-white/10 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight mb-1">Tolak VCF</h3>
+              <p className="text-slate-500 text-xs">Berikan alasan penolakan</p>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="px-6 pb-6 space-y-4">
               <textarea
-                className="form-input w-full min-h-[120px] bg-slate-50 dark:bg-white/5 border-slate-100 focus:border-red-500 rounded-2xl text-sm"
+                className="w-full min-h-[100px] px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-red-500/50 transition-colors"
                 placeholder="Alasan penolakan..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
@@ -553,18 +554,19 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
               <div className="flex gap-3 pt-2">
                 <button
-                  className="flex-1 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-colors text-sm"
+                  className="flex-1 py-2.5 rounded-xl font-bold text-slate-500 border-2 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-colors text-xs"
                   onClick={() => setShowRejectModal(false)}
                 >Batal</button>
                 <button
-                  className="flex-[2] py-2.5 rounded-xl font-bold bg-red-500 text-white shadow-sm hover:bg-red-600 transition-all text-sm"
+                  className="flex-[2] py-2.5 rounded-xl font-bold text-red-500 border-2 border-red-500/30 hover:border-red-500 hover:bg-red-500/5 transition-all text-xs"
                   onClick={handleReject}
                   disabled={loading || !rejectReason.trim()}
-                >Konfirmasi Reject</button>
+                >Konfirmasi</button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

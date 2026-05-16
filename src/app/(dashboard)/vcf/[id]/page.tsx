@@ -7,6 +7,7 @@ import { isAdmin, getUser } from "@/lib/auth";
 import { getStatusLabel, getStatusColor, formatDateTime, getErrorMessage } from "@/lib/utils";
 import { exportToPDF, exportToDocx } from "@/lib/exportUtils";
 import GuideSection from "@/components/GuideSection";
+import React from "react";
 
 // Lazy load heavy components for better performance
 const Bagian2Form = lazy(() => import("./Bagian2Form"));
@@ -81,9 +82,9 @@ interface VcfDetail {
 const STEPS = [
   { key: "pendaftaran", label: "Pendaftaran", n: 1 },
   { key: "bagian1_selesai", label: "Weighbridge Masuk", n: 2 },
-  { key: "bagian2_selesai", label: "Weighbridge Keluar", n: 3 },
-  { key: "loading_unloading_proses", label: "Weighbridge Keluar", n: 3 },
-  { key: "loading_unloading_selesai", label: "Weighbridge Keluar", n: 3 },
+  { key: "bagian2_selesai", label: "Main Gate Keluar", n: 3 },
+  { key: "loading_unloading_proses", label: "Main Gate Keluar", n: 3 },
+  { key: "loading_unloading_selesai", label: "Main Gate Keluar", n: 3 },
   { key: "bagian3_selesai", label: "Main Gate Keluar", n: 4 },
   { key: "selesai", label: "Selesai", n: 4 },
 ];
@@ -93,11 +94,40 @@ function getStepNumber(vcf: VcfDetail | null): number {
   if (vcf.status === "reject") {
     if (vcf.catatan?.includes("[REJECTED AT WB KELUAR]")) return 3;
     if (vcf.catatan?.includes("[REJECTED AT WB MASUK]")) return 2;
+    if (vcf.catatan?.includes("[REJECTED AT MAIN GATE MASUK]")) return 1;
     // Default to 1 if no marker or rejected at stage 1
     return 1;
   }
-  const step = STEPS.find((s) => s.key === vcf.status);
-  return step?.n || 1;
+  if (vcf.status === "selesai") return 4;
+  if (vcf.status === "bagian3_selesai") return 4;
+  if (vcf.status === "loading_unloading_selesai") return 3;
+  if (vcf.status === "bagian2_selesai") return 3;
+  if (vcf.status === "bagian1_selesai") return 2;
+  return 1;
+}
+
+function getRejectingPetugas(vcf: VcfDetail | null, step: number): string {
+  if (!vcf) return "Petugas";
+  switch (step) {
+    case 1:
+      return vcf.nama_petugas_main_gate_masuk || vcf.created_by?.nama || "Petugas Main Gate Masuk";
+    case 2:
+      return vcf.nama_petugas_wb_masuk
+        || vcf.pemeriksaan_masuk?.[0]?.petugas?.nama
+        || vcf.segel_masuk?.petugas?.nama
+        || "Petugas Weighbridge Masuk";
+    case 3:
+      return vcf.nama_petugas_wb_keluar
+        || vcf.pemeriksaan_keluar?.[0]?.petugas?.nama
+        || vcf.segel_keluar?.petugas?.nama
+        || "Petugas Main Gate Keluar";
+    case 4:
+      return vcf.nama_petugas_main_gate_keluar
+        || vcf.vcf_keluar?.petugas?.nama
+        || "Petugas Finish";
+    default:
+      return "Petugas";
+  }
 }
 
 export default function VcfDetailPage() {
@@ -220,7 +250,7 @@ export default function VcfDetailPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-2">
         <button
           onClick={() => router.back()}
           className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -253,9 +283,12 @@ export default function VcfDetailPage() {
           </div>
         )}
 
-        {/* Action Buttons (Only show Print on Info tab) */}
-        <div className="bg-bg-card border border-border rounded-lg p-1 ml-4 shadow-sm items-center gap-1">
-          <button
+        {/* Finalize logic now moved to Bagian4Form */}
+      </div>
+
+      {/* Action Buttons (Only show Print on Info tab) */}
+      <div className="flex justify-end">
+        <div className="inline-flex mb-2 sm:mt-2 bg-bg-card border border-border rounded-lg p-1 shadow-sm items-center gap-1">          <button
             onClick={() => setShowGuide(true)}
             className="px-3 py-2 rounded-lg font-bold text-[10px] flex items-center gap-2 transition-all text-text-muted hover:bg-slate-100 dark:hover:bg-white/5"
             title="Buka Panduan"
@@ -281,9 +314,6 @@ export default function VcfDetailPage() {
             </button>
           )}
         </div>
-
-        {/* Finalize logic now moved to Bagian4Form */}
-
       </div>
 
       {/* Guide Modal */}
@@ -330,13 +360,13 @@ export default function VcfDetailPage() {
         </Suspense>
       )}
 
-      {/* Progress steps */}
-      <div className="glass-card p-5 mb-6">
+      {/* Progress steps old */}
+      {/* <div className="glass-card p-5 mb-6">
         <div className="flex items-center justify-center">
           {[
             { n: 1, label: "Main Gate\nMasuk" },
             { n: 2, label: "Weighbridge\nMasuk" },
-            { n: 3, label: "Weighbridge\nKeluar" },
+            { n: 3, label: "Main Gate\nKeluar" },
             { n: 4, label: "Main Gate\nKeluar" },
           ].map((step, idx) => (
             <div key={step.n} className="flex items-center">
@@ -371,6 +401,176 @@ export default function VcfDetailPage() {
             </div>
           ))}
         </div>
+      </div> */}
+
+      {/* Progress Steps */}
+      <div className="glass-card mt-2 p-4 md:p-6 mb-6">
+
+        {/* Desktop */}
+        <div className="hidden md:flex items-center w-full">
+          {[
+            { n: 1, label: "Main Gate", sub: "Masuk" },
+            { n: 2, label: "Weighbridge", sub: "Masuk" },
+            { n: 3, label: "Main Gate", sub: "Keluar" },
+            { n: 4, label: "Finish", sub: "Selesai" },
+          ].map((step, idx, arr) => {
+            const completed = step.n < currentStep || isDone
+            const active = step.n === currentStep
+
+            return (
+              <React.Fragment key={step.n}>
+                <div className="flex flex-col items-center shrink-0">
+                  <div
+                    className={`
+                      w-12 h-12 rounded-2xl border-2
+                      flex items-center justify-center
+                      font-bold text-sm
+                      transition-all duration-300
+                    `}
+                    style={
+                      completed
+                        ? {
+                            borderColor: "#10b981",
+                            background: "rgba(16,185,129,0.15)",
+                            color: "#10b981",
+                          }
+                        : active
+                          ? isRejected
+                            ? {
+                                borderColor: "#ef4444",
+                                background: "rgba(239,68,68,0.15)",
+                                color: "#f87171",
+                              }
+                            : {
+                                borderColor: "#3b82f6",
+                                background: "rgba(59,130,246,0.15)",
+                                color: "#60a5fa",
+                              }
+                          : {}
+                    }
+                  >
+                    {completed
+                      ? "✓"
+                      : active && isRejected
+                        ? "×"
+                        : step.n}
+                  </div>
+
+                  <div className="mt-2 text-center">
+                    <p className="text-sm font-semibold text-text-primary dark:text-white">
+                      {step.label}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      {step.sub}
+                    </p>
+                  </div>
+                </div>
+
+                {idx < arr.length - 1 && (
+                  <div className="flex-1 mx-4 h-[3px] rounded-full overflow-hidden bg-border-light">
+                    <div
+                      className="h-full transition-all duration-300"
+                      style={{
+                        width: completed ? "100%" : "0%",
+                        background: "#10b981",
+                      }}
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            )
+          })}
+        </div>
+
+        {/* Mobile */}
+        <div className="md:hidden flex flex-col gap-3">
+          {[
+            { n: 1, label: "Main Gate Masuk" },
+            { n: 2, label: "Weighbridge Masuk" },
+            { n: 3, label: "Main Gate Keluar" },
+            { n: 4, label: "Finish Selesai" },
+          ].map((step) => {
+            const completed = step.n < currentStep || isDone
+            const active = step.n === currentStep
+
+            return (
+              <div
+                key={step.n}
+                className={`
+                  flex items-center gap-3
+                  rounded-2xl border p-3
+                  transition-all duration-300
+                `}
+                style={
+                  completed
+                    ? {
+                        borderColor: "#10b98155",
+                        background: "rgba(16,185,129,0.08)",
+                      }
+                    : active
+                      ? isRejected
+                        ? {
+                            borderColor: "#ef444455",
+                            background: "rgba(239,68,68,0.08)",
+                          }
+                        : {
+                            borderColor: "#3b82f655",
+                            background: "rgba(59,130,246,0.08)",
+                          }
+                      : {}
+                }
+              >
+                <div
+                  className={`
+                    w-10 h-10 rounded-xl border-2
+                    flex items-center justify-center
+                    font-bold text-sm shrink-0
+                  `}
+                  style={
+                    completed
+                      ? {
+                          borderColor: "#10b981",
+                          color: "#10b981",
+                        }
+                      : active
+                        ? isRejected
+                          ? {
+                              borderColor: "#ef4444",
+                              color: "#f87171",
+                            }
+                          : {
+                              borderColor: "#3b82f6",
+                              color: "#60a5fa",
+                            }
+                        : {}
+                  }
+                >
+                  {completed
+                    ? "✓"
+                    : active && isRejected
+                      ? "×"
+                      : step.n}
+                </div>
+
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-text-primary dark:text-white">
+                    {step.label}
+                  </p>
+
+                  <p className="text-xs text-text-muted mt-0.5">
+                    {completed
+                      ? "Step selesai"
+                      : active
+                        ? isRejected
+                          ? `Ditolak oleh ${getRejectingPetugas(vcf, step.n)}`
+                          : "Sedang berjalan"
+                        : "Menunggu proses"}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Baner reject */}
@@ -388,7 +588,7 @@ export default function VcfDetailPage() {
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">VCF Ditolak</p>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white dark:bg-white/5 text-red-500 border border-red-200 dark:border-red-800/40">
-                  {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Weighbridge Keluar" : "Pendaftaran"}
+                  {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Main Gate Keluar" : "Pendaftaran"}
                 </span>
               </div>
               <p className="text-xs text-red-400 dark:text-red-500 leading-relaxed truncate">
@@ -413,7 +613,7 @@ export default function VcfDetailPage() {
           { key: "info", label: "Data Registrasi VCF", always: true },
           { key: "reject_detail", label: "Detail Penolakan", always: isRejected },
           { key: "bagian2", label: "Weighbridge Masuk", always: !isRejected && (currentStep >= 2 || canFillBagian2 || (vcf?.pemeriksaan_masuk && vcf.pemeriksaan_masuk.length > 0)) },
-          { key: "bagian3", label: "Weighbridge Keluar", always: !isRejected && (currentStep >= 3 || canFillBagian3 || (vcf?.pemeriksaan_keluar && vcf.pemeriksaan_keluar.length > 0)) },
+          { key: "bagian3", label: "Main Gate Keluar", always: !isRejected && (currentStep >= 3 || canFillBagian3 || (vcf?.pemeriksaan_keluar && vcf.pemeriksaan_keluar.length > 0)) },
           { key: "bagian4", label: "Main Gate Keluar", always: !isRejected && (currentStep >= 4 || canFillBagian4 || vcf?.status === "selesai") },
         ]
           .filter((t) => t.always)
@@ -466,7 +666,7 @@ export default function VcfDetailPage() {
                     <path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3" />
                   </svg>
                   <p className="text-sm font-medium text-text-primary">
-                    {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Weighbridge Keluar" : "Pendaftaran"}
+                    {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Main Gate Keluar" : "Pendaftaran"}
                   </p>
                 </div>
 
@@ -504,10 +704,10 @@ export default function VcfDetailPage() {
                     )}
                   </div>
 
-                  {/* Step 3: Weighbridge Keluar */}
+                  {/* Step 3: Main Gate Keluar */}
                   <div className={`flex items-center gap-2 ${currentStep >= 3 ? "opacity-100" : "opacity-35"}`}>
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 3 ? "bg-green-500" : currentStep === 3 ? "bg-red-500" : "bg-gray-400"}`} />
-                    <span className={`text-xs ${currentStep === 3 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Weighbridge Keluar</span>
+                    <span className={`text-xs ${currentStep === 3 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Main Gate Keluar</span>
                     {currentStep === 3 && (
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -752,7 +952,7 @@ export default function VcfDetailPage() {
                         <div className="w-0.5 flex-1 my-2" style={{ background: "var(--border)" }} />
                       </div>
                       <div className="flex-1 pb-4">
-                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Weighbridge Keluar</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Main Gate Keluar</p>
                         <p className="text-xs" style={{ color: petugasWBK ? "var(--text-muted)" : "var(--text-secondary)" }}>
                           {petugasWBK || "Menunggu proses..."}
                         </p>
