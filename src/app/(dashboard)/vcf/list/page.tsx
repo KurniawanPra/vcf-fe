@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
@@ -33,7 +33,7 @@ const STAGE_FILTERS: Record<string, string> = {
   reject: "reject",
 };
 
-export default function VcfListPage() {
+function VcfListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlStage = searchParams.get("stage");
@@ -426,5 +426,13 @@ export default function VcfListPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function VcfListPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="spinner" /></div>}>
+      <VcfListContent />
+    </Suspense>
   );
 }
