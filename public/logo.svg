@@ -1,0 +1,24 @@
+<svg width="100%" viewBox="0 0 680 380" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">VCF Logo Transparent</title>
+  <desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">VCF logo with transparent background</desc>
+
+  <!-- V - blue, C - orange, F - green -->
+  <text x="100" y="248" font-family="Georgia, 'Times New Roman', serif" font-size="185" font-weight="700" fill="#3A3AB8" style="fill:rgb(58, 58, 184);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Georgia, &quot;Times New Roman&quot;, serif;font-size:185px;font-weight:700;text-anchor:start;dominant-baseline:auto">V</text>
+  <text x="232" y="248" font-family="Georgia, 'Times New Roman', serif" font-size="185" font-weight="700" fill="#D46A10" style="fill:rgb(212, 106, 16);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Georgia, &quot;Times New Roman&quot;, serif;font-size:185px;font-weight:700;text-anchor:start;dominant-baseline:auto">C</text>
+  <text x="388" y="248" font-family="Georgia, 'Times New Roman', serif" font-size="185" font-weight="700" fill="#1A5C32" style="fill:rgb(26, 92, 50);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Georgia, &quot;Times New Roman&quot;, serif;font-size:185px;font-weight:700;text-anchor:start;dominant-baseline:auto">F</text>
+
+  <!-- Gold oil drop -->
+  <ellipse cx="553" cy="65" rx="12" ry="18" fill="#F5C842" transform="rotate(-15,553,65)" style="fill:rgb(245, 200, 66);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="546" cy="51" r="8" fill="#F5C842" style="fill:rgb(245, 200, 66);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Underline bars -->
+  <rect x="100" y="258" width="115" height="4" rx="2" fill="#3A3AB8" style="fill:rgb(58, 58, 184);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="232" y="258" width="135" height="4" rx="2" fill="#D46A10" style="fill:rgb(212, 106, 16);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="388" y="258" width="110" height="4" rx="2" fill="#1A5C32" style="fill:rgb(26, 92, 50);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Subtitle -->
+  <text x="340" y="298" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#888" letter-spacing="5" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Arial, sans-serif;font-size:13px;font-weight:400;text-anchor:middle;dominant-baseline:auto">VEHICLE CONTROL FORMS</text>
+
+  <!-- Company name -->
+  <text x="340" y="322" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#aaa" letter-spacing="2" style="fill:rgb(170, 170, 170);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Arial, sans-serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto">PT. INDUSTRI NABATI LESTARI · SIMALUNGUN</text>
+</svg>
