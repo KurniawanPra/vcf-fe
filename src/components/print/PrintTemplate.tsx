@@ -131,22 +131,13 @@ export default function PrintTemplate({
             <button
               onClick={handlePrint}
               disabled={isLoading}
-              style={{
-                padding: "8px 24px",
-                background: isLoading ? "#6b7280" : "#8b5cf6",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                fontWeight: 700,
-                cursor: isLoading ? "not-allowed" : "pointer",
-                opacity: isLoading ? 0.5 : 1
-              }}
+              className="btn btn-primary btn-sm"
             >
-              PRINT
+              {isLoading ? "Memuat..." : "PRINT"}
             </button>
             <button 
               onClick={onClose} 
-              style={{ padding: "8px 16px", background: "#475569", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}
+              className="btn btn-secondary btn-sm"
             >
               CLOSE
             </button>

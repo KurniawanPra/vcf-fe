@@ -161,6 +161,18 @@
     finalizeVcf: (id: number) => api.post(`/vcf/${id}/finalize`),
   };
 
+  // ── Violations ───────────────────────────────────────────────────────────────
+  export const violationApi = {
+    check: (params: { driver_id?: number | string; no_polisi?: string }) =>
+      api.get("/master/violations/check", { params }),
+    getList: (params?: object) => api.get("/master/violations", { params }),
+    create: (data: object) => api.post("/master/violations", data),
+    update: (id: number, data: object) => api.put(`/master/violations/${id}`, data),
+    delete: (id: number) => api.delete(`/master/violations/${id}`),
+    updateDriverStatus: (driverId: number, status: "normal" | "warning" | "blacklist") =>
+      api.patch(`/master/drivers/${driverId}/status`, { status }),
+  };
+
   // ── Settings ─────────────────────────────────────────────────────────────────
   export const settingsApi = {
     getAll: (params?: object) => api.get("/settings", { params }),

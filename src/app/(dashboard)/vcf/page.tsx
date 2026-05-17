@@ -27,19 +27,29 @@ function RegisterButton() {
     <button
       onClick={() => { setNav(true); router.push("/vcf/register"); }}
       disabled={nav}
-      className="glass-card flex-1 md:flex-none p-2 px-6 flex items-center justify-center gap-2 group hover:border-blue-500/50 transition-all disabled:opacity-70"
+      className="action-btn action-btn-blue group"
+      style={{ padding: "10px 24px", fontSize: "13px", borderRadius: "9999px" }}
     >
-      {nav ? (
-        <svg className="animate-spin w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      ) : (
-        <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
-        </div>
-      )}
-      <p className="text-[13px] font-bold text-primary uppercase">{nav ? "Memuat..." : "Registrasi"}</p>
+      <span className="relative flex items-center gap-2">
+        {nav ? (
+          <div className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+        ) : (
+          <svg 
+            width="16" 
+            height="16" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            className="transition-transform duration-300 group-hover:rotate-180"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v8M8 12h8" />
+          </svg>
+        )}
+        <span className="tracking-wide">{nav ? "Memuat..." : "Registrasi Baru"}</span>
+      </span>
     </button>
   );
 }
@@ -60,16 +70,14 @@ const getActionLabel = (status: string) => {
 
 const getActionButtonStyle = (status: string) => {
   switch (status) {
-    case "bagian1_selesai": return "border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white shadow-sm hover:shadow-amber-500/20";
-    case "bagian2_selesai": return "border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white shadow-sm hover:shadow-indigo-500/20";
+    case "bagian1_selesai": return "action-btn action-btn-amber";
+    case "bagian2_selesai": return "action-btn action-btn-indigo";
     case "loading_unloading_proses":
-    case "loading_unloading_selesai": return "border-violet-500 text-violet-500 hover:bg-violet-500 hover:text-white shadow-sm hover:shadow-violet-500/20";
-    case "bagian3_selesai": return "border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white shadow-sm hover:shadow-emerald-500/20";
+    case "loading_unloading_selesai": return "action-btn action-btn-violet";
+    case "bagian3_selesai": return "action-btn action-btn-emerald";
     case "selesai":
-    case "reject":
-      return "border-slate-300 text-slate-500 hover:bg-slate-500 hover:text-white dark:border-white/20 dark:text-slate-400 dark:hover:bg-white/20 dark:hover:text-white";
-    default:
-      return "border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white shadow-sm hover:shadow-blue-500/20";
+    case "reject": return "action-btn action-btn-slate";
+    default: return "action-btn action-btn-blue";
   }
 };
 
@@ -162,7 +170,7 @@ export default function VcfQuickAccessPage() {
           <h1 className="text-2xl font-bold text-primary" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Operasional VCF
           </h1>
-          <p className="text-secondary text-sm">Akses cepat formulir pemeriksaan kendaraan — PT. INL</p>
+          <p className="text-secondary text-sm">Akses cepat formulir pemeriksaan kendaraan PT INL</p>
         </div>
         <button
           onClick={() => setShowGuide(!showGuide)}
@@ -187,29 +195,15 @@ export default function VcfQuickAccessPage() {
       {/* Stage Filters / Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
         {[
-          { label: "Semua Aktif", stage: "aktif", color: "var(--accent-primary)" },
-          { label: "WB Masuk", stage: "bagian1_selesai", color: "#f59e0b" },
-          { label: "WB Keluar", stage: "loading_unloading_selesai", color: "#8b5cf6" },
-          { label: "MG Keluar", stage: "bagian3_selesai", color: "#10b981" },
+          { label: "Semua Aktif", stage: "aktif", cls: "filter-tab-green" },
+          { label: "WB Masuk",    stage: "bagian1_selesai",          cls: "filter-tab-amber" },
+          { label: "WB Keluar",   stage: "loading_unloading_selesai", cls: "filter-tab-violet" },
+          { label: "MG Keluar",   stage: "bagian3_selesai",           cls: "filter-tab-emerald" },
         ].map((tab) => (
           <button
             key={tab.stage}
             onClick={() => setFilter(tab.stage)}
-            className="btn btn-sm flex-shrink-0 px-6 py-3 font-bold text-[11px] uppercase tracking-wider"
-            style={
-              filter === tab.stage
-                ? {
-                  background: tab.color,
-                  borderColor: tab.color,
-                  color: "white",
-                  boxShadow: `0 8px 16px ${tab.color}33`,
-                }
-                : {
-                  background: "var(--bg-secondary)",
-                  color: "var(--text-muted)",
-                  border: "1px solid var(--border)",
-                }
-            }
+            className={`filter-tab ${tab.cls} flex-shrink-0 ${filter === tab.stage ? "active" : ""}`}
           >
             {tab.label}
           </button>
@@ -272,7 +266,7 @@ export default function VcfQuickAccessPage() {
       <div className="glass-card overflow-hidden">
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
           <div>
-            <h2 className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Monitoring VCF di Area</h2>
+            <h2 className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Pemantauan VCF di Area Operasional</h2>
             <p className="text-[10px] text-secondary">Kendaraan yang sedang berada di dalam area pabrik INL</p>
           </div>
           <div className="flex items-center gap-3">
@@ -314,7 +308,7 @@ export default function VcfQuickAccessPage() {
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
                         {vcf.tipe_kegiatan?.replace(/_/g, " ")}
                       </span>
-                      <span className="text-[11px] font-bold text-white px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 transition-all border-2 border-blue-400 shadow-sm">
+                      <span className={`action-btn action-btn-sm ${getActionButtonStyle(vcf.status)}`}>
                         {getActionLabel(vcf.status)}
                       </span>
                     </div>
@@ -366,7 +360,7 @@ export default function VcfQuickAccessPage() {
                       <td>
                         <Link
                           href={`/vcf/${vcf.id}`}
-                          className={`flex items-center justify-center rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all border-2 ${getActionButtonStyle(vcf.status)}`}
+                          className={`${getActionButtonStyle(vcf.status)}`}
                         >
                           {getActionLabel(vcf.status)}
                         </Link>

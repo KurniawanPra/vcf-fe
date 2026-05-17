@@ -194,6 +194,7 @@ body {
 
 /* Buttons */
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -203,64 +204,179 @@ body {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
   border: none;
   outline: none;
   white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.3s ease;
+  z-index: 0;
 }
 
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
+/* ── btn-primary: gradient fill sweep from top ── */
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: var(--accent-primary, #22c55e);
   color: white;
-  box-shadow: 0 4px 12px rgba(var(--accent-primary-rgb, 34, 197, 94), 0.3);
 }
 
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(var(--accent-primary-rgb, 34, 197, 94), 0.45);
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 0;
+  background: linear-gradient(135deg, var(--accent-secondary, #16a34a), var(--accent-primary, #22c55e));
+  transition: height 0.25s ease-out;
+  z-index: -1;
+  opacity: 0.9;
 }
 
+.btn-primary:hover:not(:disabled)::before {
+  height: 100%;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 3rem; height: 3rem;
+  margin-right: -0.75rem; margin-top: -0.75rem;
+  border-radius: 9999px;
+  background: white;
+  opacity: 0.1;
+  transform: scale(0);
+  transition: transform 0.5s ease;
+  z-index: -1;
+}
+
+.btn-primary:hover:not(:disabled)::after {
+  transform: scale(3);
+}
+
+/* ── btn-secondary: border draw + fill ── */
 .btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
+  background: var(--bg-secondary, transparent);
+  color: var(--text-primary, #374151);
+  border: 2px solid var(--border, #d1d5db);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-card-hover);
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg-card-hover, rgba(0,0,0,0.06));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+  z-index: -1;
 }
 
+.btn-secondary:hover:not(:disabled)::before {
+  transform: scaleX(1);
+}
+
+/* ── btn-success: diagonal sweep (template row1 btn3) ── */
 .btn-success {
-  background: linear-gradient(135deg, var(--color-success), color-mix(in srgb, var(--color-success) 80%, black));
+  background: #10b981;
   color: white;
-  box-shadow: 0 4px 12px rgba(var(--color-success-rgb, 16, 185, 129), 0.3);
 }
 
-.btn-success:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(var(--color-success-rgb, 16, 185, 129), 0.45);
+.btn-success::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 0;
+  background: #059669;
+  transition: height 0.2s ease-out;
+  z-index: -1;
+  opacity: 0.9;
 }
 
+.btn-success:hover:not(:disabled)::before {
+  height: 100%;
+}
+
+.btn-success::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  background: white;
+  border-radius: 9999px;
+  opacity: 0.08;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+  z-index: -1;
+}
+
+.btn-success:hover:not(:disabled)::after {
+  width: 14rem;
+  height: 14rem;
+}
+
+/* ── btn-danger: ripple expand (template row4 btn3) ── */
 .btn-danger {
-  background: linear-gradient(135deg, var(--color-danger), color-mix(in srgb, var(--color-danger) 80%, black));
+  background: #ef4444;
   color: white;
-  box-shadow: 0 4px 8px rgba(var(--color-danger-rgb, 239, 68, 68), 0.25);
 }
 
-.btn-danger:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--color-danger-rgb, 239, 68, 68), 0.4);
+.btn-danger::before {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  background: #dc2626;
+  border-radius: 9999px;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+  z-index: -1;
+  opacity: 0.9;
 }
 
+.btn-danger:hover:not(:disabled)::before {
+  width: 16rem;
+  height: 16rem;
+}
+
+.btn-danger::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.1));
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* ── btn-warning: border expand fill (template row4 btn2) ── */
 .btn-warning {
-  background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, black));
+  background: #f59e0b;
   color: white;
-  box-shadow: 0 4px 8px rgba(var(--color-warning-rgb, 245, 158, 11), 0.25);
+  transition: background 0.3s ease, ring 0.3s ease;
+}
+
+.btn-warning::before {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 2rem; height: 8rem;
+  margin-right: -0.75rem; margin-top: -3rem;
+  background: white;
+  opacity: 0.1;
+  transform: translateX(3rem) rotate(12deg);
+  transition: transform 1s ease;
+  z-index: -1;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: linear-gradient(to right, #f59e0b, #fbbf24);
+}
+
+.btn-warning:hover:not(:disabled)::before {
+  transform: translateX(-10rem) rotate(12deg);
 }
 
 .btn-sm {
@@ -272,6 +388,196 @@ body {
   padding: 14px 28px;
   font-size: 16px;
 }
+
+/* ── Icon action buttons (table row edit/delete) ── */
+.btn-icon {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+  overflow: hidden;
+  transition: color 0.2s ease;
+  z-index: 0;
+}
+
+.btn-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  transform: scale(0);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: -1;
+}
+
+.btn-icon:hover::before {
+  transform: scale(1);
+}
+
+.btn-icon-edit {
+  color: #60a5fa;
+}
+
+.btn-icon-edit::before {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+.btn-icon-edit:hover {
+  color: #3b82f6;
+}
+
+.btn-icon-delete {
+  color: #f87171;
+}
+
+.btn-icon-delete::before {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.btn-icon-delete:hover {
+  color: #ef4444;
+}
+
+/* ── Action buttons (WB Masuk / WB Keluar / MG Keluar) ── */
+/* Template: ripple fill from center on hover */
+.action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 10px;
+  border: 2px solid;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color 0.3s ease, box-shadow 0.3s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-radius: 9999px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.3s ease;
+  z-index: -1;
+  opacity: 0;
+}
+
+.action-btn:hover::before {
+  width: 300px;
+  height: 300px;
+  opacity: 1;
+}
+
+.action-btn:hover {
+  color: white;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+}
+
+.action-btn:active {
+  transform: scale(0.97);
+}
+
+.action-btn-sm {
+  padding: 4px 12px;
+  font-size: 10px;
+}
+
+.action-btn-amber  { border-color: #f59e0b; color: #f59e0b; }
+.action-btn-amber::before  { background: #f59e0b; }
+.action-btn-amber:hover    { box-shadow: 0 4px 14px rgba(245,158,11,0.35); }
+
+.action-btn-indigo { border-color: #6366f1; color: #6366f1; }
+.action-btn-indigo::before { background: #6366f1; }
+.action-btn-indigo:hover   { box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
+
+.action-btn-violet { border-color: #8b5cf6; color: #8b5cf6; }
+.action-btn-violet::before { background: #8b5cf6; }
+.action-btn-violet:hover   { box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+
+.action-btn-emerald { border-color: #10b981; color: #10b981; }
+.action-btn-emerald::before { background: #10b981; }
+.action-btn-emerald:hover  { box-shadow: 0 4px 14px rgba(16,185,129,0.35); }
+
+.action-btn-blue   { border-color: #3b82f6; color: #3b82f6; }
+.action-btn-blue::before   { background: #3b82f6; }
+.action-btn-blue:hover     { box-shadow: 0 4px 14px rgba(59,130,246,0.35); }
+
+.action-btn-slate  { border-color: #94a3b8; color: #94a3b8; }
+.action-btn-slate::before  { background: #94a3b8; }
+.action-btn-slate:hover    { box-shadow: 0 4px 14px rgba(148,163,184,0.25); }
+
+/* ── Filter tabs (stage filter: Semua Aktif / WB Masuk / WB Keluar / MG Keluar) ── */
+/* Template: solid fill sweep from left on hover; active = solid filled */
+.filter-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border, #d1d5db);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  transition: color 0.25s ease, border-color 0.25s ease;
+  cursor: pointer;
+  z-index: 0;
+}
+
+.filter-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+  z-index: -1;
+  opacity: 0.9;
+}
+
+.filter-tab:hover::before,
+.filter-tab.active::before {
+  transform: scaleX(1);
+}
+
+.filter-tab:hover,
+.filter-tab.active {
+  color: white;
+  border-color: transparent;
+}
+
+.filter-tab-green::before  { background: var(--accent-primary, #22c55e); }
+.filter-tab-green.active,
+.filter-tab-green:hover    { border-color: transparent; }
+
+.filter-tab-amber::before  { background: #f59e0b; }
+.filter-tab-violet::before { background: #8b5cf6; }
+.filter-tab-emerald::before { background: #10b981; }
 
 /* Table */
 .data-table {

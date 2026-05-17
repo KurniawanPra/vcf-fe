@@ -77,8 +77,8 @@ export default function PrintMasterTable({
             {subtitle && <div style={{ fontSize: 10, opacity: 0.7 }}>{subtitle}</div>}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={handlePrint} style={{ padding: "8px 24px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}>PRINT</button>
-            <button onClick={onClose} style={{ padding: "8px 16px", background: "#475569", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}>CLOSE</button>
+            <button onClick={handlePrint} className="btn btn-primary btn-sm">PRINT</button>
+            <button onClick={onClose} className="btn btn-secondary btn-sm">CLOSE</button>
           </div>
         </div>
 

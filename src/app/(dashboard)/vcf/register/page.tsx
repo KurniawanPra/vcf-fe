@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { vcfApi } from "@/lib/api";
+import { vcfApi, violationApi } from "@/lib/api";
 import { fetchAndCacheMasterData, getCachedMasterData } from "@/lib/masterDataCache";
 import { formatTime, formatDate, isValidTime24h, getErrorMessage } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
 import { generateQRSignature } from "@/lib/qrUtils";
 import GuideSection from "@/components/GuideSection";
+import ViolationWarningCard, { type ViolationCheckResult } from "@/components/ViolationWarningCard";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import { useToast, ToastContainer } from "@/components/Toast";
 
@@ -157,6 +158,13 @@ export default function VcfRegisterPage() {
   const [muatanItems, setMuatanItems] = useState<MuatanItem[]>([]);
   const [nextNumber, setNextNumber] = useState("");
 
+  // Violation check state
+  const [violationData, setViolationData] = useState<ViolationCheckResult>({});
+  const [violationLoading, setViolationLoading] = useState(false);
+  // Modal konfirmasi pelanggaran
+  const [showViolationModal, setShowViolationModal] = useState(false);
+  const [violationModalAcknowledged, setViolationModalAcknowledged] = useState(false);
+
   // Form state
   const [tanggal, setTanggal] = useState(formatDate());
   const [jamMasuk, setJamMasuk] = useState("");
@@ -164,8 +172,8 @@ export default function VcfRegisterPage() {
   const [produkKode, setProdukKode] = useState<string>("");
   const [produkLainnya, setProdukLainnya] = useState("");
   const [transporterId, setTransporterId] = useState("");
-  const [driverId, setDriverId] = useState("");
-  const [noPolisi, setNoPolisi] = useState("");
+  const [driverId, setDriverId] = useState<string>("");
+  const [noPolisi, setNoPolisi] = useState<string>("");
   const [jenisKendaraanId, setJenisKendaraanId] = useState("");
   const [tipeKendaraan, setTipeKendaraan] = useState<TipeKendaraan>("");
   const [tahunKendaraan, setTahunKendaraan] = useState("");
@@ -229,6 +237,31 @@ export default function VcfRegisterPage() {
       .catch((e) => console.error(e))
       .finally(() => setMasterLoading(false));
   }, []);
+
+  const runViolationCheck = async (newDriverId?: string, newNoPolisi?: string) => {
+    const did = newDriverId !== undefined ? newDriverId : driverId;
+    const pol = newNoPolisi !== undefined ? newNoPolisi : noPolisi;
+    // Reset ack whenever driver/polisi changes
+    setViolationModalAcknowledged(false);
+    if (!did && !pol) { setViolationData({}); return; }
+    setViolationLoading(true);
+    try {
+      const params: { driver_id?: string; no_polisi?: string } = {};
+      if (did) params.driver_id = did;
+      if (pol) params.no_polisi = pol.toUpperCase();
+      const res = await violationApi.check(params);
+      const data = res.data?.data ?? {};
+      setViolationData(data);
+      const status = data?.driver?.status;
+      if (status === "warning" || status === "blacklist") {
+        setShowViolationModal(true);
+      }
+    } catch {
+      setViolationData({});
+    } finally {
+      setViolationLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchNext = async () => {
@@ -371,6 +404,7 @@ export default function VcfRegisterPage() {
 
   const isLoading = tipeKegiatan.startsWith("loading");
   const isUnloading = tipeKegiatan.startsWith("unloading");
+  const isDriverBlacklisted = violationData?.driver?.status === "blacklist";
 
   if (masterLoading) {
     return (
@@ -425,6 +459,119 @@ export default function VcfRegisterPage() {
       <ValidationSummary errors={validationErrors} onDismiss={() => setValidationErrors([])} />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
+      {/* Violation loading spinner */}
+      {violationLoading && (
+        <div className="flex items-center gap-2 text-xs text-text-muted mb-4 px-1">
+          <div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+          Mengecek riwayat pelanggaran...
+        </div>
+      )}
+
+      {/* Inline badge setelah ack warning */}
+      {!violationLoading && violationModalAcknowledged && violationData?.driver?.status === "warning" && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 mb-4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500 shrink-0">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+            ⚠ {violationData.driver?.nama_supir} memiliki riwayat pelanggaran — registrasi dilanjutkan dengan catatan.
+          </span>
+        </div>
+      )}
+
+      {/* Violation modal portal */}
+      {showViolationModal && violationData?.driver && (() => {
+        const d = violationData.driver!;
+        const isBlocked = d.status === "blacklist";
+        return (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+            <div className={`bg-white dark:bg-bg-card w-full max-w-md rounded-3xl shadow-2xl border-2 overflow-hidden ${
+              isBlocked ? "border-red-500/40" : "border-amber-500/40"
+            }`}>
+              {/* Top bar */}
+              <div className={`h-1.5 w-full ${ isBlocked ? "bg-gradient-to-r from-red-500 to-rose-500" : "bg-gradient-to-r from-amber-400 to-orange-400" }`} />
+              <div className="p-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                    isBlocked ? "bg-red-500/15" : "bg-amber-500/15"
+                  }`}>
+                    {isBlocked ? (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500">
+                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                      </svg>
+                    ) : (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className={`font-black text-lg ${ isBlocked ? "text-red-600 dark:text-red-400" : "text-amber-700 dark:text-amber-400" }`}>
+                      {isBlocked ? "⛔ Driver Diblokir" : "⚠ Peringatan Driver"}
+                    </h3>
+                    <p className="text-sm text-text-muted mt-0.5">
+                      {isBlocked
+                        ? "Driver ini masuk daftar blacklist. Registrasi VCF tidak dapat dilanjutkan."
+                        : "Driver ini memiliki riwayat pelanggaran. Registrasi dapat dilanjutkan."
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Driver info */}
+                <div className={`rounded-xl p-3 mb-4 ${ isBlocked ? "bg-red-500/5 border border-red-500/15" : "bg-amber-500/5 border border-amber-500/15" }`}>
+                  <p className="font-bold text-text-primary">{d.nama_supir}</p>
+                  <p className="text-xs text-text-muted font-mono">{d.no_sim}</p>
+                </div>
+
+                {/* Violation list */}
+                {d.violations?.length > 0 && (
+                  <ul className="space-y-1.5 mb-4 max-h-40 overflow-y-auto">
+                    {d.violations.map((v: any) => (
+                      <li key={v.id} className={`text-xs px-3 py-2 rounded-lg ${
+                        isBlocked ? "bg-red-500/10 text-red-700 dark:text-red-400" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                      }`}>
+                        <span className="font-semibold">{v.jenis_pelanggaran}</span>
+                        {v.keterangan && <span className="text-text-muted"> — {v.keterangan}</span>}
+                        <div className="text-[10px] text-text-muted mt-0.5">{v.tanggal_pelanggaran?.split("T")[0]}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {isBlocked ? (
+                  <div className="space-y-2">
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 font-medium">
+                      Hubungi administrator untuk membuka status blacklist driver ini.
+                    </div>
+                    <button
+                      className="w-full btn py-3 font-bold rounded-xl bg-slate-100 dark:bg-white/10 text-text-primary hover:bg-slate-200 dark:hover:bg-white/15 transition-all"
+                      onClick={() => { setShowViolationModal(false); setDriverId(""); setViolationData({}); }}
+                    >
+                      Ganti Driver
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      className="flex-1 btn py-3 font-bold rounded-xl bg-slate-100 dark:bg-white/10 text-text-primary hover:bg-slate-200 dark:hover:bg-white/15 transition-all"
+                      onClick={() => { setShowViolationModal(false); setDriverId(""); setViolationData({}); }}
+                    >
+                      Ganti Driver
+                    </button>
+                    <button
+                      className="flex-[2] btn py-3 font-black rounded-xl bg-amber-500 hover:bg-amber-600 text-white transition-all"
+                      onClick={() => { setShowViolationModal(false); setViolationModalAcknowledged(true); }}
+                    >
+                      Lanjutkan Tetap
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* SECTION 1: DOKUMEN & LOGISTIK */}
@@ -574,7 +721,15 @@ export default function VcfRegisterPage() {
                 </div>
                 <div id="field-no-polisi">
                   <label className="form-label">No. Polisi *</label>
-                  <input type="text" className="form-input uppercase" placeholder="BK 1234 ABC" value={noPolisi} onChange={e => setNoPolisi(e.target.value)} required />
+                  <input
+                    type="text"
+                    className="form-input uppercase"
+                    placeholder="BK 1234 ABC"
+                    value={noPolisi}
+                    onChange={e => setNoPolisi(e.target.value)}
+                    onBlur={e => runViolationCheck(undefined, e.target.value)}
+                    required
+                  />
                 </div>
                 <div id="field-jenis-kendaraan">
                   <label className="form-label">Jenis Kendaraan *</label>
@@ -617,7 +772,10 @@ export default function VcfRegisterPage() {
                     label="Nama Supir"
                     options={drivers}
                     value={driverId}
-                    onChange={setDriverId}
+                    onChange={(val) => {
+                      setDriverId(val);
+                      runViolationCheck(val, undefined);
+                    }}
                     placeholder="Pilih Supir"
                     required
                     displayField="display_name"
@@ -876,9 +1034,18 @@ export default function VcfRegisterPage() {
         {/* ACTIONS */}
         <div className="flex items-center justify-end gap-4 pt-4">
           <button type="button" onClick={() => router.back()} className="btn btn-secondary px-8">Batal</button>
-          <button type="submit" disabled={loading} className="btn btn-primary px-12 py-4 text-lg">
-            {loading ? <><span className="spinner" /> Menyimpan...</> : "Simpan & Daftarkan VCF"}
-          </button>
+          {isDriverBlacklisted ? (
+            <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/30">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500 shrink-0">
+                <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              </svg>
+              <span className="text-sm font-bold text-red-600 dark:text-red-400">Driver blacklist — tidak dapat mendaftar</span>
+            </div>
+          ) : (
+            <button type="submit" disabled={loading} className="btn btn-primary px-12 py-4 text-lg">
+              {loading ? <><span className="spinner" /> Menyimpan...</> : "Simpan & Daftarkan VCF"}
+            </button>
+          )}
         </div>
       </form>
     </div>

@@ -61,7 +61,7 @@ export default function DeleteConfirmModal({
             <button
               onClick={onConfirm}
               disabled={loading}
-              className="flex-[2] py-2.5 rounded-xl font-bold text-red-500 border-2 border-red-500/30 hover:border-red-500 hover:bg-red-500/5 transition-all text-xs disabled:opacity-50 disabled:pointer-events-none"
+              className="btn btn-danger flex-[2]"
             >
               {loading ? "Menghapus..." : "Hapus"}
             </button>
@@ -69,7 +69,7 @@ export default function DeleteConfirmModal({
             <button
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl font-bold text-slate-500 border-2 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-colors text-xs disabled:opacity-50"
+              className="btn btn-secondary flex-1"
             >
               Batal
             </button>

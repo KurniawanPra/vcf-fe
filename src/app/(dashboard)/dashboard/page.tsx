@@ -109,7 +109,7 @@ export default function DashboardPage() {
         v.nomor_urut?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : vcfs;
-  const [registerHover, setRegisterHover] = useState(false);
+
   return (
     <div style={{ maxWidth: 1400 }}>
       {/* ── Header ─────────────────────────────── */}
@@ -131,29 +131,19 @@ export default function DashboardPage() {
         <button
           onClick={() => { setRegisterLoading(true); setTimeout(() => router.push("/vcf/register"), 600); }}
           disabled={registerLoading}
-          onMouseEnter={() => setRegisterHover(true)}
-          onMouseLeave={() => setRegisterHover(false)}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "11px 22px", borderRadius: 12, cursor: registerLoading ? "not-allowed" : "pointer",
-            background: registerHover && !registerLoading ? "var(--accent-primary)" : "transparent",
-            border: "2px solid var(--accent-primary)",
-            color: registerHover && !registerLoading ? "white" : "var(--accent-primary)",
-            fontWeight: 700, fontSize: 14,
-            opacity: registerLoading ? 0.75 : 1,
-            transition: "all 0.2s",
-          }}
+          className="action-btn action-btn-blue group"
+          style={{ padding: "10px 22px", fontSize: "14px", borderRadius: "9999px" }}
         >
-          {registerLoading
-            ? <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 8v8M8 12h8"/>
-              </svg>}
-          {registerLoading ? "Memuat..." : "Registrasi VCF Baru"}
+          <span className="relative flex items-center gap-2">
+            {registerLoading
+              ? <div className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                  className="transition-transform duration-300 group-hover:rotate-180">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 8v8M8 12h8"/>
+                </svg>}
+            {registerLoading ? "Memuat..." : "Registrasi VCF Baru"}
+          </span>
         </button>
       </div>
 

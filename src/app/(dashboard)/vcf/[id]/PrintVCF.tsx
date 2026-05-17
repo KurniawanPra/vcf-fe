@@ -92,8 +92,8 @@
     const [masterProduk, setMasterProduk] = useState<{ id: number; nama: string; kode: string }[]>([]);
     const [masterKS, setMasterKS] = useState<{ id: number; nama_item: string }[]>([]);
     const [masterMuatan, setMasterMuatan] = useState<{ id: number; nama_item: string }[]>([]);
-    const [masterPM, setMasterPM] = useState<{ id: number; nama_item: string; kode?: string }[]>([]);
-    const [masterPK, setMasterPK] = useState<{ id: number; nama_item: string; kode?: string }[]>([]);
+    const [masterPM, setMasterPM] = useState<{ id: number; nama_item: string; kode?: string; tipe_jawaban?: string }[]>([]);
+    const [masterPK, setMasterPK] = useState<{ id: number; nama_item: string; kode?: string; tipe_jawaban?: string }[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Settings State
@@ -324,6 +324,7 @@
             {masterKS.length > 0 ? (
               masterKS.map((item, i) => {
                 const ks = vcf.kelengkapan_supir?.find(val => val.item_id === item.id);
+                if (!ks || (ks.nilai === null || ks.nilai === undefined || ks.nilai === "")) return null;
                 const isYes = ks?.nilai === true || ks?.nilai === 1 || ks?.nilai === "1" || String(ks?.nilai).toLowerCase() === "ya";
                 const isNo  = ks?.nilai === false || ks?.nilai === 0 || ks?.nilai === "0" || String(ks?.nilai).toLowerCase() === "tidak";
                 const exLbl = i === 0 ? "Tujuan" : "";
@@ -466,30 +467,34 @@
             {masterPM.length > 0 ? (
               masterPM.map((item, i) => {
                 const pm = vcf.pemeriksaan_masuk?.find(p => p.item_id === item.id);
-                const val = pm?.nilai;
-                const isPos = isPosValue(val);
-                const isNeg = isNegValue(val);
                 const nm = item.nama_item?.toLowerCase() ?? "";
-                const isTangki = nm.includes("tangki");
-                const isSegel = nm.includes("segel");
                 const isBTK = item.kode === "BTK" || nm.includes("beban");
                 const isSGL = item.kode === "SGK" || item.kode === "SGL" || nm.includes("segel");
+                const hasSpecialData = (isBTK && vcf.beban_tambahan_masuk) || (isSGL && vcf.segel_masuk);
+                if (!pm?.nilai && !hasSpecialData) return null;
+                const val = pm?.nilai;
+                const opts = item.tipe_jawaban && item.tipe_jawaban !== "input"
+                  ? item.tipe_jawaban.split(",").map(s => s.trim())
+                  : [];
+                const label1 = isBTK ? "Ada" : isSGL ? "Terpasang" : (opts[0] || "Ya");
+                const label2 = isBTK ? "Tidak" : isSGL ? "Tidak Terpasang" : (opts[1] || "Tidak");
+                const isOpt1 = val ? val.trim().toLowerCase() === label1.toLowerCase() || isPosValue(val) : false;
+                const isOpt2 = val ? val.trim().toLowerCase() === label2.toLowerCase() || isNegValue(val) : false;
                 return (
                   <tr key={item.id}>
                     <td style={PRINT_STYLES.CELL}>{String.fromCharCode(97 + i)}. {item.nama_item}</td>
                     <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}>
-                      <CK checked={hasBagian2Data && (isPos || (isBTK && btmAda) || (isSGL && segelMasukAda))}
-                            label={isTangki ? "Bagus" : isSegel ? "Terpasang" : isBTK ? "Ada" : "Ya"}
-                            highlight />
+                      <CK checked={hasBagian2Data && (isOpt1 || (isBTK && btmAda) || (isSGL && segelMasukAda))}
+                            label={label1} highlight />
                     </td>
                     <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}>
-                      <CK checked={hasBagian2Data && (isNeg || (isBTK && !btmAda) || (isSGL && !segelMasukAda))}
-                            label={isTangki ? "Tidak" : isSegel ? "Tidak Terpasang" : "Tidak"}
-                            highlight />
+                      <CK checked={hasBagian2Data && (isOpt2 || (isBTK && !btmAda) || (isSGL && !segelMasukAda))}
+                            label={label2} highlight />
                     </td>
                     <td style={PRINT_STYLES.CELL}>
                       {isBTK && <span>Jenis: <UL w={100} val={vcf.beban_tambahan_masuk?.jenis_beban} /></span>}
                       {isSGL && <span>Jml: {vcf.segel_masuk?.jumlah_segel || 0} &nbsp; No: ({vcf.segel_masuk?.nomor_segel?.map(s => s.nomor_segel).join(", ")})</span>}
+                      {!isBTK && !isSGL && val && opts.length === 0 && <span><UL w={120} val={val} /></span>}
                     </td>
                   </tr>
                 );
@@ -558,30 +563,34 @@
             {masterPK.length > 0 ? (
               masterPK.map((item, i) => {
                 const pk = findPKById(item.id);
-                const val = pk?.nilai;
-                const isPos = isPosValue(val);
-                const isNeg = isNegValue(val);
                 const nm = item.nama_item?.toLowerCase() ?? "";
                 const isBTK = item.kode === "BTK" || nm.includes("beban");
                 const isSGL = item.kode === "SGK" || item.kode === "SGL" || nm.includes("segel");
-                const isTangki = nm.includes("tangki");
-                const isSegel = nm.includes("segel");
+                const hasSpecialData = (isBTK && vcf.beban_tambahan_keluar) || (isSGL && vcf.segel_keluar);
+                if (!pk?.nilai && !hasSpecialData) return null;
+                const val = pk?.nilai;
+                const opts = item.tipe_jawaban && item.tipe_jawaban !== "input"
+                  ? item.tipe_jawaban.split(",").map(s => s.trim())
+                  : [];
+                const label1 = isBTK ? "Ada" : isSGL ? "Terpasang" : (opts[0] || "Ya");
+                const label2 = isBTK ? "Tidak" : isSGL ? "Tidak Terpasang" : (opts[1] || "Tidak");
+                const isOpt1 = val ? val.trim().toLowerCase() === label1.toLowerCase() || isPosValue(val) : false;
+                const isOpt2 = val ? val.trim().toLowerCase() === label2.toLowerCase() || isNegValue(val) : false;
                 return (
                   <tr key={item.id}>
                     <td style={PRINT_STYLES.CELL}>{String.fromCharCode(97 + i)}. {item.nama_item}</td>
                     <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}>
-                      <CK checked={hasBagian3Data && (isPos || (isBTK && btkAda) || (isSGL && segelKeluarAda))}
-                            label={isTangki ? "Bagus" : isSegel ? "Terpasang" : isBTK ? "Ada" : "Ya"}
-                            highlight />
+                      <CK checked={hasBagian3Data && (isOpt1 || (isBTK && btkAda) || (isSGL && segelKeluarAda))}
+                            label={label1} highlight />
                     </td>
                     <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}>
-                      <CK checked={hasBagian3Data && (isNeg || (isBTK && !btkAda) || (isSGL && !segelKeluarAda))}
-                            label={isTangki ? "Tidak" : isSegel ? "Tidak Terpasang" : "Tidak"}
-                            highlight />
+                      <CK checked={hasBagian3Data && (isOpt2 || (isBTK && !btkAda) || (isSGL && !segelKeluarAda))}
+                            label={label2} highlight />
                     </td>
                     <td style={PRINT_STYLES.CELL}>
                       {isBTK && <span>Jenis: <UL w={100} val={vcf.beban_tambahan_keluar?.jenis_beban} /></span>}
                       {isSGL && <span>Jml: {vcf.segel_keluar?.jumlah_segel || 0} &nbsp; No: ({vcf.segel_keluar?.nomor_segel?.map(s => s.nomor_segel).join(", ")})</span>}
+                      {!isBTK && !isSGL && val && opts.length === 0 && <span><UL w={120} val={val} /></span>}
                     </td>
                   </tr>
                 );

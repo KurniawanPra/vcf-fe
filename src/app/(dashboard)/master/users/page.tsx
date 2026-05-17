@@ -64,9 +64,7 @@ export default function UsersPage() {
       
       const res = await masterApi.getUsers(params);
       const allUsers = res.data.data || res.data;
-      // Filter out admin accounts from display to prevent accidental deletion
-      const filteredUsers = allUsers.filter((user: User) => user.role !== "admin");
-      setData(filteredUsers);
+      setData(allUsers);
     } catch {
       /* ignore */
     } finally {
@@ -413,13 +411,8 @@ export default function UsersPage() {
                         </button>
                         <button
                           id={`btn-delete-user-${item.id}`}
-                          className="btn btn-sm"
+                          className="btn btn-danger btn-sm"
                           onClick={() => handleDeleteClick(item.id)}
-                          style={{
-                            background: "rgba(239,68,68,0.1)",
-                            color: "#f87171",
-                            border: "1px solid rgba(239,68,68,0.2)",
-                          }}
                         >
                           Hapus
                         </button>

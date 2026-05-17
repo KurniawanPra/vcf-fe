@@ -32,6 +32,11 @@ const ADMIN_NAV = [
         href: "/vcf", label: "Input VCF",
         icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
       },
+      {
+        href: "/master/violations", label: "Monitoring Pelanggaran",
+        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+        adminOnly: true,
+      },
     ],
   },
   {
@@ -290,10 +295,10 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                           borderRadius: 8,
                           textDecoration: "none",
                           transition: "all 0.2s",
-                          color: isActive ? "var(--accent-primary, #22c55e)" : "var(--text-muted)",
-                          background: isActive ? (theme === "dark" ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.1)") : "transparent",
-                          border: isActive ? `1px solid rgba(var(--accent-primary-rgb, 34,197,94), 0.3)` : "1px solid transparent",
-                          boxShadow: isActive ? `0 0 12px rgba(var(--accent-primary-rgb, 34,197,94), 0.2)` : "none",
+                          color: isActive ? `rgba(var(--accent-primary-rgb, 34,197,94), 0.75)` : "var(--text-muted)",
+                          background: isActive ? `rgba(var(--accent-primary-rgb, 34,197,94), 0.12)` : "transparent",
+                          border: isActive ? `1px solid rgba(var(--accent-primary-rgb, 34,197,94), 0.2)` : "1px solid transparent",
+                          boxShadow: isActive ? `0 0 10px rgba(var(--accent-primary-rgb, 34,197,94), 0.1)` : "none",
                           fontWeight: isActive ? 600 : 400,
                         }}
                         onMouseEnter={e => {

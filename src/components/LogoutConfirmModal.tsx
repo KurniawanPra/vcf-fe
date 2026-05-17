@@ -68,7 +68,7 @@ export default function LogoutConfirmModal({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:pointer-events-none"
+            className="btn btn-danger w-full"
           >
             {loading ? (
               <>
@@ -88,7 +88,7 @@ export default function LogoutConfirmModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="w-full py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-slate-100 dark:hover:bg-white/5 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="btn btn-secondary w-full"
           >
             Tetap di sini
           </button>

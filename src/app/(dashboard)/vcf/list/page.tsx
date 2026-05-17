@@ -57,6 +57,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [navigatingId, setNavigatingId] = useState<number | null>(null);
 
   // Printing individual VCF
   const [printingVcf, setPrintingVcf] = useState<any>(null);
@@ -144,16 +145,14 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
   const getActionButtonStyle = (status: string) => {
     switch (status) {
-      case "bagian1_selesai": return "border-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white";
-      case "bagian2_selesai": return "border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white";
+      case "bagian1_selesai": return "action-btn action-btn-amber";
+      case "bagian2_selesai": return "action-btn action-btn-indigo";
       case "loading_unloading_proses":
-      case "loading_unloading_selesai": return "border-2 border-violet-600 text-violet-600 hover:bg-violet-600 hover:text-white";
-      case "bagian3_selesai": return "border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white";
+      case "loading_unloading_selesai": return "action-btn action-btn-violet";
+      case "bagian3_selesai": return "action-btn action-btn-emerald";
       case "selesai":
-      case "reject":
-        return "border-2 border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-400 hover:bg-slate-300 hover:text-white dark:hover:bg-slate-600";
-      default:
-        return "border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white";
+      case "reject": return "action-btn action-btn-slate";
+      default: return "action-btn action-btn-blue";
     }
   };
 
@@ -204,13 +203,13 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               </button>
             </div>
 
-            <button onClick={() => setIsPrinting(true)} className="px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
+            <button onClick={() => setIsPrinting(true)} className="btn btn-secondary btn-sm flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
               </svg>
               Print
             </button>
-            <button onClick={() => exportToExcel(`VCF_Export_${stageFilter}`, exportHeaders, exportData)} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm">
+            <button onClick={() => exportToExcel(`VCF_Export_${stageFilter}`, exportHeaders, exportData)} className="btn btn-primary btn-sm flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
@@ -259,14 +258,14 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             </div>
 
             {/* Reset Actions */}
-            <div className="md:col-span-2 flex items-end">
+            <div className="md:col-span-2 flex items-center">
               <button
                 onClick={() => {
                   setSearch("");
                   setTanggalDari(firstDay);
                   setTanggalSampai(lastDay);
                 }}
-                className="w-full py-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all"
+                className="btn btn-secondary btn-sm w-full"
               >
                 Reset Filter
               </button>
@@ -319,15 +318,18 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          <Link
-                            href={`/vcf/${vcf.id}`}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${getActionButtonStyle(vcf.status)}`}
+                          <button
+                            onClick={() => { setNavigatingId(vcf.id); router.push(`/vcf/${vcf.id}`); }}
+                            disabled={navigatingId === vcf.id}
+                            className={`action-btn-sm ${getActionButtonStyle(vcf.status)} flex items-center gap-1.5`}
                           >
-                            {getActionLabel(vcf)}
-                          </Link>
+                            {navigatingId === vcf.id
+                              ? <><div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" /> Memuat...</>
+                              : getActionLabel(vcf)}
+                          </button>
                           <button
                             onClick={() => handlePrint(vcf.id)}
-                            className="p-1.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 hover:text-slate-600 transition-all"
+                            className="btn-icon btn-icon-edit"
                             disabled={fetchingPrint}
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" /></svg>
@@ -374,17 +376,20 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 pt-1">
-                      <Link
-                        href={`/vcf/${vcf.id}`}
-                        className={`flex-1 flex items-center justify-center rounded-xl py-3 text-[10px] font-bold uppercase tracking-widest transition-all ${getActionButtonStyle(vcf.status)}`}
+                      <button
+                        onClick={() => { setNavigatingId(vcf.id); router.push(`/vcf/${vcf.id}`); }}
+                        disabled={navigatingId === vcf.id}
+                        className={`flex-1 ${getActionButtonStyle(vcf.status)} flex items-center justify-center gap-1.5`}
                       >
-                        {getActionLabel(vcf)}
-                      </Link>
+                        {navigatingId === vcf.id
+                          ? <><div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" /> Memuat...</>
+                          : getActionLabel(vcf)}
+                      </button>
 
                       <button
                         onClick={() => handlePrint(vcf.id)}
                         disabled={fetchingPrint}
-                        className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-slate-400 hover:bg-slate-100 transition-all"
+                        className="btn-icon btn-icon-edit"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" />
@@ -411,7 +416,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             <textarea className="form-input w-full min-h-[100px] mb-6" placeholder="Alasan penolakan..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
             <div className="flex gap-3 justify-end">
               <button className="btn btn-secondary" onClick={() => setRejectingId(null)}>Batal</button>
-              <button className="btn btn-primary" style={{ background: "#ef4444", borderColor: "#ef4444" }} onClick={handleReject} disabled={rejectLoading || !rejectReason.trim()}>{rejectLoading ? "Memproses..." : "Tolak VCF"}</button>
+              <button className="btn btn-danger" onClick={handleReject} disabled={rejectLoading || !rejectReason.trim()}>{rejectLoading ? "Memproses..." : "Tolak VCF"}</button>
             </div>
           </div>
         </div>

@@ -132,7 +132,7 @@ export default function ImportConfirmModal({
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+              className="btn btn-secondary"
             >
               Batal
             </button>
@@ -142,7 +142,7 @@ export default function ImportConfirmModal({
                 onResult?.(result);
               }}
               disabled={loading || selectedRows.size === 0}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="btn btn-primary"
             >
               {loading ? (
                 <>

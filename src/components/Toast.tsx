@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-export type ToastType = "success" | "error" | "info";
+export type ToastType = "success" | "error" | "info" | "warning";
 
 export interface ToastItem {
   id: string;
@@ -18,55 +18,53 @@ interface ToastProps {
 }
 
 const TOAST_CONFIG: Record<ToastType, {
-  gradient: string;
-  glow: string;
-  iconBg: string;
-  borderColor: string;
-  progressColor: string;
+  barColor: string;
+  labelColor: string;
   icon: JSX.Element;
-  emoji: string;
 }> = {
   success: {
-    gradient: "linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)",
-    glow: "0 8px 32px rgba(16,185,129,0.55), 0 2px 8px rgba(16,185,129,0.3)",
-    iconBg: "rgba(255,255,255,0.25)",
-    borderColor: "rgba(52,211,153,0.6)",
-    progressColor: "rgba(255,255,255,0.7)",
-    emoji: "✅",
+    barColor: "#10b981",
+    labelColor: "#10b981",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 6L9 17l-5-5" />
+      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM16.6667 28.3333L8.33337 20L10.6834 17.65L16.6667 23.6166L29.3167 10.9666L31.6667 13.3333L16.6667 28.3333Z" />
       </svg>
     ),
   },
   error: {
-    gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%)",
-    glow: "0 8px 32px rgba(239,68,68,0.55), 0 2px 8px rgba(239,68,68,0.3)",
-    iconBg: "rgba(255,255,255,0.25)",
-    borderColor: "rgba(248,113,113,0.6)",
-    progressColor: "rgba(255,255,255,0.7)",
-    emoji: "❌",
+    barColor: "#ef4444",
+    labelColor: "#ef4444",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 8v4M12 16h.01" />
+      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 3.36667C10.8167 3.36667 3.3667 10.8167 3.3667 20C3.3667 29.1833 10.8167 36.6333 20 36.6333C29.1834 36.6333 36.6334 29.1833 36.6334 20C36.6334 10.8167 29.1834 3.36667 20 3.36667ZM19.1334 33.3333V22.9H13.3334L21.6667 6.66667V17.1H27.25L19.1334 33.3333Z" />
       </svg>
     ),
   },
   info: {
-    gradient: "linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)",
-    glow: "0 8px 32px rgba(59,130,246,0.55), 0 2px 8px rgba(59,130,246,0.3)",
-    iconBg: "rgba(255,255,255,0.25)",
-    borderColor: "rgba(96,165,250,0.6)",
-    progressColor: "rgba(255,255,255,0.7)",
-    emoji: "ℹ️",
+    barColor: "#3b82f6",
+    labelColor: "#3b82f6",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 16v-4M12 8h.01" />
+      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM21.6667 28.3333H18.3334V25H21.6667V28.3333ZM21.6667 21.6666H18.3334V11.6666H21.6667V21.6666Z" />
       </svg>
     ),
   },
+  warning: {
+    barColor: "#f59e0b",
+    labelColor: "#f59e0b",
+    icon: (
+      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM21.6667 28.3333H18.3334V25H21.6667V28.3333ZM21.6667 21.6666H18.3334V11.6666H21.6667V21.6666Z" />
+      </svg>
+    ),
+  },
+};
+
+const TYPE_LABEL: Record<ToastType, string> = {
+  success: "Success",
+  error: "Error",
+  info: "Info",
+  warning: "Warning",
 };
 
 const DURATION = 4000;
@@ -78,10 +76,8 @@ function ToastBadge({ toast, onRemove }: { toast: ToastItem; onRemove: (id: stri
   const cfg = TOAST_CONFIG[toast.type];
 
   useEffect(() => {
-    // Enter animation
     const t1 = setTimeout(() => setPhase("idle"), 20);
 
-    // Progress bar countdown
     const start = Date.now();
     const tick = () => {
       const elapsed = Date.now() - start;
@@ -91,88 +87,75 @@ function ToastBadge({ toast, onRemove }: { toast: ToastItem; onRemove: (id: stri
     };
     requestAnimationFrame(tick);
 
-    // Auto dismiss
     const t2 = setTimeout(() => {
       setPhase("leave");
-      setTimeout(() => onRemove(toast.id), 400);
+      setTimeout(() => onRemove(toast.id), 350);
     }, DURATION);
 
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [toast.id, onRemove]);
 
   const transform =
-    phase === "enter" ? "translateX(120%) scale(0.85)" :
-    phase === "leave" ? "translateX(120%) scale(0.9)" :
-    "translateX(0) scale(1)";
+    phase === "enter" ? "translateX(120%)" :
+    phase === "leave" ? "translateX(120%)" :
+    "translateX(0)";
 
   const opacity = phase === "idle" ? 1 : 0;
 
   return (
     <div
       style={{
-        position: "relative",
         transform,
         opacity,
         transition: phase === "enter"
-          ? "transform 0.5s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.3s ease"
-          : "transform 0.4s cubic-bezier(0.4,0,1,1), opacity 0.35s ease",
-        background: cfg.gradient,
-        border: `1.5px solid ${cfg.borderColor}`,
-        borderRadius: "16px",
-        boxShadow: cfg.glow,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        padding: "14px 16px 18px",
-        minWidth: "300px",
-        maxWidth: "400px",
-        pointerEvents: "all",
+          ? "transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.25s ease"
+          : "transform 0.35s cubic-bezier(0.4,0,1,1), opacity 0.3s ease",
+        display: "flex",
+        width: "100%",
+        maxWidth: "360px",
         overflow: "hidden",
+        background: "#ffffff",
+        borderRadius: "8px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        pointerEvents: "all",
+        position: "relative",
       }}
     >
-      {/* Glass shimmer overlay */}
+      {/* Left colored bar + icon */}
       <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 60%, transparent 100%)",
-        borderRadius: "16px",
-        pointerEvents: "none",
-      }} />
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "48px",
+        flexShrink: 0,
+        background: cfg.barColor,
+      }}>
+        {cfg.icon}
+      </div>
 
-      {/* Content row */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", position: "relative", zIndex: 1 }}>
-        {/* Icon circle */}
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          background: cfg.iconBg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          border: "1.5px solid rgba(255,255,255,0.35)",
-        }}>
-          {cfg.icon}
-        </div>
-
-        {/* Text */}
-        <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-          <p style={{
+      {/* Content */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flex: 1,
+        padding: "10px 14px",
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{
+            fontWeight: 600,
             fontSize: "14px",
-            fontWeight: 700,
-            color: "white",
-            margin: 0,
+            color: cfg.labelColor,
+            display: "block",
             lineHeight: 1.3,
-            textShadow: "0 1px 3px rgba(0,0,0,0.2)",
           }}>
-            {toast.title}
-          </p>
+            {toast.title || TYPE_LABEL[toast.type]}
+          </span>
           {toast.message && (
             <p style={{
-              fontSize: "12.5px",
-              color: "rgba(255,255,255,0.88)",
-              margin: "4px 0 0",
+              fontSize: "13px",
+              color: "#4b5563",
+              margin: "2px 0 0",
               lineHeight: 1.45,
               wordBreak: "break-word",
             }}>
@@ -181,19 +164,20 @@ function ToastBadge({ toast, onRemove }: { toast: ToastItem; onRemove: (id: stri
           )}
         </div>
 
-        {/* Close btn */}
+        {/* Close button */}
         <button
-          onClick={() => { setPhase("leave"); setTimeout(() => onRemove(toast.id), 400); }}
+          onClick={() => { setPhase("leave"); setTimeout(() => onRemove(toast.id), 350); }}
           style={{
-            background: "rgba(255,255,255,0.2)",
-            border: "1px solid rgba(255,255,255,0.3)",
-            borderRadius: "8px",
+            background: "none",
+            border: "none",
             cursor: "pointer",
-            color: "white",
+            color: "#9ca3af",
             padding: "4px",
             lineHeight: 0,
             flexShrink: 0,
-            transition: "background 0.2s",
+            marginLeft: "8px",
+            borderRadius: "4px",
+            transition: "color 0.15s",
           }}
           aria-label="Tutup"
         >
@@ -203,15 +187,15 @@ function ToastBadge({ toast, onRemove }: { toast: ToastItem; onRemove: (id: stri
         </button>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar at bottom */}
       <div style={{
         position: "absolute",
         bottom: 0,
         left: 0,
-        height: "4px",
+        height: "3px",
         width: `${progress}%`,
-        background: cfg.progressColor,
-        borderRadius: "0 0 0 16px",
+        background: cfg.barColor,
+        opacity: 0.4,
         transition: "width 0.1s linear",
       }} />
     </div>
@@ -232,9 +216,10 @@ export function ToastContainer({ toasts, onRemove }: ToastProps) {
         zIndex: 99999,
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
+        gap: "10px",
         alignItems: "flex-end",
         pointerEvents: "none",
+        width: "360px",
       }}
     >
       {toasts.map((t) => (
@@ -251,9 +236,14 @@ let _toastCounter = 0;
 export function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  const MAX_TOASTS = 2;
+
   const addToast = (type: ToastType, title: string, message?: string) => {
     const id = `toast-${++_toastCounter}`;
-    setToasts((prev) => [...prev, { id, type, title, message }]);
+    setToasts((prev) => {
+      const next = [...prev, { id, type, title, message }];
+      return next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next;
+    });
   };
 
   const removeToast = (id: string) => {
@@ -264,6 +254,7 @@ export function useToast() {
     success: (title: string, message?: string) => addToast("success", title, message),
     error: (title: string, message?: string) => addToast("error", title, message),
     info: (title: string, message?: string) => addToast("info", title, message),
+    warning: (title: string, message?: string) => addToast("warning", title, message),
   };
 
   return { toasts, removeToast, toast };

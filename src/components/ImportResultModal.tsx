@@ -156,8 +156,7 @@ export default function ImportResultModal({
         <div className="px-5 py-4 border-t flex justify-end" style={{ borderColor: "var(--border)" }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
-            style={{ background: "var(--primary)", color: "white" }}
+            className="btn btn-primary"
           >
             Tutup
           </button>

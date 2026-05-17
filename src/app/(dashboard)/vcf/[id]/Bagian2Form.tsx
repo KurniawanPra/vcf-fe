@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { vcfApi, masterApi } from "@/lib/api";
+import { vcfApi, masterApi, violationApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { VCF_STATUS } from "@/constants/vcfStatus";
 import { createPortal } from "react-dom";
+import ViolationWarningCard, { type ViolationCheckResult } from "@/components/ViolationWarningCard";
 
 
 interface CheckItem {
@@ -45,8 +46,18 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
   // Reject Modal State
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectType, setRejectType] = useState<"warning" | "blacklist" | "reject_only">("reject_only");
   const [showSuccess, setShowSuccess] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
+  const [violationData, setViolationData] = useState<ViolationCheckResult>({});
+
+  useEffect(() => {
+    if (vcfData?.driver_id) {
+      violationApi.check({ driver_id: vcfData.driver_id })
+        .then(res => setViolationData(res.data?.data ?? {}))
+        .catch(() => {});
+    }
+  }, [vcfData?.driver_id]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -167,9 +178,28 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
     setError("");
     setLoading(true);
     try {
+      // Catat pelanggaran hanya jika bukan reject_only
+      if (rejectType !== "reject_only" && vcfData?.driver_id) {
+        await violationApi.create({
+          driver_id: vcfData.driver_id,
+          no_polisi: vcfData.no_polisi ?? null,
+          jenis_pelanggaran: rejectType === "blacklist" ? "[BLACKLIST] Ditolak WB Masuk" : "[WARNING] Ditolak WB Masuk",
+          keterangan: rejectReason,
+          tanggal_pelanggaran: new Date().toISOString().split("T")[0],
+        });
+        if (rejectType === "blacklist") {
+          await violationApi.updateDriverStatus(vcfData.driver_id, "blacklist");
+        } else {
+          await violationApi.updateDriverStatus(vcfData.driver_id, "warning");
+        }
+      }
       await vcfApi.rejectBagian2(vcfId, { catatan_reject: rejectReason });
       setShowRejectModal(false);
-      toast.success("VCF Ditolak", "Status VCF berhasil diubah menjadi reject.");
+      toast.success("VCF Ditolak",
+        rejectType === "blacklist" ? "Driver diblokir dan VCF ditolak."
+        : rejectType === "warning" ? "VCF ditolak dengan warning pada driver."
+        : "VCF berhasil ditolak."
+      );
       setTimeout(() => {
         router.push(`/vcf/${vcfId}`);
         onReject();
@@ -307,7 +337,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
           {canEdit && (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 font-bold text-[10px] flex items-center gap-2 transition-all hover:bg-slate-100"
+              className="btn btn-secondary btn-sm flex items-center gap-2"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               EDIT
@@ -372,12 +402,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const formView = (
     <div className="max-w-4xl mx-auto space-y-6">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-black text-black dark:text-white tracking-tight">{isEditing ? "Edit Security Weighbridge (Masuk)" : "Security Weighbridge (Masuk)"}</h2>
-          <p className="text-slate-500 text-sm">{isEditing ? "Perbarui hasil validasi fisik kendaraan." : "Validasi fisik kendaraan sebelum penimbangan masuk."}</p>
-        </div>
-      </div>
+      <ViolationWarningCard data={violationData} />
 
       {error && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-3 animate-headShake">
@@ -420,8 +445,8 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                               className={`
                                 cursor-pointer px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border
                                 ${isSelected 
-                                  ? (isWarning ? 'bg-red-500 border-red-500 text-white shadow-sm' : 'bg-slate-900 border-slate-900 text-white shadow-sm')
-                                  : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-slate-300 dark:hover:border-white/20'
+                                  ? (isWarning ? 'bg-red-500 border-red-500 text-white shadow-sm' : 'bg-blue-500 border-blue-500 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/30')
+                                  : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'
                                 }
                               `}
                             >
@@ -524,18 +549,22 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
           {!isEditing && (
             <button
               type="button"
-              className="px-8 py-4 rounded-2xl font-bold text-sm bg-red-500/10 text-red-500 border-2 border-red-500/20 hover:bg-red-500 hover:text-white transition-all duration-300"
-              onClick={() => setShowRejectModal(true)}
+              className="btn btn-danger flex items-center gap-2 px-5"
+              onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
               disabled={loading}
             >
-              TOLAK (REJECT)
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              REJECT VCF
             </button>
           )}
           {!isEditing && (
             <>
               <button
                 type="button"
-                className="px-8 py-4 rounded-2xl font-bold text-sm bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-2 border-transparent hover:bg-slate-300 dark:hover:bg-white/20 transition-all duration-300"
+                className="btn btn-secondary"
                 onClick={() => {
                   const resetObj: Record<number, string> = {};
                   pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
@@ -552,7 +581,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               </button>
               <button
                 type="submit"
-                className="flex-1 py-4 rounded-2xl font-bold text-sm bg-slate-900 text-white shadow-xl shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3"
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
                 disabled={loading}
               >
                 {loading ? <><span className="spinner" /> MEMPROSES...</> : "SIMPAN & LANJUTKAN"}
@@ -562,34 +591,145 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
         </div>
       </form>
 
-      {/* Reject Modal Minimalist */}
+      {/* Reject Modal — Upgraded */}
       {showRejectModal && createPortal(
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-in fade-in duration-200" onClick={() => setShowRejectModal(false)}>
-          <div className="bg-white/95 dark:bg-bg-card/95 w-full max-w-md overflow-hidden rounded-2xl border-2 border-slate-200 dark:border-white/10 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight mb-1">Tolak VCF</h3>
-              <p className="text-slate-500 text-xs">Berikan alasan penolakan</p>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-in fade-in duration-200" onClick={() => { if (!loading) setShowRejectModal(false); }}>
+          <div className="bg-white dark:bg-bg-card w-full max-w-lg overflow-hidden rounded-3xl border-2 border-red-500/30 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            {/* Top accent */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-500" />
+
+            {/* Header */}
+            <div className="px-6 pt-5 pb-4 flex items-center gap-3 border-b border-slate-100 dark:border-white/5">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500">
+                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-800 dark:text-white tracking-tight">Tolak VCF — WB Masuk</h3>
+                <p className="text-xs text-slate-500">Penolakan akan mencatat pelanggaran pada driver</p>
+              </div>
             </div>
 
-            <div className="px-6 pb-6 space-y-4">
-              <textarea
-                className="w-full min-h-[100px] px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-red-500/50 transition-colors"
-                placeholder="Alasan penolakan..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                autoFocus
-              />
+            <div className="p-6 space-y-4">
+              {/* Info VCF */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                  <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Supir</p>
+                  <p className="text-sm font-bold text-text-primary truncate">{vcfData?.supir?.nama_supir ?? vcfData?.driver?.nama_supir ?? "—"}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                  <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">No. Polisi</p>
+                  <p className="text-sm font-bold text-text-primary font-mono">{vcfData?.no_polisi ?? "—"}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                  <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Tanggal</p>
+                  <p className="text-sm font-bold text-text-primary">{vcfData?.tanggal ?? new Date().toLocaleDateString("id-ID")}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                  <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Jam</p>
+                  <p className="text-sm font-bold text-text-primary">{vcfData?.jam_masuk ?? new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
 
-              <div className="flex gap-3 pt-2">
+              {/* Tipe Pelanggaran */}
+              <div>
+                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">Tipe Pelanggaran</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRejectType("reject_only")}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      rejectType === "reject_only"
+                        ? "bg-slate-500/10 border-slate-500 text-slate-700 dark:text-slate-300"
+                        : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-slate-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                      </svg>
+                      <span className="text-xs font-black uppercase">Tolak</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Tolak saja, tanpa catatan pelanggaran</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectType("warning")}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      rejectType === "warning"
+                        ? "bg-amber-500/10 border-amber-500 text-amber-700 dark:text-amber-400"
+                        : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-amber-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      <span className="text-xs font-black uppercase">Warning</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Tolak + catat warning driver</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectType("blacklist")}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      rejectType === "blacklist"
+                        ? "bg-red-500/10 border-red-500 text-red-600 dark:text-red-400"
+                        : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-red-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                      </svg>
+                      <span className="text-xs font-black uppercase">Blacklist</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Tolak + blokir driver</p>
+                  </button>
+                </div>
+                {rejectType === "blacklist" && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Driver akan langsung diblokir dan tidak bisa mendaftar VCF baru.
+                  </div>
+                )}
+              </div>
+
+              {/* Alasan */}
+              <div>
+                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">Alasan Penolakan *</p>
+                <textarea
+                  className="w-full min-h-[90px] px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-red-500/50 transition-colors resize-none"
+                  placeholder="Jelaskan alasan penolakan secara detail..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
                 <button
-                  className="flex-1 py-2.5 rounded-xl font-bold text-slate-500 border-2 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-colors text-xs"
+                  className="btn btn-secondary flex-1"
                   onClick={() => setShowRejectModal(false)}
+                  disabled={loading}
                 >Batal</button>
                 <button
-                  className="flex-[2] py-2.5 rounded-xl font-bold text-red-500 border-2 border-red-500/30 hover:border-red-500 hover:bg-red-500/5 transition-all text-xs"
+                  className={`flex-[2] btn font-black ${
+                    rejectType === "blacklist" ? "btn-danger"
+                    : rejectType === "warning" ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500"
+                    : "bg-slate-600 hover:bg-slate-700 text-white border-slate-600"
+                  }`}
                   onClick={handleReject}
                   disabled={loading || !rejectReason.trim()}
-                >Konfirmasi</button>
+                >
+                  {loading ? <><span className="spinner" /> Memproses...</>
+                    : rejectType === "blacklist" ? "⛔ Blacklist & Tolak VCF"
+                    : rejectType === "warning" ? "⚠ Warning & Tolak VCF"
+                    : "✕ Tolak VCF"}
+                </button>
               </div>
             </div>
           </div>
@@ -611,7 +751,12 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
     );
   }
 
-  if (hasExistingData && !isEditing) return readOnlyView;
+  if (hasExistingData && !isEditing) return (
+    <div className="max-w-4xl mx-auto space-y-4">
+      <ViolationWarningCard data={violationData} />
+      {readOnlyView}
+    </div>
+  );
 
   if (hasExistingData && isEditing) {
     return (
@@ -660,7 +805,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               <button
                 type="button"
                 onClick={() => { setIsEditing(false); setError(""); }}
-                className="px-6 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-colors text-sm"
+                className="btn btn-secondary btn-sm"
               >
                 Batal
               </button>
@@ -668,10 +813,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-8 py-2.5 rounded-xl font-bold text-white transition-all text-sm shadow-sm"
-                style={{ background: 'var(--accent-primary, #22c55e)' }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                className="btn btn-success btn-sm"
               >
                 {loading ? "Menyimpan..." : "Simpan Perubahan"}
               </button>
