@@ -76,47 +76,53 @@ function ToastBadge({ toast, onRemove }: { toast: ToastItem; onRemove: (id: stri
   const cfg = TOAST_CONFIG[toast.type];
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("idle"), 20);
+    const t1 = setTimeout(() => setPhase("idle"), 30);
 
     const start = Date.now();
+    let rafId: number;
     const tick = () => {
       const elapsed = Date.now() - start;
       const pct = Math.max(0, 100 - (elapsed / DURATION) * 100);
       setProgress(pct);
-      if (pct > 0) requestAnimationFrame(tick);
+      if (pct > 0) rafId = requestAnimationFrame(tick);
     };
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
 
     const t2 = setTimeout(() => {
       setPhase("leave");
-      setTimeout(() => onRemove(toast.id), 350);
+      setTimeout(() => onRemove(toast.id), 400);
     }, DURATION);
 
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); clearTimeout(t2); cancelAnimationFrame(rafId); };
   }, [toast.id, onRemove]);
 
   const transform =
-    phase === "enter" ? "translateX(120%)" :
-    phase === "leave" ? "translateX(120%)" :
-    "translateX(0)";
+    phase === "enter" ? "translateX(calc(100% + 40px)) scale(0.92)" :
+    phase === "leave" ? "translateX(calc(100% + 40px)) scale(0.95)" :
+    "translateX(0) scale(1)";
 
   const opacity = phase === "idle" ? 1 : 0;
+
+  const transition =
+    phase === "enter"
+      ? "none"
+      : phase === "idle"
+      ? "transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease"
+      : "transform 0.38s cubic-bezier(0.55, 0, 1, 0.45), opacity 0.3s ease";
 
   return (
     <div
       style={{
         transform,
         opacity,
-        transition: phase === "enter"
-          ? "transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.25s ease"
-          : "transform 0.35s cubic-bezier(0.4,0,1,1), opacity 0.3s ease",
+        transition,
         display: "flex",
         width: "100%",
         maxWidth: "360px",
         overflow: "hidden",
         background: "#ffffff",
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        borderRadius: "10px",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)",
         pointerEvents: "all",
         position: "relative",
       }}
@@ -216,10 +222,10 @@ export function ToastContainer({ toasts, onRemove }: ToastProps) {
         zIndex: 99999,
         display: "flex",
         flexDirection: "column",
-        gap: "10px",
+        gap: "8px",
         alignItems: "flex-end",
         pointerEvents: "none",
-        width: "360px",
+        width: "min(360px, calc(100vw - 32px))",
       }}
     >
       {toasts.map((t) => (
