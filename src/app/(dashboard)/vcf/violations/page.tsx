@@ -151,7 +151,7 @@ function ViolationTable({
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Driver</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">No. Polisi</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Jenis Pelanggaran</th>
-                <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Keterangan</th>
+                <th className="px-5 py-3 text-xs font-semibold text-secondary text-left ">Keterangan</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Tanggal</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-right">Aksi</th>
               </tr>
@@ -173,7 +173,7 @@ function ViolationTable({
                       : <span className="text-text-muted text-xs">—</span>}
                   </td>
                   <td className="px-5 py-3 text-sm font-medium text-text-primary max-w-[200px]">{v.jenis_pelanggaran}</td>
-                  <td className="px-5 py-3 text-xs text-text-muted max-w-[180px] truncate" title={v.keterangan ?? ""}>{v.keterangan ?? "—"}</td>
+                  <td className="px-5 py-3 text-xs text-text-muted max-w-[220px] whitespace-normal break-words" title={v.keterangan ?? ""}>{v.keterangan ?? "—"}</td>
                   <td className="px-5 py-3 text-xs text-text-muted whitespace-nowrap">{fmt(v.tanggal_pelanggaran)}</td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex justify-end gap-1">
