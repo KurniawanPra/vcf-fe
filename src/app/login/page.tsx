@@ -102,7 +102,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div style={{ position: "relative", zIndex: 1 }}>
-          <Image src="/logo.svg" alt="VCF Logo" width={64} height={64} style={{ marginBottom: 20 }} />
+          <Image src="/logo.svg" alt="VCF Logo" width={90} height={90} style={{ marginBottom: 20 }} />
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: 6 }}>
             PT. Industri Nabati Lestari
           </div>
@@ -139,7 +139,7 @@ export default function LoginPage() {
       }}>
         {/* Mobile logo */}
         <div className="l-mobile-logo" style={{ alignItems: "center", gap: 12, marginBottom: -16, flexDirection: "column" }}>
-          <Image src="/logo.svg" alt="VCF Logo" width={90} height={90} />
+          <Image src="/logo.svg" alt="VCF Logo" width={120} height={120} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>PT. Industri Nabati Lestari</div>
             <div style={{ fontSize: 11, color: "#999", textAlign: "center" }}>Vehicle Control Form System</div>
