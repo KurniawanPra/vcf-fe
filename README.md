@@ -1,25 +1,24 @@
 # VCF System - Frontend
 
-Frontend aplikasi untuk sistem Vehicle Control Form (VCF) PT. Industri Nabati Lestari. Aplikasi ini digunakan oleh petugas dan admin untuk mencatat dan memonitor kendaraan yang masuk dan keluar area perusahaan.
+Frontend aplikasi untuk sistem Vehicle Control Form (VCF) PT. Industri Nabati Lestari. Digunakan oleh petugas dan admin untuk mencatat dan mentracking kendaraan yang masuk dan keluar area industri.
 
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
-- **Styling**: TailwindCSS
-- **UI Components**: shadcn/ui
-- **Icons**: Lucide React
-- **State Management**: React Hooks (useState, useEffect)
-- **Form Handling**: React Hook Form
-- **HTTP Client**: Fetch API
-- **QR Code**: qrcode.react
-- **Print**: React-to-print
+- **Styling**: TailwindCSS + CSS Variables (dark mode)
+- **State Management**: React Hooks (useState, useEffect, useCallback)
+- **HTTP Client**: Axios
+- **QR Code**: qrcode (canvas-based)
+- **Export**: docx, jspdf, xlsx
+- **Print**: Custom print components (react-to-print)
+- **Toast Notifications**: Custom toast system
 
 ## Prerequisites
 
 Sebelum memulai, pastikan sudah terinstall:
 
-- Node.js 18+ atau 20+
+- Node.js 18+ ( v18.20.8 )
 - npm, yarn, atau pnpm
 - Git
 - Backend API sudah running (lihat README backend)
@@ -45,10 +44,10 @@ pnpm install
 
 ### 3. Setup Environment
 
-Buat file `.env.local` di root project:
+Buat file `.env.local` atau cp `.env.local.example` menjadi `.env.local`  di root project:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
 Jika backend di server lain, sesuaikan URL-nya:
@@ -73,100 +72,122 @@ Aplikasi akan tersedia di `http://localhost:3000`
 
 ### API Endpoint
 
-Endpoint API dikonfigurasi melalui environment variable `NEXT_PUBLIC_API_URL`. Pastikan ini mengarah ke backend API yang sudah berjalan.
+Endpoint API dikonfigurasi melalui .env variable `NEXT_PUBLIC_API_URL`. Pastikan mengarah ke backend API yang sudah berjalan.
 
 ### Authentication
 
-Aplikasi menggunakan token-based authentication via Laravel Sanctum. Token disimpan di localStorage dan dikirim di header setiap request.
+Aplikasi menggunakan token-based authentication via Laravel Sanctum. Token disimpan di `localStorage` dan dikirim di header setiap request.
 
 ## Project Structure
 
 ```
-fe/
+fe/src/
 ├── app/
 │   ├── (dashboard)/
 │   │   ├── vcf/
 │   │   │   ├── [id]/
-│   │   │   │   ├── edit/
-│   │   │   │   │   └── page.tsx       - Halaman edit VCF
-│   │   │   │   ├── PrintVCF.tsx         - Komponen print VCF
-│   │   │   │   ├── Bagian2Form.tsx     - Form Bagian 2
-│   │   │   │   ├── Bagian3Form.tsx     - Form Bagian 3
-│   │   │   │   ├── Bagian4Form.tsx     - Form Bagian 4
-│   │   │   │   └── page.tsx            - Halaman detail VCF
-│   │   │   ├── register/
-│   │   │   │   └── page.tsx            - Halaman registrasi VCF baru
-│   │   │   └── page.tsx                - Halaman list VCF
+│   │   │   │   ├── Bagian1EditModal.tsx  - Modal edit registrasi VCF
+│   │   │   │   ├── Bagian2Form.tsx       - Form pemeriksaan masuk
+│   │   │   │   ├── Bagian3Form.tsx       - Form pemeriksaan keluar
+│   │   │   │   ├── Bagian4Form.tsx       - Form main gate keluar
+│   │   │   │   ├── PrintVCF.tsx          - Komponen print VCF
+│   │   │   │   └── page.tsx              - Halaman detail VCF
+│   │   │   ├── detail/[id]/page.tsx      - Halaman detail VCF (view only)
+│   │   │   ├── list/page.tsx             - Daftar VCF dengan filter & approve
+│   │   │   ├── violations/page.tsx       - Monitoring pelanggaran driver
+│   │   │   ├── register/page.tsx         - Registrasi VCF baru (Bagian 1)
+│   │   │   └── page.tsx                  - Dashboard VCF aktif
 │   │   ├── master/
-│   │   │   ├── driver/page.tsx         - Manajemen driver
-│   │   │   ├── transporter/page.tsx    - Manajemen transporter
-│   │   │   ├── jenis-kendaraan/page.tsx - Manajemen jenis kendaraan
-│   │   │   ├── produk/page.tsx         - Manajemen produk
-│   │   │   ├── item-pemeriksaan-masuk/page.tsx
-│   │   │   ├── item-pemeriksaan-keluar/page.tsx
-│   │   │   ├── item-muatan/page.tsx
-│   │   │   ├── item-kelengkapan-supir/page.tsx
-│   │   │   └── user/page.tsx           - Manajemen user
-│   │   ├── settings/page.tsx           - Pengaturan sistem
-│   │   └── layout.tsx                  - Layout dashboard
-│   ├── login/page.tsx                  - Halaman login
-│   ├── layout.tsx                      - Root layout
-│   └── page.tsx                        - Landing page / redirect
+│   │   │   ├── checklist/page.tsx        - Manajemen item kelengkapan supir
+│   │   │   ├── drivers/page.tsx          - Manajemen data driver
+│   │   │   ├── logistik/page.tsx         - Manajemen data logistik
+│   │   │   ├── muatan-dibawa/page.tsx    - Manajemen item muatan dibawa
+│   │   │   ├── muatan-diisi/page.tsx     - Manajemen item muatan diisi
+│   │   │   ├── pemeriksaan-keluar/page.tsx - Item pemeriksaan keluar
+│   │   │   ├── pemeriksaan-masuk/page.tsx  - Item pemeriksaan masuk
+│   │   │   ├── produk/page.tsx           - Manajemen produk
+│   │   │   ├── transporters/page.tsx     - Manajemen transporter
+│   │   │   ├── users/page.tsx            - Manajemen user & role
+│   │   │   ├── vehicles/page.tsx         - Manajemen jenis kendaraan
+│   │   │   └── violations/page.tsx       - Manajemen data pelanggaran
+│   │   ├── dashboard/page.tsx            - Halaman dashboard utama
+│   │   ├── settings/page.tsx             - Pengaturan sistem (print, dll)
+│   │   └── layout.tsx                    - Layout dashboard + hamburger mobile
+│   ├── login/page.tsx                    - Halaman login
+│   ├── layout.tsx                        - Root layout
+│   └── page.tsx                          - Landing page / redirect
 ├── components/
-│   ├── ui/                            - shadcn/ui components
 │   ├── print/
-│   │   └── PrintElements.tsx          - Komponen print reusable
-│   └── ...
+│   │   ├── PrintElements.tsx             - Komponen print reusable
+│   │   ├── PrintMasterTable.tsx          - Print tabel master data
+│   │   └── PrintTemplate.tsx             - Template print umum
+│   ├── DeleteConfirmModal.tsx            - Modal konfirmasi hapus
+│   ├── GuideSection.tsx                  - Komponen panduan penggunaan
+│   ├── ImportConfirmModal.tsx            - Modal konfirmasi import Excel
+│   ├── ImportResultModal.tsx             - Modal hasil import
+│   ├── LogoutConfirmModal.tsx            - Modal konfirmasi logout
+│   ├── SearchableDropdown.tsx            - Dropdown dengan search
+│   ├── Sidebar.tsx                       - Sidebar navigasi
+│   ├── ThemeProvider.tsx                 - Provider dark/light mode
+│   ├── Toast.tsx                         - Custom toast notifications
+│   └── ViolationWarningCard.tsx          - Card peringatan pelanggaran
 ├── lib/
-│   ├── api.ts                         - API client functions
-│   └── utils.ts                       - Utility functions
-├── public/
-│   └── ...
-└── types/
-    └── index.ts                       - TypeScript types
+│   ├── api.ts                            - API client (Axios-based)
+│   ├── auth.ts                           - Auth helpers (token, role)
+│   ├── exportUtils.ts                    - Export ke PDF, DOCX, Excel
+│   ├── importTemplate.ts                 - Template import Excel
+│   ├── masterDataCache.ts                - Cache master data di memori
+│   ├── qrUtils.ts                        - Generate QR code tanda tangan
+│   └── utils.ts                          - Utility functions umum
+└── constants/
+    └── vcfStatus.ts                      - Konstanta status VCF
 ```
 
 ## Key Features
 
 ### VCF Registration (Bagian 1)
-- Input data kendaraan dan pengemudi
-- Validasi field wajib
-- Generate nomor urut otomatis
-- Status tracking
+- Input data kendaraan, pengemudi, transporter, dan produk
+- Validasi field wajib & pengecekan pelanggaran driver otomatis
+- Generate nomor urut VCF otomatis
+- Checklist kelengkapan supir & muatan
 
-### Weighbridge Masuk (Bagian 2)
-- Form pemeriksaan kendaraan masuk
-- Input beban tambahan
+### Pemeriksaan Masuk (Bagian 2)
+- Form pemeriksaan item masuk (dinamis dari master data)
 - Input segel dan nomor segel
-- Upload foto (jika diperlukan)
+- Mode edit untuk data yang sudah terisi
+- Approve / reject dengan alasan & tipe tindakan
 
-### Weighbridge Keluar (Bagian 3)
-- Form pemeriksaan kendaraan keluar
-- Input beban tambahan
+### Pemeriksaan Keluar (Bagian 3)
+- Form pemeriksaan item keluar (dinamis dari master data)
 - Input segel keluar
-- Validasi data
+- Approve / reject dengan catatan blacklist/warning
 
 ### Main Gate Keluar (Bagian 4)
-- Input jam keluar
-- Finalisasi transaksi
-- Generate QR code tanda tangan
+- Input jam keluar & emergency kontak
+- Konfirmasi finalisasi transaksi
+- Generate QR code tanda tangan digital
 
 ### Print VCF
-- Layout print profesional
-- QR code untuk verifikasi
-- Support multi-bagian dalam satu dokumen
-- Keterangan rata kiri untuk readability
+- Layout print profesional multi-bagian
+- QR code untuk verifikasi keaslian dokumen
+- Konfigurasi nama perusahaan & footer dari settings
+- Export ke PDF dan DOCX
 
 ### Master Data Management
-- CRUD untuk semua master data
-- Search dan filter
-- Pagination
-- Active/inactive toggle
+- CRUD lengkap untuk semua master data
+- Import data massal dari Excel
+- Export ke Excel, PDF, DOCX
+- Search, filter, dan active/inactive toggle
+
+### Pelanggaran Driver
+- Pencatatan riwayat pelanggaran per driver
+- Status warning dan blacklist
+- Pengecekan otomatis saat registrasi VCF baru
 
 ### Dashboard
-- Statistik VCF hari ini
-- Status tracking
-- Quick actions
+- Statistik VCF aktif hari ini
+- Status tracking per tahap
+- Quick actions untuk admin
 
 ## Build for Production
 
@@ -190,48 +211,45 @@ pnpm start
 
 ## Deployment
 
-### Vercel (Recommended)
+### Render / Vercel (Recommended)
 
 1. Push code ke GitHub
-2. Import project ke Vercel
+2. Import project ke platform deployment
 3. Set environment variables:
-   - `NEXT_PUBLIC_API_URL` - URL backend API
+   - `NEXT_PUBLIC_API_URL` — URL backend API
 4. Deploy
 
-### Other Platforms
+### Self-hosted
 
-Build static export (jika diperlukan):
+Build lalu serve folder `.next` menggunakan Node.js:
 
 ```bash
 npm run build
+npm start
 ```
-
-File build akan ada di folder `.next`. Deploy sesuai platform yang digunakan.
 
 ## API Integration
 
-Aplikasi frontend menggunakan API functions di `lib/api.ts` untuk berkomunikasi dengan backend. Pastikan backend sudah running dan endpoint sesuai dengan dokumentasi Postman collection.
+Semua fungsi API ada di `src/lib/api.ts` menggunakan Axios. Pastikan backend sudah running dan `NEXT_PUBLIC_API_URL` sudah dikonfigurasi.
 
 ### Contoh Penggunaan API
 
 ```typescript
-import { vcfApi } from '@/lib/api';
+import { vcfApi, masterApi } from '@/lib/api';
 
 // Get list VCF
-const vcfs = await vcfApi.getAll();
+const res = await vcfApi.getList({ status: 'aktif' });
 
 // Create VCF
 const newVcf = await vcfApi.create(data);
 
-// Update VCF
-const updated = await vcfApi.update(id, data);
+// Get master drivers
+const drivers = await masterApi.getDrivers({ is_active: 1 });
 ```
 
 ## Troubleshooting
 
 ### Module Not Found Error
-
-Jika ada error module not found:
 
 ```bash
 rm -rf node_modules package-lock.json
@@ -240,10 +258,7 @@ npm install
 
 ### Port Already in Use
 
-Jika port 3000 sudah digunakan:
-
 ```bash
-# Gunakan port lain
 npm run dev -- -p 3001
 ```
 
@@ -256,12 +271,8 @@ Pastikan:
 
 ### Build Error
 
-Jika build gagal:
-
 ```bash
-# Clear cache
 rm -rf .next
-# Rebuild
 npm run build
 ```
 
@@ -275,24 +286,24 @@ npm run build
 ## Development Guidelines
 
 ### Component Structure
-- Gunakan functional components dengan hooks
-- Gunakan TypeScript untuk type safety
-- Komponen reusable di folder `components/`
-- Komponen page-specific di folder `app/`
+- Functional components dengan hooks
+- TypeScript untuk type safety
+- Komponen reusable di `src/components/`
+- Komponen page-specific di `src/app/`
 
 ### Styling
-- Gunakan TailwindCSS utility classes
-- Untuk styling kompleks, gunakan shadcn/ui components
-- Hindari inline styles
+- TailwindCSS utility classes
+- CSS Variables untuk theming dark/light mode
+- Hindari inline styles (kecuali dynamic values)
 
 ### State Management
-- Untuk state lokal, gunakan `useState`
-- Untuk side effects, gunakan `useEffect`
-- Untuk form, gunakan React Hook Form
+- State lokal: `useState`
+- Side effects: `useEffect`
+- Fungsi async: `useCallback` untuk stabilitas dependency
 
 ### Error Handling
-- Selalu handle error di API calls
-- Tampilkan error message yang jelas ke user
+- Selalu handle error di API calls dengan `getErrorMessage()`
+- Tampilkan feedback via Toast notifications
 - Log error untuk debugging
 
 ## License
