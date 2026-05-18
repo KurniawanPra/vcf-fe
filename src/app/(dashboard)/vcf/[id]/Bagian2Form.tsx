@@ -561,11 +561,11 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
           />
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {!isEditing && (
             <button
               type="button"
-              className="btn btn-danger flex items-center gap-2 px-5"
+              className="btn btn-danger flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-2 text-sm sm:text-base order-2 sm:order-1"
               onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
               disabled={loading}
             >
@@ -573,14 +573,15 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
                 <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
-              REJECT VCF
+              <span className="sm:hidden">TOLAK</span>
+              <span className="hidden sm:inline">REJECT VCF</span>
             </button>
           )}
           {!isEditing && (
             <>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary py-2.5 sm:py-2 text-sm sm:text-base order-3 sm:order-2"
                 onClick={() => {
                   const resetObj: Record<number, string> = {};
                   pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
@@ -597,10 +598,10 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               </button>
               <button
                 type="submit"
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-2 text-sm sm:text-base order-1 sm:order-3"
                 disabled={loading}
               >
-                {loading ? <><span className="spinner" /> MEMPROSES...</> : "SIMPAN & LANJUTKAN"}
+                {loading ? <><span className="spinner" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
               </button>
             </>
           )}
@@ -610,7 +611,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       {/* Reject Modal — Upgraded */}
       {showRejectModal && createPortal(
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-in fade-in duration-200" onClick={() => { if (!loading) setShowRejectModal(false); }}>
-          <div className="bg-white dark:bg-bg-card w-full max-w-lg overflow-hidden rounded-3xl border-2 border-red-500/30 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-bg-card w-full max-w-lg max-h-[90vh] overflow-hidden rounded-3xl border-2 border-red-500/30 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Top accent */}
             <div className="h-1.5 w-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-500" />
 
@@ -628,7 +629,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
               {/* Info VCF */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
