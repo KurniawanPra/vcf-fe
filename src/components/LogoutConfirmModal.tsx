@@ -23,12 +23,17 @@ export default function LogoutConfirmModal({
     if (isOpen) {
       setMounted(true);
       document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
     } else {
       const timer = setTimeout(() => setMounted(false), 300);
       document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
       return () => clearTimeout(timer);
     }
-    return () => { document.body.style.overflow = "unset"; };
+    return () => { 
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
   }, [isOpen]);
 
   if (!isOpen && !mounted) return null;

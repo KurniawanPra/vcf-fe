@@ -66,6 +66,36 @@ export default function ProdukPage() {
 
   useEffect(() => { fetchData(); }, [fetchData, debouncedSearch]);
 
+  // Dispatch modal events for create/edit modal
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showModal]);
+
+  // Dispatch modal events for delete modal
+  useEffect(() => {
+    if (showDeleteModal) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showDeleteModal]);
+
   const openCreate = () => {
     setEditing(null);
     setForm({ nama: "", kode: "", keterangan: "", is_active: true });

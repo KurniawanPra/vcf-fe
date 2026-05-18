@@ -60,6 +60,21 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
     }
   }, [vcfData, canEdit]);
 
+  // Dispatch modal events for showConfirm
+  useEffect(() => {
+    if (showConfirm) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showConfirm]);
+
   const validateForm = (): { valid: boolean; message?: string } => {
     const errors: { jamKeluar?: boolean; emergencyKontak?: boolean; keterangan?: boolean } = {};
     

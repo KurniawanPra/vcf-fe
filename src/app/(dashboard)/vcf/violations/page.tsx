@@ -217,6 +217,21 @@ export default function ViolationsPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Dispatch modal events for showModal
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showModal]);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {

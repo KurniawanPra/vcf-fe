@@ -47,16 +47,37 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectType, setRejectType] = useState<"warning" | "blacklist" | "reject_only">("reject_only");
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // Dispatch modal state for hamburger hide
+  // Dispatch modal events for showRejectModal
   useEffect(() => {
     if (showRejectModal) {
-      window.dispatchEvent(new Event("modal-open"));
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
     } else {
-      window.dispatchEvent(new Event("modal-close"));
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
     }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
   }, [showRejectModal]);
-  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Dispatch modal events for showSuccess
+  useEffect(() => {
+    if (showSuccess) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showSuccess]);
   const [dataLoading, setDataLoading] = useState(true);
   const [violationData, setViolationData] = useState<ViolationCheckResult>({});
 

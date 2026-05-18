@@ -139,6 +139,51 @@ export default function VcfDetailAliasPage() {
     fetchVcf();
   }, [fetchVcf]);
 
+  // Dispatch modal events for Bagian1EditModal
+  useEffect(() => {
+    if (showBagian1Edit) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showBagian1Edit]);
+
+  // Dispatch modal events for PrintVCF
+  useEffect(() => {
+    if (showPrint) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showPrint]);
+
+  // Dispatch modal events for showGuide
+  useEffect(() => {
+    if (showGuide) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showGuide]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">

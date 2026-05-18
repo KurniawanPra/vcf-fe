@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ImportConfirmModalProps {
   isOpen: boolean;
@@ -24,6 +24,20 @@ export default function ImportConfirmModal({
   loading = false,
 }: ImportConfirmModalProps) {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set(data.map((_, i) => i)));
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

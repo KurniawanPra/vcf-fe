@@ -104,6 +104,51 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     fetchVcfs();
   }, [stageFilter, search, tanggalDari, tanggalSampai]);
 
+  // Dispatch modal events for reject modal
+  useEffect(() => {
+    if (rejectingId !== null) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [rejectingId]);
+
+  // Dispatch modal events for PrintVCF
+  useEffect(() => {
+    if (printingVcf) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [printingVcf]);
+
+  // Dispatch modal events for PrintMasterTable
+  useEffect(() => {
+    if (isPrinting) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [isPrinting]);
+
   const handleReject = async () => {
     if (!rejectingId || !rejectReason.trim()) return;
     setRejectLoading(true);

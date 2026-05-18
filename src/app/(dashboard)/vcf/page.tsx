@@ -131,6 +131,21 @@ export default function VcfQuickAccessPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Dispatch modal events for showGuide
+  useEffect(() => {
+    if (showGuide) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showGuide]);
+
   const fetchActive = useCallback(async () => {
     setLoading(true);
     try {

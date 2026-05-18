@@ -24,7 +24,16 @@ export default function ImportResultModal({
   useEffect(() => {
     if (isOpen) {
       setShowDetails(false);
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
     }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;

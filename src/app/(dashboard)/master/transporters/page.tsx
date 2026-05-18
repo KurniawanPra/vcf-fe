@@ -58,6 +58,36 @@ export default function TransportersPage() {
   useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 300); return () => clearTimeout(t); }, [search]);
   useEffect(() => { fetchData(); }, [fetchData, debouncedSearch]);
 
+  // Dispatch modal events for create/edit modal
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showModal]);
+
+  // Dispatch modal events for delete modal
+  useEffect(() => {
+    if (showDeleteModal) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showDeleteModal]);
+
   const openCreate = () => { setEditing(null); setForm({ nama_transporter: "", kode: "", is_active: true }); setError(""); setShowModal(true); };
   const openEdit = (item: Transporter) => { setEditing(item); setForm({ nama_transporter: item.nama_transporter, kode: item.kode, is_active: item.is_active }); setError(""); setShowModal(true); };
 

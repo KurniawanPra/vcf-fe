@@ -165,6 +165,36 @@ export default function VcfRegisterPage() {
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [violationModalAcknowledged, setViolationModalAcknowledged] = useState(false);
 
+  // Dispatch modal events for showGuide
+  useEffect(() => {
+    if (showGuide) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showGuide]);
+
+  // Dispatch modal events for showViolationModal
+  useEffect(() => {
+    if (showViolationModal) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [showViolationModal]);
+
   // Form state
   const [tanggal, setTanggal] = useState(formatDate());
   const [jamMasuk, setJamMasuk] = useState("");
