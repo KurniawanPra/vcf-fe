@@ -81,12 +81,10 @@ export default function DashboardPage() {
     try {
       const res = await vcfApi.getList({ per_page: 100 });
       const allData: VcfSummary[] = (res.data.data || res.data || []) as VcfSummary[];
-      console.log("Dashboard - All VCFs:", allData.map(v => ({ nomor_urut: v.nomor_urut, status: v.status, tanggal: v.tanggal })));
       const aktif = allData.filter(v => v.status !== "selesai" && v.status !== "reject" && v.status !== "ditolak").length;
       const selesai = allData.filter(v => v.status === "selesai").length;
       const hari_ini = allData.filter(v => v.tanggal === new Date().toISOString().split("T")[0]).length;
       const activeData = allData.filter(v => v.status !== "selesai" && v.status !== "reject" && v.status !== "ditolak");
-      console.log("Dashboard - Active VCFs:", activeData.map(v => ({ nomor_urut: v.nomor_urut, status: v.status })));
       setStats({ total: allData.length, aktif, selesai, hari_ini });
       setVcfs(activeData);
     } catch {
