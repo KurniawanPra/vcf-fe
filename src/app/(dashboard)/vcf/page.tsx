@@ -211,8 +211,10 @@ export default function VcfQuickAccessPage() {
       </div>
 
       {/* Search & Stats Section */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        <div className="relative flex-1 w-full">
+      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+        
+        {/* Search Input */}
+        <div className="flex-1 min-w-0 relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -232,12 +234,17 @@ export default function VcfQuickAccessPage() {
           />
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto">
-          <div className="glass-card flex-1 md:flex-none md:min-w-[120px] p-2 px-4 flex flex-col items-center justify-center text-center">
-            <p className="text-[9px] font-bold text-secondary uppercase mb-0.5">Total</p>
-            <p className="text-xl font-bold text-blue-500">{vcfs.length}</p>
+        {/* Right Side Controls */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          
+          {/* Total Badge */}
+          <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[80px]">
+            <p className="text-[9px] font-bold text-secondary uppercase leading-none mb-0.5">Total</p>
+            <p className="text-xl font-bold text-blue-500 leading-none">{vcfs.length}</p>
           </div>
-          <div className="glass-card flex-1 md:flex-none md:min-w-[100px] p-2 px-4 flex flex-col items-center justify-center text-center">
+
+          {/* View Mode Toggle */}
+          <div className="glass-card h-12 px-3 flex items-center justify-center">
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/10 rounded-lg p-1">
               <button
                 onClick={() => setViewMode("table")}
@@ -258,7 +265,10 @@ export default function VcfQuickAccessPage() {
               </button>
             </div>
           </div>
+
+          {/* Register Button */}
           <RegisterButton />
+
         </div>
       </div>
 

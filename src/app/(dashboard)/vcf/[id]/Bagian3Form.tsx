@@ -228,7 +228,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
         await violationApi.create({
           driver_id: vcfData.driver_id,
           no_polisi: vcfData.no_polisi ?? null,
-          jenis_pelanggaran: rejectType === "blacklist" ? "[BLACKLIST] Ditolak WB Keluar" : "[WARNING] Ditolak WB Keluar",
+          jenis_pelanggaran: rejectType === "blacklist" ? "[BLACKLIST] Ditolak WB Keluar" : "[WARNING] WB Keluar",
           keterangan: rejectReason,
           tanggal_pelanggaran: new Date().toISOString().split("T")[0],
         });
@@ -238,11 +238,27 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
           await violationApi.updateDriverStatus(vcfData.driver_id, "warning");
         }
       }
+
+      // Jika hanya warning, jangan tolak VCF - biarkan lanjut
+      if (rejectType === "warning") {
+        setShowRejectModal(false);
+        toast.success("Warning Tercatat", "Pelanggaran driver dicatat. VCF dapat dilanjutkan.");
+        // Refresh violation data to show updated status
+        if (vcfData?.driver_id) {
+          violationApi.check({ driver_id: vcfData.driver_id })
+            .then(res => setViolationData(res.data?.data ?? {}))
+            .catch(() => {});
+        }
+        setTimeout(() => {
+          setLoading(false);
+        }, 500);
+        return;
+      }
+
       await vcfApi.rejectBagian3(vcfId, { catatan_reject: rejectReason });
       setShowRejectModal(false);
       toast.success("VCF Ditolak",
         rejectType === "blacklist" ? "Driver diblokir dan VCF ditolak."
-        : rejectType === "warning" ? "VCF ditolak dengan warning pada driver."
         : "VCF berhasil ditolak."
       );
       setTimeout(() => {
@@ -605,9 +621,9 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 </div>
               </div>
 
-              {/* Tipe Pelanggaran */}
+              {/* Tipe Tindakan */}
               <div>
-                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">Tipe Pelanggaran</p>
+                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">Tipe Tindakan</p>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
@@ -622,7 +638,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M18 6 6 18M6 6l12 12"/>
                       </svg>
-                      <span className="text-xs font-black uppercase">Tolak</span>
+                      <span className="text-xs font-black uppercase">Tolak VCF</span>
                     </div>
                     <p className="text-[10px] text-slate-400">Tolak saja, tanpa catatan pelanggaran</p>
                   </button>
@@ -641,7 +657,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                       </svg>
                       <span className="text-xs font-black uppercase">Warning</span>
                     </div>
-                    <p className="text-[10px] text-slate-400">Tolak + catat warning driver</p>
+                    <p className="text-[10px] text-slate-400">Catat warning, VCF tetap lanjut</p>
                   </button>
                   <button
                     type="button"
@@ -658,7 +674,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                       </svg>
                       <span className="text-xs font-black uppercase">Blacklist</span>
                     </div>
-                    <p className="text-[10px] text-slate-400">Tolak + blokir driver</p>
+                    <p className="text-[10px] text-slate-400">Tolak VCF + blokir driver</p>
                   </button>
                 </div>
                 {rejectType === "blacklist" && (
@@ -667,14 +683,22 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                     Driver akan langsung diblokir dan tidak bisa mendaftar VCF baru.
                   </div>
                 )}
+                {rejectType === "warning" && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    VCF tidak ditolak. Driver dicatat warning dan bisa melanjutkan proses.
+                  </div>
+                )}
               </div>
 
               {/* Alasan */}
               <div>
-                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">Alasan Penolakan *</p>
+                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">
+                  {rejectType === "warning" ? "Alasan Warning *" : "Alasan Penolakan *"}
+                </p>
                 <textarea
                   className="w-full min-h-[90px] px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-red-500/50 transition-colors resize-none"
-                  placeholder="Jelaskan alasan penolakan secara detail..."
+                  placeholder={rejectType === "warning" ? "Jelaskan pelanggaran yang dilakukan driver..." : "Jelaskan alasan penolakan secara detail..."}
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   autoFocus
@@ -699,7 +723,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 >
                   {loading ? <><span className="spinner" /> Memproses...</>
                     : rejectType === "blacklist" ? "⛔ Blacklist & Tolak VCF"
-                    : rejectType === "warning" ? "⚠ Warning & Tolak VCF"
+                    : rejectType === "warning" ? "⚠ Catat Warning"
                     : "✕ Tolak VCF"}
                 </button>
               </div>
