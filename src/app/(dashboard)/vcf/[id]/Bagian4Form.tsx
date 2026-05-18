@@ -41,6 +41,21 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [showConfirm, setShowConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Dispatch modal events for isEditing
+  useEffect(() => {
+    if (isEditing) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [isEditing]);
+
   // Pre-fill data if available
   useEffect(() => {
     if (vcfData.vcf_keluar) {

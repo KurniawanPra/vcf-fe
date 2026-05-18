@@ -35,6 +35,21 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [keteranganUmum, setKeteranganUmum] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
+  // Dispatch modal events for isEditing
+  useEffect(() => {
+    if (isEditing) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [isEditing]);
+
   // Reject Modal State
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
