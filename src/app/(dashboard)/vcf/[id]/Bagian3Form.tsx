@@ -39,6 +39,15 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectType, setRejectType] = useState<"warning" | "blacklist" | "reject_only">("reject_only");
+
+  // Dispatch modal state for hamburger hide
+  useEffect(() => {
+    if (showRejectModal) {
+      window.dispatchEvent(new Event("modal-open"));
+    } else {
+      window.dispatchEvent(new Event("modal-close"));
+    }
+  }, [showRejectModal]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(true);

@@ -11,12 +11,27 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Listen for modal open/close events
+  useEffect(() => {
+    const handleModalOpen = () => setIsModalOpen(true);
+    const handleModalClose = () => setIsModalOpen(false);
+    
+    window.addEventListener("modal-open", handleModalOpen);
+    window.addEventListener("modal-close", handleModalClose);
+    
+    return () => {
+      window.removeEventListener("modal-open", handleModalOpen);
+      window.removeEventListener("modal-close", handleModalClose);
+    };
   }, []);
 
   return (
@@ -52,8 +67,8 @@ export default function DashboardLayout({
         padding: isMobile ? "72px 16px 24px" : "24px",
         position: "relative",
       }}>
-        {/* Mobile toggle button (Hamburger/X) */}
-        {isMobile && (
+        {/* Mobile toggle button (Hamburger/X) - hide when modal open */}
+        {isMobile && !isModalOpen && (
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{
