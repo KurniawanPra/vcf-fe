@@ -172,7 +172,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
         {/* Shimmer top bar */}
         <div style={{
           height: 2, flexShrink: 0,
-          background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.5), rgba(59,130,246,0.5), transparent)",
+          background: "linear-gradient(90deg, transparent, rgba(34,168,74,0.6), rgba(30,58,110,0.5), transparent)",
         }} />
 
         {/* Header */}
@@ -186,7 +186,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
           minHeight: 52,
         }}>
           {/* Logo — only when expanded */}
-          {!collapsed && <Image src="/logo.svg" alt="VCF" width={30} height={30} style={{ objectFit: "contain" }} />}
+          {!collapsed && <Image src="/logo_primary.png" alt="VCF" width={60} height={60} style={{ objectFit: "contain" }} />}
 
           {/* Title — only when expanded */}
           {!collapsed && (

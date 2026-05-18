@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   keywords: ["VCF", "vehicle control form", "INL", "industri nabati lestari", "keamanan pabrik"],
   authors: [{ name: "PT. Industri Nabati Lestari" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo_primary.png",
   },
 };
 
@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <meta name="theme-color" content="#0a0e1a" />
+        <meta name="theme-color" content="#1e3a6e" />
       </head>
       <body>
         <ThemeProvider>

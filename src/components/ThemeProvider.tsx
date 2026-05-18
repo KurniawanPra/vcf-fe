@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 /* ── shared presets ───────────────────────────────────────────── */
 export const ACCENT_PRESETS = [
-  { label: "Hijau (Default)", light: "#22c55e", lightRgb: "34,197,94",  dark: "#4ade80", darkRgb: "74,222,128" },
+  { label: "Hijau (Default)", light: "#22a84a", lightRgb: "34,168,74",  dark: "#34d870", darkRgb: "52,216,112" },
   { label: "Biru",            light: "#3b82f6", lightRgb: "59,130,246", dark: "#60a5fa", darkRgb: "96,165,250" },
   { label: "Ungu",            light: "#8b5cf6", lightRgb: "139,92,246", dark: "#a78bfa", darkRgb: "167,139,250" },
   { label: "Merah",           light: "#ef4444", lightRgb: "239,68,68",  dark: "#f87171", darkRgb: "248,113,113" },

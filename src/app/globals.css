@@ -10,9 +10,9 @@
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
   /* Accent (primary buttons, active states) */
-  --accent-primary: #22c55e;
-  --accent-secondary: #16a34a;
-  --accent-primary-rgb: 34, 197, 94;
+  --accent-primary: #22a84a;
+  --accent-secondary: #178a3b;
+  --accent-primary-rgb: 34, 168, 74;
   /* Semantic colors */
   --color-success: #10b981;
   --color-success-rgb: 16, 185, 129;
@@ -39,9 +39,9 @@
   --bg-secondary: #0f172a;
   --bg-card: #0f172a;
   --bg-card-hover: #1e293b;
-  --accent-primary: #4ade80;
-  --accent-secondary: #22c55e;
-  --accent-primary-rgb: 74, 222, 128;
+  --accent-primary: #34d870;
+  --accent-secondary: #22a84a;
+  --accent-primary-rgb: 52, 216, 112;
   --color-success: #34d399;
   --color-success-rgb: 52, 211, 153;
   --color-warning: #fbbf24;

@@ -59,13 +59,13 @@ export default function LoginPage() {
         .l-input::placeholder { color: #bbb; }
         .l-input:focus {
           outline: none;
-          border-color: #111;
+          border-color: #4284ff;
           background: #fff;
-          box-shadow: 0 0 0 3px rgba(0,0,0,0.07);
+          box-shadow: 0 0 0 3px rgba(30,58,110,0.10);
         }
         .l-btn {
           width: 100%; height: 44px;
-          background: #111; color: #fff;
+          background: #00025b; color: #fff;
           border: none; border-radius: 8px;
           font-size: 14px; font-weight: 600;
           font-family: inherit; letter-spacing: 0.01em;
@@ -73,7 +73,7 @@ export default function LoginPage() {
           display: flex; align-items: center; justify-content: center; gap: 7px;
           transition: background .15s, transform .1s;
         }
-        .l-btn:hover:not(:disabled) { background: #222; }
+        .l-btn:hover:not(:disabled) { background: #152c52; }
         .l-btn:active:not(:disabled) { transform: scale(0.99); }
         .l-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -88,7 +88,7 @@ export default function LoginPage() {
       {/* ── Left brand panel ── */}
       <div className="l-brand" style={{
         width: 420, flexShrink: 0,
-        background: "#111",
+        background: "linear-gradient(160deg, #7facff 0%, #162236 100%)",
         flexDirection: "column",
         padding: "48px 44px",
         position: "relative", overflow: "hidden",
@@ -101,20 +101,20 @@ export default function LoginPage() {
         }} />
 
         {/* Logo */}
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <Image src="/logo.svg" alt="VCF Logo" width={90} height={90} style={{ marginBottom: 20 }} />
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: 6 }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
+          <Image src="/logo_primary.png" alt="VCF Logo" width={130} height={130} style={{ marginBottom: -18 }} />
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10 }}>
             PT. Industri Nabati Lestari
           </div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 6 }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 8 }}>
             Vehicle Control<br />Form System
           </div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, maxWidth: 260, marginTop: 10 }}>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, maxWidth: 260 }}>
             Pencatatan keluar masuk kendaraan di Main Gate dan Weighbridge PT. INL Sei Mangkei.
           </div>
         </div>
 
-        {/* Bottom badges */}
+        {/* Bottom badges */}     
         <div style={{ marginTop: "auto", position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             { icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", text: "QR Code di setiap formulir VCF" },
@@ -138,11 +138,11 @@ export default function LoginPage() {
         padding: "40px 24px",
       }}>
         {/* Mobile logo */}
-        <div className="l-mobile-logo" style={{ alignItems: "center", gap: 12, marginBottom: -16, flexDirection: "column" }}>
-          <Image src="/logo.svg" alt="VCF Logo" width={120} height={120} />
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>PT. Industri Nabati Lestari</div>
-            <div style={{ fontSize: 11, color: "#999", textAlign: "center" }}>Vehicle Control Form System</div>
+        <div className="l-mobile-logo" style={{ alignItems: "center", gap: 4, marginBottom: 8, flexDirection: "column" }}>
+          <Image src="/logo_primary.png" alt="VCF Logo" width={160} height={160} style={{ marginBottom: -35 }} />
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 2 }}>PT. Industri Nabati Lestari</div>
+            <div style={{ fontSize: 11, color: "#999" }}>Vehicle Control Form System</div>
           </div>
         </div>
 
@@ -152,7 +152,7 @@ export default function LoginPage() {
           background: "#fff",
           border: "1px solid #e5e3de",
           borderRadius: 14,
-          marginTop: "3rem",
+          marginTop: "1.5rem",
           padding: "36px 32px",
           boxShadow: "0 2px 4px rgba(0,0,0,0.03), 0 12px 40px rgba(0,0,0,0.07)",
         }}>
