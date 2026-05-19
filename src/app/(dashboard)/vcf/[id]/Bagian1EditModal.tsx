@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { vcfApi } from "@/lib/api";
 import { fetchAndCacheMasterData, getCachedMasterData } from "@/lib/masterDataCache";
 import { formatTime, formatDate, isValidTime24h, getErrorMessage } from "@/lib/utils";
@@ -349,7 +350,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
   };
 
   if (masterLoading) {
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.6)" }}>
         <div className="glass-card w-full max-w-5xl p-16 flex flex-col items-center justify-center min-h-[60vh] gap-6">
           <div className="w-16 h-16 rounded-full border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 animate-spin" />
@@ -361,7 +362,8 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
             <div className="h-full bg-blue-500 transition-all duration-500 ease-out" style={{ width: `${masterProgress}%` }} />
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
