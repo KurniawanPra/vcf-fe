@@ -165,7 +165,7 @@ export default function VcfDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [vcfId, hasInitializedTab]);
+  }, [vcfId]);
 
   const handleExport = async (format: 'pdf' | 'docx') => {
     if (!vcf) return;
