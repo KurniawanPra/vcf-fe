@@ -80,12 +80,12 @@ interface VcfDetail {
 }
 
 const STEPS = [
-  { key: "pendaftaran", label: "Pendaftaran", n: 1 },
-  { key: "bagian1_selesai", label: "Weighbridge Masuk", n: 2 },
-  { key: "bagian2_selesai", label: "Main Gate Keluar", n: 3 },
-  { key: "loading_unloading_proses", label: "Main Gate Keluar", n: 3 },
-  { key: "loading_unloading_selesai", label: "Main Gate Keluar", n: 3 },
-  { key: "bagian3_selesai", label: "Main Gate Keluar", n: 4 },
+  { key: "pendaftaran", label: "Registrasi Masuk", n: 1 },
+  { key: "bagian1_selesai", label: "WB Masuk", n: 2 },
+  { key: "bagian2_selesai", label: "WB Keluar", n: 3 },
+  { key: "loading_unloading_proses", label: "WB Keluar", n: 3 },
+  { key: "loading_unloading_selesai", label: "WB Keluar", n: 3 },
+  { key: "bagian3_selesai", label: "Selesai", n: 4 },
   { key: "selesai", label: "Selesai", n: 4 },
 ];
 
@@ -454,10 +454,10 @@ export default function VcfDetailPage() {
         {/* Desktop */}
         <div className="hidden md:flex items-center w-full">
           {[
-            { n: 1, label: "Main Gate", sub: "Masuk" },
+            { n: 1, label: "Registrasi", sub: "Masuk" },
             { n: 2, label: "Weighbridge", sub: "Masuk" },
-            { n: 3, label: "Main Gate", sub: "Keluar" },
-            { n: 4, label: "Finish", sub: "Selesai" },
+            { n: 3, label: "Weighbridge", sub: "Keluar" },
+            { n: 4, label: "Selesai", sub: "" },
           ].map((step, idx, arr) => {
             const completed = step.n < currentStep || isDone
             const active = step.n === currentStep
@@ -530,10 +530,10 @@ export default function VcfDetailPage() {
         {/* Mobile */}
         <div className="md:hidden flex flex-col gap-3">
           {[
-            { n: 1, label: "Main Gate Masuk" },
+            { n: 1, label: "Registrasi Masuk" },
             { n: 2, label: "Weighbridge Masuk" },
-            { n: 3, label: "Main Gate Keluar" },
-            { n: 4, label: "Finish Selesai" },
+            { n: 3, label: "Weighbridge Keluar" },
+            { n: 4, label: "Selesai" },
           ].map((step) => {
             const completed = step.n < currentStep || isDone
             const active = step.n === currentStep
@@ -633,7 +633,7 @@ export default function VcfDetailPage() {
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">VCF Ditolak</p>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white dark:bg-white/5 text-red-500 border border-red-200 dark:border-red-800/40">
-                  {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Main Gate Keluar" : "Pendaftaran"}
+                  {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Weighbridge Keluar" : "Pendaftaran"}
                 </span>
               </div>
               <p className="text-xs text-red-400 dark:text-red-500 leading-relaxed truncate">
@@ -658,7 +658,7 @@ export default function VcfDetailPage() {
           { key: "info", label: "Data Registrasi VCF", always: true },
           { key: "reject_detail", label: "Detail Penolakan", always: isRejected },
           { key: "bagian2", label: "Weighbridge Masuk", always: !isRejected && (currentStep >= 2 || canFillBagian2 || (vcf?.pemeriksaan_masuk && vcf.pemeriksaan_masuk.length > 0)) },
-          { key: "bagian3", label: "Main Gate Keluar", always: !isRejected && (currentStep >= 3 || canFillBagian3 || (vcf?.pemeriksaan_keluar && vcf.pemeriksaan_keluar.length > 0)) },
+          { key: "bagian3", label: "Weighbridge Keluar", always: !isRejected && (currentStep >= 3 || canFillBagian3 || (vcf?.pemeriksaan_keluar && vcf.pemeriksaan_keluar.length > 0)) },
           { key: "bagian4", label: "Main Gate Keluar", always: !isRejected && (currentStep >= 4 || canFillBagian4 || vcf?.status === "selesai") },
         ]
           .filter((t) => t.always)
@@ -711,7 +711,7 @@ export default function VcfDetailPage() {
                     <path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3" />
                   </svg>
                   <p className="text-sm font-medium text-text-primary">
-                    {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Main Gate Keluar" : "Pendaftaran"}
+                    {currentStep === 2 ? "Weighbridge Masuk" : currentStep === 3 ? "Weighbridge Keluar" : "Pendaftaran"}
                   </p>
                 </div>
 
@@ -749,10 +749,10 @@ export default function VcfDetailPage() {
                     )}
                   </div>
 
-                  {/* Step 3: Main Gate Keluar */}
+                  {/* Step 3: Weighbridge Keluar */}
                   <div className={`flex items-center gap-2 ${currentStep >= 3 ? "opacity-100" : "opacity-35"}`}>
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentStep > 3 ? "bg-green-500" : currentStep === 3 ? "bg-red-500" : "bg-gray-400"}`} />
-                    <span className={`text-xs ${currentStep === 3 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Main Gate Keluar</span>
+                    <span className={`text-xs ${currentStep === 3 ? "font-medium text-text-primary" : "text-text-secondary"}`}>Weighbridge Keluar</span>
                     {currentStep === 3 && (
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />

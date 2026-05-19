@@ -625,25 +625,27 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
         </div>
       </form>
 
-      {/* Reject Modal — Upgraded */}
+      {/* Reject Modal */}
       {showRejectModal && createPortal(
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-in fade-in duration-200" onClick={() => { if (!loading) setShowRejectModal(false); }}>
-          <div className="bg-white dark:bg-bg-card w-full max-w-lg max-h-[90vh] overflow-hidden rounded-3xl border-2 border-red-500/30 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Top accent */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-500" />
+        <div
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+          onClick={() => { if (!loading) setShowRejectModal(false); }}
+        >
+          <div
+            className="bg-white dark:bg-bg-card w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: "90vh", borderTop: "1px solid rgba(255,255,255,0.08)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle (mobile) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-slate-200 dark:bg-white/10" />
+            </div>
 
             {/* Header */}
-            <div className="px-6 pt-5 pb-4 flex items-center gap-3 border-b border-slate-100 dark:border-white/5">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500">
-                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-base font-black text-slate-800 dark:text-white tracking-tight">Tolak VCF — WB Keluar</h3>
-                <p className="text-xs text-slate-500">Penolakan akan mencatat pelanggaran pada driver</p>
-              </div>
+            <div className="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-white/5">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-1">Tindakan</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Tolak VCF — WB Keluar</h3>
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto">
@@ -681,9 +683,6 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M18 6 6 18M6 6l12 12"/>
-                      </svg>
                       <span className="text-xs font-black uppercase">Tolak VCF</span>
                     </div>
                     <p className="text-[10px] text-slate-400">Tolak saja, tanpa catatan pelanggaran</p>
@@ -698,9 +697,6 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                      </svg>
                       <span className="text-xs font-black uppercase">Warning</span>
                     </div>
                     <p className="text-[10px] text-slate-400">Catat warning, VCF tetap lanjut</p>
@@ -715,23 +711,18 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                      </svg>
                       <span className="text-xs font-black uppercase">Blacklist</span>
                     </div>
                     <p className="text-[10px] text-slate-400">Tolak VCF + blokir driver</p>
                   </button>
                 </div>
                 {rejectType === "blacklist" && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <div className="mt-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400">
                     Driver akan langsung diblokir dan tidak bisa mendaftar VCF baru.
                   </div>
                 )}
                 {rejectType === "warning" && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
                     VCF tidak ditolak. Driver dicatat warning dan bisa melanjutkan proses.
                   </div>
                 )}
@@ -768,9 +759,9 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   disabled={loading || !rejectReason.trim()}
                 >
                   {loading ? <><span className="spinner" /> Memproses...</>
-                    : rejectType === "blacklist" ? "⛔ Blacklist & Tolak VCF"
-                    : rejectType === "warning" ? "⚠ Catat Warning"
-                    : "✕ Tolak VCF"}
+                    : rejectType === "blacklist" ? "Blacklist & Tolak VCF"
+                    : rejectType === "warning" ? "Catat Warning"
+                    : "Tolak VCF"}
                 </button>
               </div>
             </div>

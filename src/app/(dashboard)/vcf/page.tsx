@@ -56,12 +56,12 @@ function RegisterButton() {
 
 const getActionLabel = (status: string) => {
   const map: Record<string, string> = {
-    bagian1_selesai: "WB Masuk",
-    bagian2_selesai: "WB Keluar",
+    bagian1_selesai: "Isi WB Masuk",
+    bagian2_selesai: "Isi WB Keluar",
     loading_unloading_proses: "Lihat Operasional",
-    loading_unloading_selesai: "WB Keluar",
-    bagian3_selesai: "MG Keluar",
-    weighbridge_keluar: "MG Keluar",
+    loading_unloading_selesai: "Isi WB Keluar",
+    bagian3_selesai: "Isi MG Keluar",
+    weighbridge_keluar: "Isi MG Keluar",
     selesai: "Lihat Detail",
     reject: "Lihat Detail",
   };
@@ -212,7 +212,7 @@ export default function VcfQuickAccessPage() {
         {[
           { label: "Semua Aktif", stage: "aktif", cls: "filter-tab-green" },
           { label: "WB Masuk",    stage: "bagian1_selesai",          cls: "filter-tab-amber" },
-          { label: "WB Keluar",   stage: "loading_unloading_selesai", cls: "filter-tab-violet" },
+          { label: "WB Keluar",   stage: "bagian2_selesai",           cls: "filter-tab-violet" },
           { label: "MG Keluar",   stage: "bagian3_selesai",           cls: "filter-tab-emerald" },
         ].map((tab) => (
           <button

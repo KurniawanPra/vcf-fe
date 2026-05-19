@@ -104,13 +104,13 @@ export default function PrintTemplate({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-4 sm:py-10">
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-4 sm:py-10" style={{ overflowX: "auto" }}>
       <div style={{ 
-        width: "210mm", 
+        width: "210mm",
+        minWidth: "210mm",
         height: "fit-content", 
         background: "#fff", 
         flexShrink: 0,
-        maxWidth: "100%"
       }}
       className="print-preview-container">
         

@@ -79,12 +79,12 @@ interface VcfDetail {
 }
 
 const STEPS = [
-  { key: "pendaftaran", label: "Pendaftaran", n: 1 },
-  { key: "bagian1_selesai", label: "Weighbridge Masuk", n: 2 },
-  { key: "bagian2_selesai", label: "Weighbridge Keluar", n: 3 },
-  { key: "loading_unloading_proses", label: "Weighbridge Keluar", n: 3 },
-  { key: "loading_unloading_selesai", label: "Weighbridge Keluar", n: 3 },
-  { key: "bagian3_selesai", label: "Main Gate Keluar", n: 4 },
+  { key: "pendaftaran", label: "Registrasi Masuk", n: 1 },
+  { key: "bagian1_selesai", label: "WB Masuk", n: 2 },
+  { key: "bagian2_selesai", label: "WB Keluar", n: 3 },
+  { key: "loading_unloading_proses", label: "WB Keluar", n: 3 },
+  { key: "loading_unloading_selesai", label: "WB Keluar", n: 3 },
+  { key: "bagian3_selesai", label: "Selesai", n: 4 },
   { key: "selesai", label: "Selesai", n: 4 },
 ];
 
@@ -299,10 +299,10 @@ export default function VcfDetailAliasPage() {
       <div className="bg-white dark:bg-bg-card border border-slate-100 dark:border-white/5 p-3 sm:p-6 rounded-2xl sm:rounded-[32px] shadow-sm mb-4 sm:mb-6">
         <div className="grid grid-cols-4 gap-2 sm:gap-0 sm:flex sm:flex-row items-center">
           {[
-            { n: 1, label: "MG", sub: "Masuk" },
+            { n: 1, label: "Reg", sub: "Masuk" },
             { n: 2, label: "WB", sub: "Masuk" },
             { n: 3, label: "WB", sub: "Keluar" },
-            { n: 4, label: "MG", sub: "Keluar" },
+            { n: 4, label: "Selesai", sub: "" },
           ].map((step, idx) => (
             <div key={step.n} className="flex flex-col items-center">
               <div

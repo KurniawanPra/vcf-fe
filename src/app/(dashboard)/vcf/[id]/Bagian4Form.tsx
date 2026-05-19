@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
 import { formatTime, isValidTime24h, getErrorMessage } from "@/lib/utils";
@@ -456,62 +457,68 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
       </form>
 
       {/* Confirmation Modal */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300">
-            <div className="relative p-8">
-              <div className="absolute top-0 right-0 p-6">
-                <button 
-                  onClick={() => setShowConfirm(false)}
-                  className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 transition-colors"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
+      {showConfirm && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+          onClick={() => !loading && setShowConfirm(false)}
+        >
+          <div
+            className="w-full sm:max-w-md bg-white dark:bg-slate-900 sm:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle (mobile) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-slate-200 dark:bg-white/10" />
+            </div>
 
-              <div className="mb-8 text-center sm:text-left">
-                <div className="w-20 h-20 rounded-[28px] bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-6 mx-auto sm:mx-0 shadow-inner">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                </div>
-                <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-3">Finalisasi Keluar?</h3>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm sm:text-base">
-                  Kendaraan <span className="text-slate-900 dark:text-white font-bold">{vcfData.no_polisi}</span> ({vcfData.driver?.nama_supir}) akan dinyatakan keluar dari area pabrik secara permanen.
+            <div className="px-6 pt-5 pb-6 space-y-5">
+              {/* Header */}
+              <div>
+                <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-1">Konfirmasi</p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Finalisasi Keluar?</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{vcfData.no_polisi}</span>
+                  {vcfData.driver?.nama_supir ? ` · ${vcfData.driver.nama_supir}` : ""}
+                  {" "}akan dinyatakan keluar dari area pabrik.
                 </p>
               </div>
 
-              <div className="space-y-4 mb-10">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Jam Keluar</span>
-                  <span className="text-xl font-black text-emerald-500 font-mono">{jamKeluar} WIB</span>
-                </div>
+              {/* Summary row */}
+              <div className="flex items-center justify-between py-3 border-t border-b border-slate-100 dark:border-white/5">
+                <span className="text-xs text-slate-400 dark:text-slate-500">Jam Keluar</span>
+                <span className="text-base font-bold font-mono text-slate-800 dark:text-white">{jamKeluar} <span className="font-normal text-slate-400 text-xs">WIB</span></span>
               </div>
 
-              <div className="flex flex-col gap-3">
+              {/* Actions */}
+              <div className="flex flex-col gap-2 pt-1">
                 <button
                   onClick={handleFinalize}
                   disabled={loading}
-                  className="btn btn-success w-full flex items-center justify-center gap-3"
+                  className="btn btn-success w-full"
+                  style={{ height: 44 }}
                 >
                   {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      MEMPROSES...
-                    </>
-                  ) : (
-                    "YA, KONFIRMASI KELUAR"
-                  )}
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
+                      Memproses...
+                    </span>
+                  ) : "Konfirmasi Keluar"}
                 </button>
                 <button
                   onClick={() => setShowConfirm(false)}
                   disabled={loading}
                   className="btn btn-secondary w-full"
+                  style={{ height: 44 }}
                 >
-                  BATAL
+                  Batal
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
