@@ -250,7 +250,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
       }
     };
     init();
-  }, [vcfId, onClose, toast]);
+  }, [vcfId]);
 
   const isLoading = tipeKegiatan.startsWith("loading");
   const isUnloading = tipeKegiatan.startsWith("unloading");

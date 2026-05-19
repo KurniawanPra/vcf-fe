@@ -133,7 +133,7 @@ export default function VcfDetailAliasPage() {
     } finally {
       setLoading(false);
     }
-  }, [vcfId, hasInitializedTab]);
+  }, [vcfId]);
 
   useEffect(() => {
     fetchVcf();
