@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { vcfApi } from "@/lib/api";
 import { fetchAndCacheMasterData, getCachedMasterData } from "@/lib/masterDataCache";
@@ -91,6 +91,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [masterLoading, setMasterLoading] = useState(true);
   const [masterProgress, setMasterProgress] = useState(0);
+  const hasInitialized = useRef(false);
   
   // Settings
   const [showProdukLainnya, setShowProdukLainnya] = useState(true);
@@ -149,6 +150,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
   };
 
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     const init = async () => {
       setMasterLoading(true);
       setMasterProgress(10);
