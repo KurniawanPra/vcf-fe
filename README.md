@@ -48,7 +48,7 @@ Buat file `.env.local` atau cp `.env.local.example` menjadi `.env.local`  di roo
 
 ```env
 PATH_URL=/backend
-BACKEND_URL=http://localhost:8000
+API_URL=http://127.0.0.1:8000
 ```
 
 ### 4. Run Development Server
@@ -261,7 +261,7 @@ npm run dev -- -p 3001
 
 Pastikan:
 1. Backend API sudah running
-2. `PATH_URL` di `.env.local` sudah benar
+2. `PATH_URL` dan `API_URL` di `.env.local` sudah benar
 3. Tidak ada CORS issue di backend
 
 ### Build Error
