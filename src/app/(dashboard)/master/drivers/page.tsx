@@ -13,6 +13,7 @@ import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface Driver {
   id: number;
@@ -25,6 +26,8 @@ interface Driver {
 }
 
 const SIM_TYPES = ["A", "B1", "B2", "B2 Umum", "BII Umum", "C", "D"];
+
+const PAGE_SIZE = 10;
 
 export default function DriversPage() {
   const { toasts, removeToast, toast } = useToast();
@@ -44,6 +47,7 @@ export default function DriversPage() {
   const [error, setError] = useState("");
   const [isPrinting, setIsPrinting] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -116,7 +120,7 @@ export default function DriversPage() {
     };
   }, [showDeleteModal]);
 
-  const handleReset = () => { setSearch(""); };
+  const handleReset = () => { setSearch(""); setCurrentPage(1); };
 
   const openCreate = () => {
     setEditing(null);
@@ -324,6 +328,7 @@ export default function DriversPage() {
           {loading ? (
             <div className="flex items-center justify-center py-16"><div className="spinner" /></div>
           ) : (
+            <>
             <table className="data-table">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5">
@@ -341,9 +346,9 @@ export default function DriversPage() {
                 {data.length === 0 ? (
                   <tr><td colSpan={8} className="text-center py-12 text-muted">Tidak ada data supir ditemukan.</td></tr>
                 ) : (
-                  data.map((item, idx) => (
+                  data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item, idx) => (
                     <tr key={item.id} className="border-b border-white/5 hover:bg-bg-card-hover transition-colors group">
-                      <td className="px-6 py-4 text-center text-xs text-secondary font-mono">{idx + 1}</td>
+                      <td className="px-6 py-4 text-center text-xs text-secondary font-mono">{(currentPage - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4 font-medium text-text-primary dark:text-white">{item.nama_supir}</td>
                       <td className="px-6 py-4 font-mono text-xs text-secondary">{item.no_sim}</td>
                       <td className="px-6 py-4 text-sm text-secondary">{item.jenis_sim}</td>
@@ -395,6 +400,10 @@ export default function DriversPage() {
                 )}
               </tbody>
             </table>
+            <div className="px-6 pb-4">
+              <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setCurrentPage(p)} />
+            </div>
+            </>
           )}
         </div>
       </div>

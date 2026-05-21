@@ -10,6 +10,7 @@ import PrintMasterTable from "@/components/print/PrintMasterTable";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import { downloadImportTemplate, parseExcelPreview, importDataBatch } from "@/lib/importTemplate";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface ChecklistItem {
   id: number;
@@ -18,6 +19,8 @@ interface ChecklistItem {
   urutan: number;
   is_active: boolean;
 }
+
+const PAGE_SIZE = 10;
 
 export default function ChecklistPage() {
   const { toasts, removeToast, toast } = useToast();
@@ -46,6 +49,7 @@ export default function ChecklistPage() {
 
   // Filters
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -286,79 +290,84 @@ export default function ChecklistPage() {
             <div className="spinner" />
           </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr className="border-b border-white/10 bg-white/5">
-                <th className="px-6 py-4 text-sm font-semibold text-secondary w-16">Urutan</th>
-                <th className="px-6 py-4 text-sm font-semibold text-secondary">Nama Item</th>
-                <th className="px-6 py-4 text-sm font-semibold text-secondary">Keterangan</th>
-                <th className="px-6 py-4 text-sm font-semibold text-secondary">Status</th>
-                <th className="px-6 py-4 text-sm font-semibold text-secondary text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-muted">
-                    Tidak ada data ditemukan.
-                  </td>
+          <>
+            <table className="data-table">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="px-6 py-4 text-sm font-semibold text-secondary w-16">Urutan</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-secondary">Nama Item</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-secondary">Keterangan</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-secondary">Status</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-secondary text-right">Aksi</th>
                 </tr>
-              ) : (
-                data.map((item, idx) => (
-                  <tr key={item.id} className="border-b border-white/5 hover:bg-bg-card-hover transition-colors group">
-                    <td className="px-6 py-4 text-sm text-secondary font-mono">{item.urutan}</td>
-                    <td className="px-6 py-4 font-medium text-white">{item.nama_item}</td>
-                    <td className="px-6 py-4 text-sm text-secondary">{item.keterangan || "—"}</td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleToggleActive(item)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-200 focus:outline-none ${
-                          item.is_active 
-                            ? "bg-green-500/20 border border-green-500/30" 
-                            : "bg-red-500/20 border border-red-500/30"
-                        }`}
-                        title={item.is_active ? "Klik untuk Nonaktifkan" : "Klik untuk Aktifkan"}
-                      >
-                        <span
-                          className={`inline-block h-3 w-3 transform rounded-full transition-transform duration-200 ${
-                            item.is_active 
-                              ? "translate-x-5 bg-green-400" 
-                              : "translate-x-1 bg-red-400"
-                          }`}
-                        />
-                      </button>
-                      <p className={`text-[9px] mt-0.5 font-bold ${item.is_active ? "text-green-500/60" : "text-red-500/60"}`}>
-                        {item.is_active ? "AKTIF" : "NONAKTIF"}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => openEdit(item)}
-                          className="w-9 h-9 flex items-center justify-center text-violet-400 hover:bg-violet-400/10 rounded-xl transition-all"
-                          title="Edit Item"
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(item.id)}
-                          className="btn-icon btn-icon-delete"
-                          title="Hapus"
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
-                          </svg>
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {data.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-muted">
+                      Tidak ada data ditemukan.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item, idx) => (
+                    <tr key={item.id} className="border-b border-white/5 hover:bg-bg-card-hover transition-colors group">
+                      <td className="px-6 py-4 text-sm text-secondary font-mono">{item.urutan}</td>
+                      <td className="px-6 py-4 font-medium text-white">{item.nama_item}</td>
+                      <td className="px-6 py-4 text-sm text-secondary">{item.keterangan || "—"}</td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleToggleActive(item)}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-200 focus:outline-none ${
+                            item.is_active 
+                              ? "bg-green-500/20 border border-green-500/30" 
+                              : "bg-red-500/20 border border-red-500/30"
+                          }`}
+                          title={item.is_active ? "Klik untuk Nonaktifkan" : "Klik untuk Aktifkan"}
+                        >
+                          <span
+                            className={`inline-block h-3 w-3 transform rounded-full transition-transform duration-200 ${
+                              item.is_active 
+                                ? "translate-x-5 bg-green-400" 
+                                : "translate-x-1 bg-red-400"
+                            }`}
+                          />
+                        </button>
+                        <p className={`text-[9px] mt-0.5 font-bold ${item.is_active ? "text-green-500/60" : "text-red-500/60"}`}>
+                          {item.is_active ? "AKTIF" : "NONAKTIF"}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="w-9 h-9 flex items-center justify-center text-violet-400 hover:bg-violet-400/10 rounded-xl transition-all"
+                            title="Edit Item"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(item.id)}
+                            className="btn-icon btn-icon-delete"
+                            title="Hapus"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <div className="px-6 pb-4">
+              <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setCurrentPage(p)} />
+            </div>
+          </>
         )}
       </div>
       </div>

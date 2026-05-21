@@ -9,6 +9,7 @@ import { getStatusLabel, getStatusColor, getErrorMessage } from "@/lib/utils";
 import { exportToExcel } from "@/lib/exportUtils";
 import PrintVCF from "../[id]/PrintVCF";
 import PrintMasterTable from "@/components/print/PrintMasterTable";
+import Pagination from "@/components/Pagination";
 
 interface Vcf {
   id: number;
@@ -52,6 +53,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [tanggalDari, setTanggalDari] = useState(firstDay);
   const [tanggalSampai, setTanggalSampai] = useState(lastDay);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Reject State
   const [rejectingId, setRejectingId] = useState<number | null>(null);
@@ -101,6 +103,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   };
 
   useEffect(() => {
+    setCurrentPage(1);
     fetchVcfs();
   }, [stageFilter, search, tanggalDari, tanggalSampai]);
 
@@ -326,65 +329,70 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             ) : vcfs.length === 0 ? (
               <div className="py-20 text-center text-secondary font-medium">Data VCF tidak ditemukan.</div>
             ) : (
-              <table className="data-table">
-                <thead className="sticky top-0 z-10 bg-bg-card">
-                  <tr>
-                    <th className="w-24 text-center">No. Urut</th>
-                    <th className="text-center">Tanggal</th>
-                    <th className="w-32 min-w-32 text-center">No. Polisi</th>
-                    <th className="text-center">Supir</th>
-                    <th className="text-center">Transporter</th>
-                    <th className="text-center">Produk</th>
-                    <th className="text-center">Tipe</th>
-                    <th className="text-center">Status</th>
-                    <th className="w-40 text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vcfs.map((vcf) => (
-                    <tr key={vcf.id}>
-                      <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
-                      <td className="text-xs">{vcf.tanggal}</td>
-                      <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white">{vcf.no_polisi}</td>
-                      <td className="text-xs">{vcf.driver?.nama_supir || "—"}</td>
-                      <td className="text-xs">{vcf.transporter?.nama_transporter || "—"}</td>
-                      <td>
-                        {vcf.produk ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{vcf.produk}</span>
-                        ) : "—"}
-                      </td>
-                      <td className="w-32 min-w-32">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-400" : "bg-emerald-500/10 text-emerald-400"}`}>
-                          {vcf.tipe_kegiatan?.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td className="w-32 min-w-32">
-                        <span className={`status-badge ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => { setNavigatingId(vcf.id); router.push(`/vcf/${vcf.id}`); }}
-                            disabled={navigatingId === vcf.id}
-                            className={`action-btn-sm ${getActionButtonStyle(vcf.status)} flex items-center gap-1.5`}
-                          >
-                            {navigatingId === vcf.id
-                              ? <><div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" /> Memuat...</>
-                              : getActionLabel(vcf)}
-                          </button>
-                          <button
-                            onClick={() => handlePrint(vcf.id)}
-                            className="btn-icon btn-icon-edit"
-                            disabled={fetchingPrint}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" /></svg>
-                          </button>
-                        </div>
-                      </td>
+              <>
+                <table className="data-table">
+                  <thead className="sticky top-0 z-10 bg-bg-card">
+                    <tr>
+                      <th className="w-24 text-center">No. Urut</th>
+                      <th className="text-center">Tanggal</th>
+                      <th className="w-32 min-w-32 text-center">No. Polisi</th>
+                      <th className="text-center">Supir</th>
+                      <th className="text-center">Transporter</th>
+                      <th className="text-center">Produk</th>
+                      <th className="text-center">Tipe</th>
+                      <th className="text-center">Status</th>
+                      <th className="w-40 text-center">Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                      <tr key={vcf.id}>
+                        <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
+                        <td className="text-xs">{vcf.tanggal}</td>
+                        <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white">{vcf.no_polisi}</td>
+                        <td className="text-xs">{vcf.driver?.nama_supir || "—"}</td>
+                        <td className="text-xs">{vcf.transporter?.nama_transporter || "—"}</td>
+                        <td>
+                          {vcf.produk ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{vcf.produk}</span>
+                          ) : "—"}
+                        </td>
+                        <td className="w-32 min-w-32">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                            {vcf.tipe_kegiatan?.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className="w-32 min-w-32">
+                          <span className={`status-badge ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { setNavigatingId(vcf.id); router.push(`/vcf/${vcf.id}`); }}
+                              disabled={navigatingId === vcf.id}
+                              className={`action-btn-sm ${getActionButtonStyle(vcf.status)} flex items-center gap-1.5`}
+                            >
+                              {navigatingId === vcf.id
+                                ? <><div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" /> Memuat...</>
+                                : getActionLabel(vcf)}
+                            </button>
+                            <button
+                              onClick={() => handlePrint(vcf.id)}
+                              className="btn-icon btn-icon-edit"
+                              disabled={fetchingPrint}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="px-6 pb-4">
+                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                </div>
+              </>
             )}
           </div>
         )}
@@ -397,53 +405,58 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             ) : vcfs.length === 0 ? (
               <div className="py-20 text-center text-secondary font-medium">Data VCF tidak ditemukan.</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-                {vcfs.map((vcf) => (
-                  <div key={vcf.id} className="glass-card p-5 space-y-4 hover:border-blue-500/40 transition-all group relative overflow-hidden flex flex-col">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-blue-400 text-sm tracking-tight">{vcf.nomor_urut}</span>
-                      <span className={`status-badge text-[10px] ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
-                    </div>
-
-                    <div className="flex-1">
-                      <h3 className="font-black text-text-primary dark:text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">{vcf.no_polisi}</h3>
-                      <p className="text-xs text-secondary mt-1 font-medium truncate">{vcf.transporter?.nama_transporter || "—"}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-bg-primary dark:bg-white/5 rounded-xl p-2.5 border border-border/50">
-                        <p className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 opacity-60">Supir</p>
-                        <p className="text-xs font-bold text-text-primary dark:text-white truncate">{vcf.driver?.nama_supir || "—"}</p>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+                  {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                    <div key={vcf.id} className="glass-card p-5 space-y-4 hover:border-blue-500/40 transition-all group relative overflow-hidden flex flex-col">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-blue-400 text-sm tracking-tight">{vcf.nomor_urut}</span>
+                        <span className={`status-badge text-[10px] ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
                       </div>
-                      <div className="bg-bg-primary dark:bg-white/5 rounded-xl p-2.5 border border-border/50">
-                        <p className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 opacity-60">Produk</p>
-                        <p className="text-xs font-bold text-text-primary dark:text-white truncate">{vcf.produk || "—"}</p>
+
+                      <div className="flex-1">
+                        <h3 className="font-black text-text-primary dark:text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">{vcf.no_polisi}</h3>
+                        <p className="text-xs text-secondary mt-1 font-medium truncate">{vcf.transporter?.nama_transporter || "—"}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-bg-primary dark:bg-white/5 rounded-xl p-2.5 border border-border/50">
+                          <p className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 opacity-60">Supir</p>
+                          <p className="text-xs font-bold text-text-primary dark:text-white truncate">{vcf.driver?.nama_supir || "—"}</p>
+                        </div>
+                        <div className="bg-bg-primary dark:bg-white/5 rounded-xl p-2.5 border border-border/50">
+                          <p className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 opacity-60">Produk</p>
+                          <p className="text-xs font-bold text-text-primary dark:text-white truncate">{vcf.produk || "—"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => { setNavigatingId(vcf.id); router.push(`/vcf/${vcf.id}`); }}
+                          disabled={navigatingId === vcf.id}
+                          className={`flex-1 ${getActionButtonStyle(vcf.status)} flex items-center justify-center gap-1.5`}
+                        >
+                          {navigatingId === vcf.id
+                            ? <><div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" /> Memuat...</>
+                            : getActionLabel(vcf)}
+                        </button>
+
+                        <button
+                          onClick={() => handlePrint(vcf.id)}
+                          disabled={fetchingPrint}
+                          className="btn-icon btn-icon-edit"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => { setNavigatingId(vcf.id); router.push(`/vcf/${vcf.id}`); }}
-                        disabled={navigatingId === vcf.id}
-                        className={`flex-1 ${getActionButtonStyle(vcf.status)} flex items-center justify-center gap-1.5`}
-                      >
-                        {navigatingId === vcf.id
-                          ? <><div className="w-3 h-3 rounded-full border-2 border-current/30 border-t-current animate-spin" /> Memuat...</>
-                          : getActionLabel(vcf)}
-                      </button>
-
-                      <button
-                        onClick={() => handlePrint(vcf.id)}
-                        disabled={fetchingPrint}
-                        className="btn-icon btn-icon-edit"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <div className="px-6 pb-4">
+                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                </div>
+              </>
             )}
           </div>
         )}

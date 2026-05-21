@@ -11,6 +11,7 @@ import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface InspectionItem {
   id: number;
@@ -23,6 +24,8 @@ interface InspectionItem {
   has_detail?: boolean;
   keterangan_detail?: string;
 }
+
+const PAGE_SIZE = 10;
 
 export default function PemeriksaanKeluarPage() {
   const { toasts, removeToast, toast } = useToast();
@@ -71,6 +74,7 @@ export default function PemeriksaanKeluarPage() {
 
   // Filters
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -353,7 +357,7 @@ export default function PemeriksaanKeluarPage() {
                 </td>
               </tr>
             ) : (
-              data.map((item, idx) => (
+              data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item, idx) => (
                 <tr key={item.id} className="border-b border-border hover:bg-bg-card-hover transition-colors group">
                   <td className="px-6 py-4 text-sm text-secondary font-mono text-center">{item.urutan}</td>
                   <td className="px-6 py-4">
@@ -420,6 +424,9 @@ export default function PemeriksaanKeluarPage() {
             )}
           </tbody>
         </table>
+        <div className="px-6 pb-4">
+          <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setCurrentPage(p)} />
+        </div>
       </div>
       </div>
 

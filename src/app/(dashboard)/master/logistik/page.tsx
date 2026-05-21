@@ -11,12 +11,15 @@ import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface Logistik {
   id: number;
   nama_logistik: string;
   is_active: boolean;
 }
+
+const PAGE_SIZE = 10;
 
 export default function LogistikPage() {
   const { toasts, removeToast, toast } = useToast();
@@ -36,6 +39,7 @@ export default function LogistikPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Import states
   const [showImportModal, setShowImportModal] = useState(false);
@@ -262,9 +266,9 @@ export default function LogistikPage() {
             ) : data.length === 0 ? (
               <tr><td colSpan={4} className="px-6 py-8 text-center text-secondary">Tidak ada data.</td></tr>
             ) : (
-              data.map((item, idx) => (
+              data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item, idx) => (
                 <tr key={item.id} className="border-b border-white/5 hover:bg-bg-card-hover transition-colors">
-                  <td className="px-6 py-4 text-sm text-secondary">{idx + 1}</td>
+                  <td className="px-6 py-4 text-sm text-secondary">{(currentPage - 1) * PAGE_SIZE + idx + 1}</td>
                   <td className="px-6 py-4 text-sm font-medium text-white">{item.nama_logistik}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${item.is_active ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
@@ -282,6 +286,9 @@ export default function LogistikPage() {
             )}
           </tbody>
         </table>
+        <div className="px-6 pb-4">
+          <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setCurrentPage(p)} />
+        </div>
       </div>
       </div>
 

@@ -301,11 +301,19 @@ export default function VcfEditPage() {
     if (!jenisKendaraanId)
       addError("jenisKendaraan", "Informasi Kendaraan", "Jenis Kendaraan", "field-jenis-kendaraan");
 
-    if (tahunKendaraan) {
+    if (!tipeKendaraan)
+      addError("tipeKendaraan", "Informasi Kendaraan", "Tipe Kendaraan", "field-tipe-kendaraan");
+
+    if (!tujuan.trim())
+      addError("tujuan", "Informasi Kendaraan", "Asal / Tujuan", "field-tujuan");
+
+    if (!tahunKendaraan) {
+      addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan");
+    } else {
       const year = parseInt(tahunKendaraan, 10);
       const currentYear = new Date().getFullYear();
-      if (isNaN(year) || year > currentYear) {
-        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (Maks. " + currentYear + ")", "field-tahun-kendaraan");
+      if (isNaN(year) || year > currentYear || year < 1950) {
+        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - " + currentYear + ")", "field-tahun-kendaraan");
       }
     }
 

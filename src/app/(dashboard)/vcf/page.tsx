@@ -8,6 +8,7 @@ import { prefetchMasterData } from "@/lib/masterDataCache";
 import { getStatusLabel, getStatusColor } from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface VcfSummary {
   id: number;
@@ -122,6 +123,7 @@ export default function VcfQuickAccessPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [showGuide, setShowGuide] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Debounce search input
   useEffect(() => {
@@ -164,6 +166,7 @@ export default function VcfQuickAccessPage() {
   }, [filter, debouncedSearch]);
 
   useEffect(() => {
+    setCurrentPage(1);
     fetchActive();
     // Prefetch master data in background so register page is instant
     prefetchMasterData();
@@ -311,35 +314,40 @@ export default function VcfQuickAccessPage() {
             ) : vcfs.length === 0 ? (
               <div className="py-12 text-center text-secondary text-sm">Tidak ada kendaraan aktif saat ini.</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {vcfs.map((vcf) => (
-                  <Link
-                    key={vcf.id}
-                    href={`/vcf/${vcf.id}`}
-                    className="block p-4 rounded-xl border transition-all hover:border-blue-500/40 hover:shadow-md group"
-                    style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="font-mono font-bold text-blue-400 text-sm">{vcf.nomor_urut}</span>
-                      <span className={`status-badge text-[9px] ${getStatusColor(vcf.status)}`}>
-                        {getStatusLabel(vcf.status)}
-                      </span>
-                    </div>
-                    <div className="mb-3">
-                      <p className="font-bold text-text-primary dark:text-white text-base leading-tight">{vcf.no_polisi}</p>
-                      <p className="text-[11px] text-secondary mt-0.5">{vcf.driver?.nama_supir || "—"}</p>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
-                        {vcf.tipe_kegiatan?.replace(/_/g, " ")}
-                      </span>
-                      <span className={`action-btn action-btn-sm ${getActionButtonStyle(vcf.status)}`}>
-                        {getActionLabel(vcf.status)}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                    <Link
+                      key={vcf.id}
+                      href={`/vcf/${vcf.id}`}
+                      className="block p-4 rounded-xl border transition-all hover:border-blue-500/40 hover:shadow-md group"
+                      style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="font-mono font-bold text-blue-400 text-sm">{vcf.nomor_urut}</span>
+                        <span className={`status-badge text-[9px] ${getStatusColor(vcf.status)}`}>
+                          {getStatusLabel(vcf.status)}
+                        </span>
+                      </div>
+                      <div className="mb-3">
+                        <p className="font-bold text-text-primary dark:text-white text-base leading-tight">{vcf.no_polisi}</p>
+                        <p className="text-[11px] text-secondary mt-0.5">{vcf.driver?.nama_supir || "—"}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
+                          {vcf.tipe_kegiatan?.replace(/_/g, " ")}
+                        </span>
+                        <span className={`action-btn action-btn-sm ${getActionButtonStyle(vcf.status)}`}>
+                          {getActionLabel(vcf.status)}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <div className="px-4 pb-4">
+                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                </div>
+              </>
             )}
           </div>
         )}
@@ -359,41 +367,46 @@ export default function VcfQuickAccessPage() {
             ) : vcfs.length === 0 ? (
               <div className="py-12 text-center text-secondary text-sm">Tidak ada kendaraan aktif saat ini.</div>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>No.</th><th>No. Polisi</th><th>Supir</th><th>Transporter</th><th>Tipe</th><th>Status</th><th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vcfs.map((vcf) => (
-                    <tr key={vcf.id}>
-                      <td><span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span></td>
-                      <td className="font-semibold">{vcf.no_polisi}</td>
-                      <td className="text-secondary text-sm">{vcf.driver?.nama_supir || "—"}</td>
-                      <td className="text-secondary text-sm">{vcf.transporter?.nama_transporter || "—"}</td>
-                      <td>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
-                          {vcf.tipe_kegiatan?.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${getStatusColor(vcf.status)}`}>
-                          {getStatusLabel(vcf.status)}
-                        </span>
-                      </td>
-                      <td>
-                        <Link
-                          href={`/vcf/${vcf.id}`}
-                          className={`${getActionButtonStyle(vcf.status)}`}
-                        >
-                          {getActionLabel(vcf.status)}
-                        </Link>
-                      </td>
+              <>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>No.</th><th>No. Polisi</th><th>Supir</th><th>Transporter</th><th>Tipe</th><th>Status</th><th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                      <tr key={vcf.id}>
+                        <td><span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span></td>
+                        <td className="font-semibold">{vcf.no_polisi}</td>
+                        <td className="text-secondary text-sm">{vcf.driver?.nama_supir || "—"}</td>
+                        <td className="text-secondary text-sm">{vcf.transporter?.nama_transporter || "—"}</td>
+                        <td>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
+                            {vcf.tipe_kegiatan?.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${getStatusColor(vcf.status)}`}>
+                            {getStatusLabel(vcf.status)}
+                          </span>
+                        </td>
+                        <td>
+                          <Link
+                            href={`/vcf/${vcf.id}`}
+                            className={`${getActionButtonStyle(vcf.status)}`}
+                          >
+                            {getActionLabel(vcf.status)}
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="px-6 pb-4">
+                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                </div>
+              </>
             )}
           </div>
         )}

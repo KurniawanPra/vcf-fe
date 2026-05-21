@@ -11,6 +11,7 @@ import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface MuatanItem {
   id: number;
@@ -20,6 +21,8 @@ interface MuatanItem {
   urutan: number;
   is_active: boolean;
 }
+
+const PAGE_SIZE = 10;
 
 export default function MuatanDibawaPage() {
   const { toasts, removeToast, toast } = useToast();
@@ -52,6 +55,7 @@ export default function MuatanDibawaPage() {
   const [importResult, setImportResult] = useState({ success: 0, failed: 0, errors: [] as string[] });
 
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -300,7 +304,7 @@ export default function MuatanDibawaPage() {
             ) : data.length === 0 ? (
               <tr><td colSpan={5} className="px-6 py-8 text-center text-secondary">Tidak ada data.</td></tr>
             ) : (
-              data.map((item) => (
+              data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item) => (
                 <tr key={item.id} className="border-b border-border hover:bg-bg-card-hover transition-colors group">
                   <td className="px-6 py-4 text-sm text-secondary font-mono text-center">{item.urutan}</td>
                   <td className="px-6 py-4 text-sm font-medium text-black dark:text-white">{item.nama_item}</td>
@@ -339,6 +343,9 @@ export default function MuatanDibawaPage() {
             )}
           </tbody>
         </table>
+        <div className="px-6 pb-4">
+          <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setCurrentPage(p)} />
+        </div>
       </div>
       </div>
 

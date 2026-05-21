@@ -7,6 +7,7 @@ import { isAdmin } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { createPortal } from "react-dom";
+import Pagination from "@/components/Pagination";
 
 interface Driver {
   id: number;
@@ -194,6 +195,8 @@ function ViolationTable({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const filtered = violations.filter(v => {
     const q = search.toLowerCase();
@@ -248,7 +251,7 @@ function ViolationTable({
               ? "bg-slate-500/15 border-slate-400/30 text-text-primary hover:bg-slate-500/25"
               : "bg-transparent border-white/5 text-text-muted opacity-40 cursor-not-allowed"
           }`}
-          onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setFilterStatus(""); }}
+          onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setFilterStatus(""); setPage(1); }}
           disabled={!search && !dateFrom && !dateTo && !filterStatus}
         >Reset Filter</button>
       </div>
@@ -275,7 +278,7 @@ function ViolationTable({
               </tr>
             </thead>
             <tbody>
-              {filtered.map(v => {
+              {filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(v => {
                 const dStatus = v.driver?.status ?? "normal";
                 const rowCls = dStatus === "blacklist"
                   ? "bg-red-500/3 hover:bg-red-500/5"
@@ -341,6 +344,9 @@ function ViolationTable({
               })}
             </tbody>
           </table>
+          <div className="px-6 pb-4">
+            <Pagination currentPage={page} totalItems={filtered.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setPage(p)} />
+          </div>
         </div>
       )}
     </div>

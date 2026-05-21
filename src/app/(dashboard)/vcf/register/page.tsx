@@ -331,11 +331,19 @@ export default function VcfRegisterPage() {
     if (!jenisKendaraanId)
       addError("jenisKendaraan", "Informasi Kendaraan", "Jenis Kendaraan", "field-jenis-kendaraan");
 
-    if (tahunKendaraan) {
+    if (!tipeKendaraan)
+      addError("tipeKendaraan", "Informasi Kendaraan", "Tipe Kendaraan", "field-tipe-kendaraan");
+
+    if (!tujuan.trim())
+      addError("tujuan", "Informasi Kendaraan", "Asal / Tujuan", "field-tujuan");
+
+    if (!tahunKendaraan) {
+      addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan");
+    } else {
       const year = parseInt(tahunKendaraan, 10);
       const currentYear = new Date().getFullYear();
-      if (isNaN(year) || year > currentYear) {
-        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (Maks. " + currentYear + ")", "field-tahun-kendaraan");
+      if (isNaN(year) || year > currentYear || year < 1950) {
+        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - " + currentYear + ")", "field-tahun-kendaraan");
       }
     }
 
@@ -417,6 +425,7 @@ export default function VcfRegisterPage() {
       };
 
       const res = await vcfApi.createBagian1(payload);
+      console.log("API Response:", res.data);
       const vcfId = res.data.data?.id || res.data.id;
       
       toast.success("Registrasi Berhasil", "Data VCF telah didaftarkan ke sistem.");
@@ -426,6 +435,7 @@ export default function VcfRegisterPage() {
         router.push("/vcf");
       }, 1000);
     } catch (err: any) {
+      console.error("API Error:", err);
       toast.error("Registrasi Gagal", getErrorMessage(err, "Gagal menyimpan VCF."));
     } finally {
       setLoading(false);

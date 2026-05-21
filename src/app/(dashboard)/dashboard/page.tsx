@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
 import { getUser, isAdmin } from "@/lib/auth";
 import { getStatusLabel, getStatusColor } from "@/lib/utils";
+import Pagination from "@/components/Pagination";
 
 interface VcfSummary {
   id: number;
@@ -73,6 +74,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [registerLoading, setRegisterLoading] = useState(false);
+  const [dashPage, setDashPage] = useState(1);
 
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Selamat Pagi" : now.getHours() < 17 ? "Selamat Siang" : "Selamat Sore";
@@ -225,15 +227,27 @@ export default function DashboardPage() {
         <div style={{
           padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
           borderBottom: "1px solid var(--border)",
-          background: "var(--bg-secondary)",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.04) 0%, var(--bg-secondary) 100%)",
           flexWrap: "wrap",
           gap: 12,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 12,
+              background: "rgba(99,102,241,0.12)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2">
+                <rect x="1" y="3" width="15" height="13" rx="1"/>
+                <path d="M16 8h4l3 3v5h-7V8z"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </div>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Kendaraan Aktif</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Kendaraan Aktif di Area</p>
               <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                {loading ? "Memuat..." : `${vcfs.length} kendaraan sedang di area`}
+                {loading ? "Memuat..." : `${vcfs.length} kendaraan sedang di dalam area pabrik`}
               </p>
             </div>
           </div>
@@ -242,30 +256,30 @@ export default function DashboardPage() {
               <svg width="15" height="15" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input
                 type="text" placeholder="Cari no. polisi / supir..."
-                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setDashPage(1); }}
                 style={{
                   paddingLeft: 32, paddingRight: 12, height: 34, borderRadius: 10, fontSize: 12,
                   background: "var(--bg-primary)", border: "1px solid var(--border)",
-                  color: "var(--text-primary)", outline: "none", width: 240,
+                  color: "var(--text-primary)", outline: "none", width: 220,
                 }}
               />
             </div>
             <Link href="/vcf" style={{
               padding: "7px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600,
-              background: "var(--bg-primary)", border: "1px solid var(--border)",
-              color: "var(--text-secondary)", textDecoration: "none",
+              background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)",
+              color: "#818cf8", textDecoration: "none", transition: "all 0.2s",
             }}>
               Lihat Semua
             </Link>
           </div>
         </div>
 
-        {/* Card body */}
-        <div style={{ padding: 20 }}>
+        {/* Card body — premium table */}
+        <div style={{ overflowX: "auto" }}>
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1,2,3,4,5,6].map(i => (
-                <div key={i} style={{ borderRadius: 14, height: 110, background: "var(--bg-secondary)", animation: "pulse 1.5s infinite" }}/>
+            <div style={{ padding: 24 }}>
+              {[1,2,3,4,5].map(i => (
+                <div key={i} style={{ height: 48, marginBottom: 8, borderRadius: 10, background: "var(--bg-secondary)", animation: "pulse 1.5s infinite" }}/>
               ))}
             </div>
           ) : filtered.length === 0 ? (
@@ -281,46 +295,86 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.slice(0, 9).map(vcf => {
-                const isLoading = vcf.tipe_kegiatan?.includes("loading");
-                const statusClr = vcf.status === "selesai" ? "#10b981" : vcf.status === "reject" ? "#ef4444" : "#3b82f6";
-                return (
-                  <Link key={vcf.id} href={`/vcf/${vcf.id}`} style={{
-                    display: "block", borderRadius: 16, padding: "16px 18px",
-                    background: "var(--bg-secondary)", border: "1px solid var(--border)",
-                    textDecoration: "none", transition: "all 0.2s", position: "relative", overflow: "hidden",
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.borderColor = statusClr + "40"; (e.currentTarget as HTMLElement).style.boxShadow = `0 6px 24px ${statusClr}15`; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.borderColor = ""; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}>
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2.5, background: `linear-gradient(90deg, ${statusClr}, transparent)` }}/>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 10, background: `${statusClr}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={statusClr} strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            <>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)" }}>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px", whiteSpace: "nowrap" }}>No. VCF</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>No. Polisi</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>Supir</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>Transporter</th>
+                  <th style={{ padding: "10px 16px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>Tipe</th>
+                  <th style={{ padding: "10px 16px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>Status</th>
+                  <th style={{ padding: "10px 16px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.slice((dashPage - 1) * 10, dashPage * 10).map((vcf, idx) => {
+                  const isLoading = vcf.tipe_kegiatan?.includes("loading");
+                  const statusClr = vcf.status === "selesai" ? "#10b981" : vcf.status === "reject" ? "#ef4444" : "#6366f1";
+                  const isEven = idx % 2 === 0;
+                  return (
+                    <tr key={vcf.id} style={{
+                      borderBottom: "1px solid var(--border)",
+                      background: isEven ? "transparent" : "rgba(255,255,255,0.01)",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--bg-card-hover)"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isEven ? "transparent" : "rgba(255,255,255,0.01)"}
+                    >
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusClr, boxShadow: `0 0 6px ${statusClr}80`, flexShrink: 0 }} />
+                          <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 12, color: "#a78bfa" }}>{vcf.nomor_urut}</span>
                         </div>
-                        <div>
-                          <p style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, color: "#a78bfa" }}>{vcf.nomor_urut}</p>
-                          <span className={`status-badge ${getStatusColor(vcf.status)}`} style={{ fontSize: 9 }}>{getStatusLabel(vcf.status)}</span>
-                        </div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-muted)" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{vcf.no_polisi}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
-                        background: isLoading ? "rgba(139,92,246,0.12)" : "rgba(16,185,129,0.12)",
-                        color: isLoading ? "#a78bfa" : "#34d399",
-                      }}>
-                        {vcf.tipe_kegiatan?.replace(/_/g, " ").toUpperCase()}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{vcf.driver?.nama_supir || "—"} · {vcf.transporter?.nama_transporter || "—"}</p>
-                  </Link>
-                );
-              })}
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>{vcf.no_polisi}</span>
+                      </td>
+                      <td style={{ padding: "12px 16px", color: "var(--text-secondary)", fontSize: 12 }}>
+                        {vcf.driver?.nama_supir || "—"}
+                      </td>
+                      <td style={{ padding: "12px 16px", color: "var(--text-secondary)", fontSize: 12, maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {vcf.transporter?.nama_transporter || "—"}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, textTransform: "uppercase",
+                          background: isLoading ? "rgba(139,92,246,0.12)" : "rgba(16,185,129,0.12)",
+                          color: isLoading ? "#a78bfa" : "#34d399",
+                          border: `1px solid ${isLoading ? "rgba(139,92,246,0.25)" : "rgba(16,185,129,0.25)"}`,
+                        }}>
+                          {vcf.tipe_kegiatan?.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span className={`status-badge ${getStatusColor(vcf.status)}`} style={{ fontSize: 9 }}>{getStatusLabel(vcf.status)}</span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                        <Link
+                          href={`/vcf/${vcf.id}`}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                            background: `rgba(${vcf.status === "selesai" ? "16,185,129" : "99,102,241"},0.1)`,
+                            color: vcf.status === "selesai" ? "#34d399" : "#818cf8",
+                            border: `1px solid rgba(${vcf.status === "selesai" ? "16,185,129" : "99,102,241"},0.25)`,
+                            textDecoration: "none", transition: "all 0.15s",
+                          }}
+                        >
+                          Detail
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div style={{ padding: "8px 24px 16px" }}>
+              <Pagination currentPage={dashPage} totalItems={filtered.length} itemsPerPage={10} onPageChange={(p) => setDashPage(p)} />
             </div>
+            </>
           )}
         </div>
       </div>

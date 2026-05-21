@@ -6,10 +6,11 @@ import { exportToExcel, exportToPDF, exportToDocx } from "@/lib/exportUtils";
 import { getErrorMessage } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
-import { parseExcelPreview, importDataBatch } from "@/lib/importTemplate";
+import { downloadImportTemplate, parseExcelPreview, importDataBatch } from "@/lib/importTemplate";
 import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
+import Pagination from "@/components/Pagination";
 
 interface User {
   id: number;
@@ -19,6 +20,8 @@ interface User {
   urutan: number;
   is_active: boolean;
 }
+
+const PAGE_SIZE = 10;
 
 export default function UsersPage() {
   const { toasts, removeToast, toast } = useToast();
@@ -39,6 +42,7 @@ export default function UsersPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -221,52 +225,49 @@ export default function UsersPage() {
         
         <div className="flex flex-wrap items-center gap-2">
           {/* Import */}
-          <div className="relative">
-            <input 
-              type="file" 
-              id="import-excel" 
-              accept=".xlsx, .xls" 
-              className="hidden" 
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                e.target.value = "";
-                const { data, errors } = await parseExcelPreview(
-                  file,
-                  (row) => {
-                    const nama = String(row["nama *"] ?? row["nama"] ?? "").trim();
-                    const username = String(row["username *"] ?? row["username"] ?? "").trim();
-                    const password = String(row["password *"] ?? row["password"] ?? "").trim();
-                    if (!nama || !username || !password) return null;
-                    return {
-                      nama,
-                      username,
-                      password,
-                      role: String(row["role"] ?? "petugas").trim(),
-                      is_active: String(row["is_active (Ya/Tidak)"] ?? row["is_active"] ?? "Ya").trim().toLowerCase() !== "tidak" ? "Ya" : "Tidak",
-                    };
-                  }
-                );
-                setImportData(data);
-                setImportErrors(errors);
-                setShowImportModal(true);
-                if (errors.length > 0) {
-                  console.warn("Import preview errors:", errors);
-                }
-              }}
-            />
-            <button
-              onClick={() => document.getElementById('import-excel')?.click()}
-              className="btn btn-secondary flex items-center gap-2"
-              title="Import dari Excel"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+          <div className="relative group">
+            <button className="btn btn-secondary flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               <span>Import</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
             </button>
+            <div className="absolute right-0 mt-1 w-52 border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50" style={{ background: "var(--bg-secondary)" }}>
+              <button onClick={() => downloadImportTemplate("Pengguna", ["nama *", "username *", "password *", "role (admin/petugas)", "is_active (Ya/Tidak)"], [
+                ["Budi Santoso", "budi.santoso", "password123", "petugas", "Ya"],
+                ["Admin Utama", "admin.utama", "admin12345", "admin", "Ya"],
+              ])} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover first:rounded-t-xl flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                Unduh Template (.xlsx)
+              </button>
+              <label className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover last:rounded-b-xl flex items-center gap-2 cursor-pointer" style={{ color: "var(--text-primary)" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                Upload File Excel
+                <input type="file" accept=".xlsx,.xls" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  e.target.value = "";
+                  const { data, errors } = await parseExcelPreview(
+                    file,
+                    (row) => {
+                      const nama = String(row["nama *"] ?? row["nama"] ?? "").trim();
+                      const username = String(row["username *"] ?? row["username"] ?? "").trim();
+                      const password = String(row["password *"] ?? row["password"] ?? "").trim();
+                      if (!nama || !username || !password) return null;
+                      return {
+                        nama,
+                        username,
+                        password,
+                        role: String(row["role (admin/petugas)"] ?? row["role"] ?? "petugas").trim(),
+                        is_active: String(row["is_active (Ya/Tidak)"] ?? row["is_active"] ?? "Ya").trim().toLowerCase() !== "tidak" ? "Ya" : "Tidak",
+                      };
+                    }
+                  );
+                  setImportData(data);
+                  setImportErrors(errors);
+                  setShowImportModal(true);
+                }} />
+              </label>
+            </div>
           </div>
 
           {/* Export Dropdown */}
@@ -376,78 +377,83 @@ export default function UsersPage() {
             <div className="spinner" />
           </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th className="w-12 text-center">No.</th>
-                <th>Nama</th>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.length === 0 ? (
+          <>
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-muted">
-                    Tidak ada data pengguna ditemukan.
-                  </td>
+                  <th className="w-12 text-center">No.</th>
+                  <th>Nama</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
                 </tr>
-              ) : (
-                data.map((item, index) => (
-                  <tr key={item.id}>
-                    <td className="text-center font-mono text-xs text-muted">{index + 1}</td>
-                    <td className="font-medium">{item.nama}</td>
-                    <td className="font-mono text-xs text-secondary">{item.username}</td>
-                    <td>
-                      <span
-                        className="text-[10px] font-bold px-2 py-0.5 rounded"
-                        style={{
-                          background: item.role === "admin" ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.06)",
-                          color: item.role === "admin" ? "#60a5fa" : "var(--text-secondary)",
-                          border: `1px solid ${item.role === "admin" ? "rgba(59,130,246,0.3)" : "var(--border-light)"}`,
-                        }}
-                      >
-                        {item.role.toUpperCase()}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => handleToggleActive(item)}
-                        className={`flex items-center gap-2 px-2 py-1 rounded-full text-[10px] font-bold transition-all ${
-                          item.is_active 
-                            ? "bg-green-500/20 text-green-400 border border-green-500/30" 
-                            : "bg-red-500/20 text-red-400 border border-red-500/30"
-                        }`}
-                      >
-                        <div className={`w-1.5 h-1.5 rounded-full ${item.is_active ? "bg-green-400" : "bg-red-400"}`} />
-                        {item.is_active ? "AKTIF" : "NONAKTIF"}
-                      </button>
-                    </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <button
-                          id={`btn-edit-user-${item.id}`}
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => handleEdit(item)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          id={`btn-delete-user-${item.id}`}
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDeleteClick(item.id)}
-                        >
-                          Hapus
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {data.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-muted">
+                      Tidak ada data pengguna ditemukan.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((item, index) => (
+                    <tr key={item.id}>
+                      <td className="text-center font-mono text-xs text-muted">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+                      <td className="font-medium">{item.nama}</td>
+                      <td className="font-mono text-xs text-secondary">{item.username}</td>
+                      <td>
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded"
+                          style={{
+                            background: item.role === "admin" ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.06)",
+                            color: item.role === "admin" ? "#60a5fa" : "var(--text-secondary)",
+                            border: `1px solid ${item.role === "admin" ? "rgba(59,130,246,0.3)" : "var(--border-light)"}`,
+                          }}
+                        >
+                          {item.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleToggleActive(item)}
+                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-[10px] font-bold transition-all ${
+                            item.is_active 
+                              ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                              : "bg-red-500/20 text-red-400 border border-red-500/30"
+                          }`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full ${item.is_active ? "bg-green-400" : "bg-red-400"}`} />
+                          {item.is_active ? "AKTIF" : "NONAKTIF"}
+                        </button>
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          <button
+                            id={`btn-edit-user-${item.id}`}
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleEdit(item)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            id={`btn-delete-user-${item.id}`}
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteClick(item.id)}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <div className="px-4 pb-4">
+              <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setCurrentPage(p)} />
+            </div>
+          </>
         )}
       </div>
       </div>
