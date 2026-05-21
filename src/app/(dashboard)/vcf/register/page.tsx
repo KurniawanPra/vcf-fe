@@ -425,7 +425,6 @@ export default function VcfRegisterPage() {
       };
 
       const res = await vcfApi.createBagian1(payload);
-      console.log("API Response:", res.data);
       const vcfId = res.data.data?.id || res.data.id;
       
       toast.success("Registrasi Berhasil", "Data VCF telah didaftarkan ke sistem.");
@@ -435,7 +434,6 @@ export default function VcfRegisterPage() {
         router.push("/vcf");
       }, 1000);
     } catch (err: any) {
-      console.error("API Error:", err);
       toast.error("Registrasi Gagal", getErrorMessage(err, "Gagal menyimpan VCF."));
     } finally {
       setLoading(false);
