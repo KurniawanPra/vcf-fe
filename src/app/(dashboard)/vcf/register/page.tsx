@@ -210,6 +210,8 @@ export default function VcfRegisterPage() {
   const [tujuan, setTujuan] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [checklist, setChecklist] = useState<Record<number, boolean | null>>({});
+  const [brutoFrom, setBrutoFrom] = useState("");
+  const [taraFrom, setTaraFrom] = useState("");
 
   const [muatanDibawa, setMuatanDibawa] = useState<Record<number, { checked: boolean; nilai: string }>>({});
   const [muatanDiisi, setMuatanDiisi] = useState<Record<number, { checked: boolean; nilai: string }>>({});
@@ -422,6 +424,8 @@ export default function VcfRegisterPage() {
         muatan_diisi: isLoading ? buildMuatanPayload(muatanDiisi, muatanDiisiLainnya) : [],
         keterangan: keteranganFinal,
         qr_signature: qrSignature,
+        bruto_from: brutoFrom ? parseFloat(brutoFrom) : null,
+        tara_from: taraFrom ? parseFloat(taraFrom) : null,
       };
 
       const res = await vcfApi.createBagian1(payload);
@@ -728,6 +732,44 @@ export default function VcfRegisterPage() {
               {produkKode === "OTHERS" && (
                 <input type="text" className="form-input mt-3" placeholder="Sebutkan produk lainnya..." value={produkLainnya} onChange={e => setProdukLainnya(e.target.value)} required />
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Rujukan Timbangan Asal */}
+        <div className="glass-card p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-text-primary">Rujukan Timbangan Asal (Optional)</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="form-label">Bruto Asal (kg)</label>
+              <input
+                type="number"
+                step="any"
+                className="form-input"
+                placeholder="Masukkan Bruto Asal"
+                value={brutoFrom}
+                onChange={(e) => setBrutoFrom(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="form-label">Tarra Asal (kg)</label>
+              <input
+                type="number"
+                step="any"
+                className="form-input"
+                placeholder="Masukkan Tarra Asal"
+                value={taraFrom}
+                onChange={(e) => setTaraFrom(e.target.value)}
+              />
             </div>
           </div>
         </div>

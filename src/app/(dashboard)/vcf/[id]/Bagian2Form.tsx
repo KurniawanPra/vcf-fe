@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { vcfApi, masterApi, violationApi } from "@/lib/api";
+import { vcfApi, masterApi, violationApi, timbanganApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { VCF_STATUS } from "@/constants/vcfStatus";
@@ -42,6 +42,13 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
   const [keteranganUmum, setKeteranganUmum] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [scaleWeight, setScaleWeight] = useState("");
+
+  const activityType = vcfData?.tipe_kegiatan || "";
+  const isLoading = activityType.startsWith("loading");
+  const isUnloading = activityType.startsWith("unloading");
+  const existingWeight = isLoading ? vcfData?.timbangan?.tara : vcfData?.timbangan?.bruto;
+  const hasExistingWeight = existingWeight !== null && existingWeight !== undefined;
 
   // Dispatch modal events for isEditing
   useEffect(() => {
@@ -326,8 +333,24 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       return;
     }
 
+    if (!hasExistingWeight && !isEditing) {
+      if (!scaleWeight || isNaN(parseFloat(scaleWeight)) || parseFloat(scaleWeight) <= 0) {
+        toast.error("Validasi Gagal", `Berat ${isLoading ? 'Tara' : 'Bruto'} wajib diisi dengan angka positif.`);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
+      if (!hasExistingWeight && !isEditing) {
+        const weightNum = parseFloat(scaleWeight);
+        if (isLoading) {
+          await timbanganApi.updateTara(vcfId, weightNum);
+        } else {
+          await timbanganApi.updateBruto(vcfId, weightNum);
+        }
+      }
+
       const pemItems = pemeriksaanItems.map((item) => ({
         item_id: item.id,
         nilai: pemeriksaan[item.id],
@@ -452,6 +475,33 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               )}
             </div>
           )}
+
+          {/* Timbangan Weighbridge Masuk Result */}
+          <div className="mt-6 pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+              <p className="form-label text-blue-500 font-bold">Berat Masuk ({isLoading ? "Tarra" : "Bruto"})</p>
+              <span className="px-2.5 py-1 bg-blue-500/10 rounded-lg text-lg font-mono text-blue-600 dark:text-blue-400 font-bold">
+                {isLoading 
+                  ? (vcfData?.timbangan?.tara ? `${vcfData.timbangan.tara} kg` : "—") 
+                  : (vcfData?.timbangan?.bruto ? `${vcfData.timbangan.bruto} kg` : "—")}
+              </span>
+            </div>
+            
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+              <p className="form-label text-text-muted font-bold">Rujukan Timbangan Asal</p>
+              <div className="grid grid-cols-2 gap-2 text-sm mt-1">
+                <div>
+                  <span className="text-xs text-text-muted">Bruto Asal:</span>
+                  <p className="font-bold text-text-primary">{vcfData?.timbangan?.bruto_from ? `${vcfData.timbangan.bruto_from} kg` : "—"}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted">Tarra Asal:</span>
+                  <p className="font-bold text-text-primary">{vcfData?.timbangan?.tara_from ? `${vcfData.timbangan.tara_from} kg` : "—"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {vcfData.segel_masuk && (
             <div className="mt-6 pt-6 border-t border-border">
               <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
@@ -480,6 +530,59 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* WEIGHING SCALE INPUT */}
+        {!hasExistingWeight && (
+          <div className="glass-card p-6 shadow-sm border border-blue-500/20 bg-blue-50/5 dark:bg-blue-500/[0.02]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-text-primary">Timbangan Weighbridge Masuk</h3>
+                <p className="text-xs text-text-muted">Input berat kendaraan saat masuk</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="form-label font-bold text-blue-600">
+                  {isLoading ? "Berat Tarra Masuk (kg) *" : "Berat Bruto Masuk (kg) *"}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  className="form-input text-lg font-mono"
+                  placeholder={`Masukkan berat ${isLoading ? 'tara' : 'bruto'}...`}
+                  value={scaleWeight}
+                  onChange={(e) => setScaleWeight(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-text-muted mt-1">
+                  Proses: <span className="font-bold uppercase text-blue-500">{isLoading ? "Loading (Masuk = Tara)" : "Unloading (Masuk = Bruto)"}</span>
+                </p>
+              </div>
+              
+              {/* Reference Weight from Registration */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex flex-col justify-center">
+                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Rujukan Timbangan Asal</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-xs text-text-muted">Bruto Asal:</span>
+                    <p className="font-bold text-text-primary">{vcfData?.timbangan?.bruto_from ? `${vcfData.timbangan.bruto_from} kg` : "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-text-muted">Tarra Asal:</span>
+                    <p className="font-bold text-text-primary">{vcfData?.timbangan?.tara_from ? `${vcfData.timbangan.tara_from} kg` : "—"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4">
           {pemeriksaanItems.map((item) => {
             const options = item.tipe_jawaban && item.tipe_jawaban.includes(',') ? item.tipe_jawaban.split(',').map(o => o.trim()) : null;

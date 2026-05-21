@@ -150,10 +150,10 @@ export default function PrintTemplate({
           {/* ── SHARED HEADER ── */}
           <table style={{ width: "100%", marginBottom: 0, borderCollapse: "collapse" }}>
             <colgroup>
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "50%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "47%" }} />
+              <col style={{ width: "19%" }} />
+              <col style={{ width: "19%" }} />
             </colgroup>
             <tbody>
               {/* Row 1–4: Logo + Company Info + Doc metadata */}

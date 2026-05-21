@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { PRINT_STYLES } from "./PrintElements";
+import { settingsApi } from "@/lib/api";
 
 interface PrintMasterTableProps {
   title: string;
@@ -13,6 +14,7 @@ interface PrintMasterTableProps {
   docNo?: string;
   revNo?: string;
   effDate?: string;
+  orientation?: "portrait" | "landscape";
 }
 
 export default function PrintMasterTable({
@@ -24,9 +26,33 @@ export default function PrintMasterTable({
   docNo = "—",
   revNo = "—",
   effDate = "—",
+  orientation = "portrait",
 }: PrintMasterTableProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [printSettings, setPrintSettings] = useState({
+    company_name: "PT. INDUSTRI NABATI LESTARI",
+    company_address: "Komp.KEK Sei Mangkei, Kav.2-3, Kec. Bosar Maligas, Kab. Simalungun, Sumatera Utara, 21183",
+    font_family: "Arial, sans-serif",
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const resSettings = await settingsApi.getPrint().catch(() => ({ data: { data: {} } }));
+        const settings = resSettings.data?.data || {};
+        setPrintSettings({
+          company_name: settings["print.company_name"] || "PT. INDUSTRI NABATI LESTARI",
+          company_address: settings["print.company_address"] || "Komp.KEK Sei Mangkei, Kav.2-3, Kec. Bosar Maligas, Kab. Simalungun, Sumatera Utara, 21183",
+          font_family: settings["print.font_family"] || "Arial, sans-serif",
+        });
+      } catch (err) {
+        console.error("Failed to fetch settings for master table printing", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handlePrint = () => {
     const html = printRef.current?.innerHTML;
@@ -38,8 +64,8 @@ export default function PrintMasterTable({
         <head>
           <title>${title}</title>
           <style>
-            @page { size: A4 portrait; margin: 0; }
-            body { font-family: Arial, sans-serif; font-size: 9px; color: #000; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4 ${orientation}; margin: 0; }
+            body { font-family: ${printSettings.font_family}; font-size: 9px; color: #000; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             * { box-sizing: border-box; }
             table { border-collapse: collapse; width: 100%; table-layout: fixed; }
             th, td { border: 1px solid #000; padding: 3px 6px; vertical-align: middle; font-size: 9px; word-wrap: break-word; }
@@ -62,7 +88,7 @@ export default function PrintMasterTable({
       <div 
         ref={containerRef}
         style={{ 
-          width: "210mm", 
+          width: orientation === "landscape" ? "297mm" : "210mm", 
           height: "fit-content", 
           background: "#fff", 
           flexShrink: 0,
@@ -101,30 +127,29 @@ export default function PrintMasterTable({
                   </div>
                 </td>
                 <td rowSpan={3} style={{ ...PRINT_STYLES.CELL, textAlign: "center", verticalAlign: "middle", padding: "4px 6px" }}>
-                  <div style={{ fontWeight: "bold", fontSize: 11, letterSpacing: 0.3 }}>PT. INDUSTRI NABATI LESTARI</div>
-                  <div style={{ fontWeight: "bold", fontSize: 9, marginTop: 1 }}>PABRIK MINYAK GORENG</div>
+                  <div style={{ fontWeight: "bold", fontSize: 11, letterSpacing: 0.3, textDecoration: "underline" }}>{printSettings.company_name}</div>
+                  <div style={{ fontSize: 9, marginTop: 1 }}>PABRIK MINYAK GORENG</div>
                   <div style={{ fontSize: 8, marginTop: 2, lineHeight: 1.4 }}>
-                    Komp.KEK Sei Mangkei, Kav.2-3, Kec. Bosar Maligas,<br />
-                    Kab. Simalungun, Sumatera Utara, 21183
+                    {printSettings.company_address}
                   </div>
                 </td>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>No. Dokumen</td>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8, fontWeight: "bold" }}>{docNo}</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>No. Dokumen</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8, fontWeight: "bold" }}>{docNo}</td>
               </tr>
               <tr>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>Tgl berlaku</td>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>{effDate}</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>Tgl berlaku</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>{effDate}</td>
               </tr>
               <tr>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>No. Revisi</td>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>{revNo}</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>No. Revisi</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>{revNo}</td>
               </tr>
               <tr>
-                <td style={{ ...PRINT_STYLES.CELL, textAlign: "center", verticalAlign: "middle", fontWeight: "bold", fontSize: 10, padding: "5px 4px", borderTop: "1px solid #000" }}>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, textAlign: "center", verticalAlign: "middle", fontWeight: "bold", fontSize: 10, padding: "5px 4px", borderTop: "1px solid #000" }}>
                   {title.toUpperCase()}
                 </td>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>Halaman</td>
-                <td style={{ ...PRINT_STYLES.CELL, fontSize: 8 }}>1 dari 1</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>Halaman</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>1 dari 1</td>
               </tr>
             </tbody>
           </table>
@@ -178,7 +203,7 @@ export default function PrintMasterTable({
               Dokumen ini dicetak dari sistem VCF — PT. Industri Nabati Lestari. Hanya untuk keperluan internal.
             </div>
             <div style={{ fontWeight: "bold", fontSize: 8, letterSpacing: 0.3, textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
-              PT. INDUSTRI NABATI LESTARI
+              {printSettings.company_name}
             </div>
           </div>
         </div>

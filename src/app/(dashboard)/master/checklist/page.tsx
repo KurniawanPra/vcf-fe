@@ -241,7 +241,7 @@ export default function ChecklistPage() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
             </button>
             <div className="absolute right-0 mt-1 w-44 border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50" style={{ background: "var(--bg-secondary)" }}>
-              <button onClick={() => exportToExcel("Data_Checklist", ["ID","Nama Item","Keterangan","Urutan","Status"], data.map(i => [i.id, i.nama_item, i.keterangan, i.urutan, i.is_active ? 'Aktif' : 'Nonaktif']))} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover first:rounded-t-xl" style={{ color: "var(--text-primary)" }}>Excel (.xlsx)</button>
+              <button onClick={() => exportToExcel("Data_Checklist", ["No.","Nama Item","Keterangan","Urutan","Status"], data.map((i, index) => [index + 1, i.nama_item, i.keterangan, i.urutan, i.is_active ? 'Aktif' : 'Nonaktif']))} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover first:rounded-t-xl" style={{ color: "var(--text-primary)" }}>Excel (.xlsx)</button>
               <button onClick={() => setIsPrinting(true)} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover last:rounded-b-xl" style={{ color: "var(--text-primary)" }}>Cetak / PDF</button>
             </div>
           </div>

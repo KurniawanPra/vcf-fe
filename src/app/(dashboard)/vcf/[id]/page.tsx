@@ -15,6 +15,7 @@ const Bagian3Form = lazy(() => import("./Bagian3Form"));
 const Bagian4Form = lazy(() => import("./Bagian4Form"));
 const PrintVCF = lazy(() => import("./PrintVCF"));
 const Bagian1EditModal = lazy(() => import("./Bagian1EditModal"));
+const AdminTimbanganModal = lazy(() => import("./AdminTimbanganModal"));
 
 // Form loading skeleton
 function FormSkeleton() {
@@ -77,6 +78,15 @@ interface VcfDetail {
   nama_petugas_wb_keluar?: string;
   nama_petugas_main_gate_keluar?: string;
   keterangan?: string;
+  timbangan?: {
+    id: number;
+    vcf_id: number;
+    bruto_from?: number | null;
+    tara_from?: number | null;
+    bruto?: number | null;
+    tara?: number | null;
+    netto?: number | null;
+  };
 }
 
 const STEPS = [
@@ -142,6 +152,7 @@ export default function VcfDetailPage() {
   const [showPrint, setShowPrint] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showBagian1Edit, setShowBagian1Edit] = useState(false);
+  const [showAdminTimbangan, setShowAdminTimbangan] = useState(false);
 
   const fetchVcf = useCallback(async () => {
     try {
@@ -873,6 +884,76 @@ export default function VcfDetailPage() {
                 </div>
               </div>
 
+              {/* Timbangan Section */}
+              {vcf.timbangan && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs uppercase tracking-wider font-bold flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      Data Timbangan Weighbridge
+                    </h4>
+                    {isAdmin() && (
+                      <button
+                        onClick={() => setShowAdminTimbangan(true)}
+                        className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                        </svg>
+                        Edit (Admin)
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Timbangan Asal */}
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                      <p className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-2">Rujukan Timbangan Asal</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-[10px] text-text-muted">Bruto Asal:</span>
+                          <p className="font-bold text-text-primary mt-0.5">{vcf.timbangan.bruto_from ? `${vcf.timbangan.bruto_from} kg` : "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-text-muted">Tarra Asal:</span>
+                          <p className="font-bold text-text-primary mt-0.5">{vcf.timbangan.tara_from ? `${vcf.timbangan.tara_from} kg` : "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timbangan Masuk & Keluar */}
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 md:col-span-2">
+                      <p className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-2">Hasil Timbang Weighbridge</p>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-[10px] text-text-muted">WB Masuk ({vcf.tipe_kegiatan?.startsWith("loading") ? "Tarra" : "Bruto"}):</span>
+                          <p className="font-bold text-blue-600 dark:text-blue-400 text-base mt-0.5">
+                            {vcf.timbangan.tara && vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.tara} kg` : 
+                             vcf.timbangan.bruto && !vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.bruto} kg` : "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-text-muted">WB Keluar ({vcf.tipe_kegiatan?.startsWith("loading") ? "Bruto" : "Tarra"}):</span>
+                          <p className="font-bold text-purple-600 dark:text-purple-400 text-base mt-0.5">
+                            {vcf.timbangan.bruto && vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.bruto} kg` : 
+                             vcf.timbangan.tara && !vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.tara} kg` : "—"}
+                          </p>
+                        </div>
+                        <div className="border-l border-border pl-4">
+                          <span className="text-[10px] text-emerald-500 font-bold uppercase">Netto (Bruto - Tarra):</span>
+                          <p className="font-black text-emerald-600 dark:text-emerald-400 text-lg mt-0.5">
+                            {vcf.timbangan.netto ? `${vcf.timbangan.netto} kg` : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Keterangan Petugas */}
               {vcf.keterangan ? (
                 <div className="p-4 rounded-xl border-l-4" style={{ background: "rgba(59, 130, 246, 0.05)", borderColor: "#60a5fa" }}>
@@ -1298,6 +1379,19 @@ export default function VcfDetailPage() {
       {showPrint && vcf && (
         <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="spinner" /></div>}>
           <PrintVCF vcf={vcf as any} onClose={() => setShowPrint(false)} />
+        </Suspense>
+      )}
+
+      {/* Admin Timbangan Override Modal */}
+      {showAdminTimbangan && vcf && (
+        <Suspense fallback={null}>
+          <AdminTimbanganModal
+            isOpen={showAdminTimbangan}
+            onClose={() => setShowAdminTimbangan(false)}
+            vcfId={vcf.id}
+            initialData={vcf.timbangan}
+            onSuccess={fetchVcf}
+          />
         </Suspense>
       )}
     </div>

@@ -161,6 +161,15 @@
     finalizeVcf: (id: number) => api.post(`/vcf/${id}/finalize`),
   };
 
+  // ── Timbangan ────────────────────────────────────────────────────────────────
+  export const timbanganApi = {
+    get: (vcfId: number) => api.get(`/vcf/${vcfId}/timbangan`),
+    store: (data: { vcf_id: number; bruto_from?: number | string; tara_from?: number | string }) => api.post("/vcf/timbangan", data),
+    updateBruto: (vcfId: number, bruto: number) => api.post(`/vcf/${vcfId}/timbangan/bruto`, { bruto }),
+    updateTara: (vcfId: number, tara: number) => api.post(`/vcf/${vcfId}/timbangan/tara`, { tara }),
+    updateAdmin: (vcfId: number, data: { bruto_from?: number | string | null, tara_from?: number | string | null, bruto?: number | string | null, tara?: number | string | null }) => api.put(`/vcf/${vcfId}/timbangan/admin`, data),
+  };
+
   // ── Violations ───────────────────────────────────────────────────────────────
   export const violationApi = {
     check: (params: { driver_id?: number | string; no_polisi?: string }) =>

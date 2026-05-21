@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
 import { getStatusLabel, getStatusColor, getErrorMessage } from "@/lib/utils";
-import { exportToExcel } from "@/lib/exportUtils";
+import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 import PrintVCF from "../[id]/PrintVCF";
 import PrintMasterTable from "@/components/print/PrintMasterTable";
 import Pagination from "@/components/Pagination";
@@ -20,8 +20,15 @@ interface Vcf {
   tanggal: string;
   jam_masuk: string;
   transporter?: { nama_transporter: string };
-  driver?: { nama_supir: string };
+  driver?: { nama_supir: string; no_sim?: string };
   produk?: string;
+  timbangan?: {
+    bruto_from?: number | null;
+    bruto?: number | null;
+    tara_from?: number | null;
+    tara?: number | null;
+    netto?: number | null;
+  };
 }
 
 const STAGE_FILTERS: Record<string, string> = {
@@ -204,16 +211,22 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     }
   };
 
-  const exportHeaders = ["No. Urut", "Tanggal", "No. Polisi", "Supir", "Transporter", "Produk", "Tipe", "Status"];
+  const exportHeaders = ["No. Urut", "Tanggal", "No. Polisi", "Supir", "No. SIM", "Transporter", "Produk", "Tipe", "Status", "Bruto Asal", "Bruto WB", "Tara Asal", "Tara WB", "Netto"];
   const exportData = vcfs.map(v => [
     v.nomor_urut,
     v.tanggal,
     v.no_polisi,
     v.driver?.nama_supir || "—",
+    v.driver?.no_sim || "—",
     v.transporter?.nama_transporter || "—",
     v.produk || "—",
     v.tipe_kegiatan?.replace(/_/g, " "),
     getStatusLabel(v.status),
+    v.timbangan?.bruto_from || "—",
+    v.timbangan?.bruto || "—",
+    v.timbangan?.tara_from || "—",
+    v.timbangan?.tara || "—",
+    v.timbangan?.netto || "—",
   ]);
 
   return (
@@ -255,9 +268,15 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
               </svg>
-              Print
+              Print HTML
             </button>
-            <button onClick={() => exportToExcel(`VCF_Export_${stageFilter}`, exportHeaders, exportData)} className="btn btn-primary btn-sm flex items-center gap-2">
+            <button onClick={() => exportToPDF(`VCF_Export_${stageFilter || 'Semua'}`, `Daftar VCF — ${stageLabel}`, exportHeaders, exportData, `Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`)} className="btn btn-primary btn-sm flex items-center gap-2 bg-red-500 hover:bg-red-600 border-none text-white">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+              </svg>
+              PDF
+            </button>
+            <button onClick={() => exportToExcel(`VCF_Export_${stageFilter || 'Semua'}`, exportHeaders, exportData, `Daftar VCF — ${stageLabel}`, `Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`)} className="btn btn-primary btn-sm flex items-center gap-2 bg-green-500 hover:bg-green-600 border-none text-white">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
@@ -337,9 +356,13 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                       <th className="text-center">Tanggal</th>
                       <th className="w-32 min-w-32 text-center">No. Polisi</th>
                       <th className="text-center">Supir</th>
+                      <th className="text-center">No. SIM</th>
                       <th className="text-center">Transporter</th>
                       <th className="text-center">Produk</th>
                       <th className="text-center">Tipe</th>
+                      <th className="text-center">Bruto (Asal/WB)</th>
+                      <th className="text-center">Tara (Asal/WB)</th>
+                      <th className="text-center">Netto</th>
                       <th className="text-center">Status</th>
                       <th className="w-40 text-center">Aksi</th>
                     </tr>
@@ -350,19 +373,33 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                         <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
                         <td className="text-xs">{vcf.tanggal}</td>
                         <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white">{vcf.no_polisi}</td>
-                        <td className="text-xs">{vcf.driver?.nama_supir || "—"}</td>
+                        <td className="text-xs">
+                          {vcf.driver?.nama_supir || "—"}
+                        </td>
+                        <td className="text-xs">
+                          {vcf.driver?.no_sim || "—"}
+                        </td>
                         <td className="text-xs">{vcf.transporter?.nama_transporter || "—"}</td>
                         <td>
                           {vcf.produk ? (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{vcf.produk}</span>
                           ) : "—"}
                         </td>
-                        <td className="w-32 min-w-32">
+                        <td className="w-32 min-w-32 text-center">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-400" : "bg-emerald-500/10 text-emerald-400"}`}>
                             {vcf.tipe_kegiatan?.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="w-32 min-w-32">
+                        <td className="text-xs text-center font-mono">
+                          <span className="text-slate-500">{vcf.timbangan?.bruto_from || "-"}</span> / <span className="text-blue-500 font-bold">{vcf.timbangan?.bruto || "-"}</span>
+                        </td>
+                        <td className="text-xs text-center font-mono">
+                          <span className="text-slate-500">{vcf.timbangan?.tara_from || "-"}</span> / <span className="text-purple-500 font-bold">{vcf.timbangan?.tara || "-"}</span>
+                        </td>
+                        <td className="text-xs text-center font-bold text-emerald-500 font-mono">
+                          {vcf.timbangan?.netto || "-"}
+                        </td>
+                        <td className="w-32 min-w-32 text-center">
                           <span className={`status-badge ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
                         </td>
                         <td>
@@ -490,6 +527,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
           subtitle={`Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`}
           headers={exportHeaders}
           data={exportData}
+          orientation="landscape"
           onClose={() => setIsPrinting(false)}
         />
       )}

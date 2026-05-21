@@ -70,6 +70,15 @@
     nama_petugas_wb_masuk?: string;
     nama_petugas_wb_keluar?: string;
     nama_petugas_main_gate_keluar?: string;
+    timbangan?: {
+      id: number;
+      vcf_id: number;
+      bruto_from?: number | null;
+      tara_from?: number | null;
+      bruto?: number | null;
+      tara?: number | null;
+      netto?: number | null;
+    };
   }
 
   interface Props {
@@ -315,7 +324,10 @@
                   </span>
                 )}
               </td>
-              <td colSpan={2} style={PRINT_STYLES.CELL}></td>
+              <td colSpan={2} style={PRINT_STYLES.CELL}>
+                <strong>Bruto Asal</strong>: <UL w={60} val={vcf.timbangan?.bruto_from ? `${vcf.timbangan.bruto_from} kg` : "-"} /> &nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>Tarra Asal</strong>: <UL w={60} val={vcf.timbangan?.tara_from ? `${vcf.timbangan.tara_from} kg` : "-"} />
+              </td>
             </tr>
 
             <tr>
@@ -527,6 +539,13 @@
                 </tr>
               </>
             )}
+            {/* Timbangan WB Masuk */}
+            <tr>
+              <td colSpan={4} style={PRINT_STYLES.CELL}>
+                <strong>Berat Timbang Masuk ({isLoading ? "Tarra" : "Bruto"})</strong>:{" "}
+                <UL w={60} val={hasBagian2Data ? (isLoading ? (vcf.timbangan?.tara ? `${vcf.timbangan.tara} kg` : "-") : (vcf.timbangan?.bruto ? `${vcf.timbangan.bruto} kg` : "-")) : "-"} />
+              </td>
+            </tr>
           </tbody>
         </table>
         {/* ── Keterangan + QR — tabel tersendiri, struktur bersih ── */}
@@ -623,6 +642,21 @@
                 </tr>
               </>
             )}
+            {/* Timbangan WB Keluar & Netto */}
+            <tr>
+              <td colSpan={4} style={PRINT_STYLES.CELL}>
+                <div style={{ display: "flex", gap: 15 }}>
+                  <span>
+                    <strong>Berat Timbang Keluar ({isLoading ? "Bruto" : "Tarra"})</strong>:{" "}
+                    <UL w={60} val={hasBagian3Data ? (isLoading ? (vcf.timbangan?.bruto ? `${vcf.timbangan.bruto} kg` : "-") : (vcf.timbangan?.tara ? `${vcf.timbangan.tara} kg` : "-")) : "-"} />
+                  </span>
+                  <span>
+                    <strong>Netto</strong>:{" "}
+                    <UL w={60} val={hasBagian3Data && vcf.timbangan?.netto ? `${vcf.timbangan.netto} kg` : "-"} />
+                  </span>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
         {/* ── Keterangan + QR — tabel tersendiri, struktur bersih ── */}

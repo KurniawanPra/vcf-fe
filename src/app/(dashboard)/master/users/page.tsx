@@ -286,8 +286,8 @@ export default function UsersPage() {
             <div className="absolute right-0 mt-1 w-40 bg-bg-secondary border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
               <button 
                 onClick={() => {
-                  const headers = ["ID", "Nama", "Username", "Role", "Status"];
-                  const dataArr = data.map(u => [u.id, u.nama, u.username, u.role, u.is_active ? 'Aktif' : 'Nonaktif']);
+                  const headers = ["No.", "Nama", "Username", "Role", "Status"];
+                  const dataArr = data.map((u, index) => [index + 1, u.nama, u.username, u.role, u.is_active ? 'Aktif' : 'Nonaktif']);
                   exportToExcel("Data_Pengguna", headers, dataArr);
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover first:rounded-t-xl"
@@ -296,8 +296,8 @@ export default function UsersPage() {
               </button>
               <button 
                 onClick={async () => {
-                  const headers = ["ID", "Nama", "Username", "Role", "Status"];
-                  const dataArr = data.map(u => [u.id, u.nama, u.username, u.role, u.is_active ? 'Aktif' : 'Nonaktif']);
+                  const headers = ["No.", "Nama", "Username", "Role", "Status"];
+                  const dataArr = data.map((u, index) => [index + 1, u.nama, u.username, u.role, u.is_active ? 'Aktif' : 'Nonaktif']);
                   await exportToPDF("Data_Pengguna", "Laporan Master Data Pengguna", headers, dataArr);
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover"
@@ -306,8 +306,8 @@ export default function UsersPage() {
               </button>
               <button 
                 onClick={async () => {
-                  const headers = ["ID", "Nama", "Username", "Role", "Status"];
-                  const dataArr = data.map(u => [u.id, u.nama, u.username, u.role, u.is_active ? 'Aktif' : 'Nonaktif']);
+                  const headers = ["No.", "Nama", "Username", "Role", "Status"];
+                  const dataArr = data.map((u, index) => [index + 1, u.nama, u.username, u.role, u.is_active ? 'Aktif' : 'Nonaktif']);
                   await exportToDocx("Data_Pengguna", "Laporan Master Data Pengguna", headers, dataArr);
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover last:rounded-b-xl"

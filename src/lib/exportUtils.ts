@@ -6,16 +6,19 @@ import { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, Bor
 
 export type ExportFormat = 'pdf' | 'excel' | 'docx';
 
-export const exportToExcel = (filename: string, headers: string[], data: any[][]) => {
+export const exportToExcel = (filename: string, headers: string[], data: any[][], title?: string, subtitle?: string) => {
   // Create header rows mimicking the image
-  const headerInfo = [
+  const headerInfo: any[][] = [
     ["PT. INDUSTRI NABATI LESTARI", "", "", "", "No. Dokumen", "FM-BSHS-42/01"],
     ["PABRIK MINYAK GORENG", "", "", "", "Tgl berlaku", "13-Mar-25"],
     ["Komp. KEK Sei Mangkei, Kav. 2-3, Kec. Bosar Maligas, Kab. Simalungun", "", "", "", "No. Revisi", "01"],
-    ["VEHICLE CONTROL FORM (VCF)", "", "", "", "Halaman", "1 dari 1"],
-    [],
-    headers
+    [title || "VEHICLE CONTROL FORM (VCF)", "", "", "", "Halaman", "1 dari 1"],
   ];
+  if (subtitle) {
+    headerInfo.push([subtitle]);
+  }
+  headerInfo.push([]);
+  headerInfo.push(headers);
 
   const worksheet = XLSX.utils.aoa_to_sheet([...headerInfo, ...data]);
   
@@ -49,10 +52,17 @@ const getLogoBase64 = async () => {
 };
 
 const drawINLHeader = (doc: jsPDF, logoBase64: string | null, title: string) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
   const startX = 10;
   const startY = 10;
-  const width = 190;
+  const width = pageWidth - 20;
   const height = 30;
+
+  const logoWidth = 30;
+  const rightBoxWidth = 50;
+  const rightBoxX = startX + width - rightBoxWidth;
+  const dividerX = rightBoxX + 25;
+  const centerTextX = startX + logoWidth + (width - logoWidth - rightBoxWidth) / 2;
 
   // Outer border
   doc.setDrawColor(0);
@@ -60,14 +70,14 @@ const drawINLHeader = (doc: jsPDF, logoBase64: string | null, title: string) => 
   doc.rect(startX, startY, width, height);
 
   // Vertical dividers
-  doc.line(startX + 30, startY, startX + 30, startY + height); // Logo area
-  doc.line(startX + 140, startY, startX + 140, startY + height); // Middle area
-  doc.line(startX + 165, startY, startX + 165, startY + height); // Label/Value divider
+  doc.line(startX + logoWidth, startY, startX + logoWidth, startY + height); // Logo area
+  doc.line(rightBoxX, startY, rightBoxX, startY + height); // Middle area
+  doc.line(dividerX, startY, dividerX, startY + height); // Label/Value divider
 
   // Right side horizontal lines
-  doc.line(startX + 140, startY + 7.5, startX + width, startY + 7.5);
-  doc.line(startX + 140, startY + 15, startX + width, startY + 15);
-  doc.line(startX + 140, startY + 22.5, startX + width, startY + 22.5);
+  doc.line(rightBoxX, startY + 7.5, startX + width, startY + 7.5);
+  doc.line(rightBoxX, startY + 15, startX + width, startY + 15);
+  doc.line(rightBoxX, startY + 22.5, startX + width, startY + 22.5);
 
   // Logo
   if (logoBase64) {
@@ -89,16 +99,16 @@ const drawINLHeader = (doc: jsPDF, logoBase64: string | null, title: string) => 
   // Center Content
   doc.setTextColor(0);
   doc.setFontSize(10);
-  doc.text("PT. INDUSTRI NABATI LESTARI", startX + 85, startY + 6, { align: "center" });
+  doc.text("PT. INDUSTRI NABATI LESTARI", centerTextX, startY + 6, { align: "center" });
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text("PABRIK MINYAK GORENG", startX + 85, startY + 11, { align: "center" });
+  doc.text("PABRIK MINYAK GORENG", centerTextX, startY + 11, { align: "center" });
   doc.setFontSize(6);
-  doc.text("Komp. KEK Sei Mangkei, Kav. 2-3, Kec. Bosar Maligas, Kab. Simalungun, Sumatera Utara", startX + 85, startY + 16, { align: "center" });
+  doc.text("Komp. KEK Sei Mangkei, Kav. 2-3, Kec. Bosar Maligas, Kab. Simalungun, Sumatera Utara", centerTextX, startY + 16, { align: "center" });
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(title.toUpperCase(), startX + 85, startY + 25, { align: "center" });
+  doc.text(title.toUpperCase(), centerTextX, startY + 25, { align: "center" });
 
   // Right Side Content
   doc.setFontSize(7);
@@ -107,13 +117,13 @@ const drawINLHeader = (doc: jsPDF, logoBase64: string | null, title: string) => 
   const values = ["FM-BSHS-42/01", "13-Mar-25", "01", "1 dari 1"];
   
   labels.forEach((label, i) => {
-    doc.text(label, startX + 142, startY + 5 + (i * 7.5));
-    doc.text(values[i], startX + 167, startY + 5 + (i * 7.5));
+    doc.text(label, rightBoxX + 2, startY + 5 + (i * 7.5));
+    doc.text(values[i], dividerX + 2, startY + 5 + (i * 7.5));
   });
 };
 
-export const exportToPDF = async (filename: string, title: string, headers: string[], data: any[][]) => {
-  const doc = new jsPDF();
+export const exportToPDF = async (filename: string, title: string, headers: string[], data: any[][], subtitle?: string, orientation: "portrait" | "landscape" = "portrait") => {
+  const doc = new jsPDF({ orientation });
   const logoBase64 = await getLogoBase64();
   drawINLHeader(doc, logoBase64, title);
 
@@ -122,10 +132,16 @@ export const exportToPDF = async (filename: string, title: string, headers: stri
   doc.setTextColor(100);
   doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 56);
 
+  let startY = 62;
+  if (subtitle) {
+    doc.text(subtitle, 14, 60);
+    startY = 66;
+  }
+
   autoTable(doc, {
     head: [headers],
     body: data,
-    startY: 62,
+    startY: startY,
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [59, 130, 246] },
   });

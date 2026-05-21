@@ -203,7 +203,7 @@ export default function LogistikPage() {
               </svg>
             </button>
             <div className="absolute right-0 mt-1 w-44 border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50" style={{ background: "var(--bg-secondary)" }}>
-              <button onClick={() => exportToExcel("Data_Logistik", ["ID","Nama Logistik","Status"], data.map(i => [i.id, i.nama_logistik, i.is_active ? 'Aktif' : 'Nonaktif']))} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover first:rounded-t-xl" style={{ color: "var(--text-primary)" }}>Excel (.xlsx)</button>
+              <button onClick={() => exportToExcel("Data_Logistik", ["No.","Nama Logistik","Status"], data.map((i, index) => [index + 1, i.nama_logistik, i.is_active ? 'Aktif' : 'Nonaktif']))} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover first:rounded-t-xl" style={{ color: "var(--text-primary)" }}>Excel (.xlsx)</button>
               <button onClick={() => setIsPrinting(true)} className="w-full text-left px-4 py-2 text-sm hover:bg-bg-card-hover last:rounded-b-xl" style={{ color: "var(--text-primary)" }}>Cetak / PDF</button>
             </div>
           </div>
