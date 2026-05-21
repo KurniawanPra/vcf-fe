@@ -50,8 +50,7 @@ export async function fetchAndCacheMasterData(
 
     const tData = (tRes.data.data || tRes.data).filter((t: any) => t.is_active === true || t.is_active === 1 || t.is_active === "1");
     const dData = (dRes.data.data || dRes.data).filter((d: any) => d.is_active === true || d.is_active === 1 || d.is_active === "1");
-    const settings = sRes.data.data || {};
-    const showProdukLainnya = settings["vcf.show_produk_lainnya"] !== false;
+    const showProdukLainnya = true;
     const produkRaw = (pRes.data.data || pRes.data || []).filter((p: any) => p.is_active === true || p.is_active === 1 || p.is_active === "1");
     const produkOptions = produkRaw.map((p: any) => ({ kode: p.kode || p.nama, label: p.nama }));
 

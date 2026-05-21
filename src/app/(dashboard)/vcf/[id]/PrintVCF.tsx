@@ -137,7 +137,7 @@
           setPrintSettings({
             company_name: settings["print.company_name"] || "PT. Industri Nabati Lestari",
             company_address: settings["print.company_address"] || "Jl. Industri No. 123, Indonesia",
-            show_qr_signature: settings["print.show_qr_signature"] !== false,
+            show_qr_signature: true,
             footer_text: settings["print.footer_text"] || "Dokumen ini dihasilkan secara otomatis oleh sistem VCF",
             font_family: settings["print.font_family"] || "Arial, sans-serif",
           });

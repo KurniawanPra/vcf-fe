@@ -777,7 +777,6 @@ export default function VcfEditPage() {
                       </div>
                     </div>
                   ))}
-                  {/* Lainnya — controlled by vcf.show_produk_lainnya setting */}
                   {showProdukLainnya && (
                   <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/10">
                     <div className="flex items-center justify-between">
