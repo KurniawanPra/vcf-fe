@@ -5,8 +5,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: `${process.env.PATH_URL || '/backend'}/:path*`,
-        destination: `${process.env.API_URL || 'http://127.0.0.1:8000'}/api/:path*`,
+        source: '/backend/:path*',
+        destination: 'http://103.193.145.61:7777/api/:path*',
       },
     ];
   },
