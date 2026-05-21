@@ -860,8 +860,8 @@ export default function VcfRegisterPage() {
                 )}
               </div>
               <div>
-                <label className="form-label">Tujuan</label>
-                <input type="text" className="form-input" placeholder="Masukkan tujuan" value={tujuan} onChange={e => setTujuan(e.target.value)} />
+                <label className="form-label">{isLoading ? "Tujuan" : "Asal"}</label>
+                <input type="text" className="form-input" placeholder={isLoading ? "Masukkan tujuan" : "Masukkan asal"} value={tujuan} onChange={e => setTujuan(e.target.value)} />
               </div>
             </div>
           </div>
