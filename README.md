@@ -47,13 +47,8 @@ pnpm install
 Buat file `.env.local` atau cp `.env.local.example` menjadi `.env.local`  di root project:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-```
-
-Jika backend di server lain, sesuaikan URL-nya:
-
-```env
-NEXT_PUBLIC_API_URL=https://your-backend-domain.com/api
+PATH_URL=/backend
+BACKEND_URL=http://localhost:8000
 ```
 
 ### 4. Run Development Server
@@ -72,7 +67,7 @@ Aplikasi akan tersedia di `http://localhost:3000`
 
 ### API Endpoint
 
-Endpoint API dikonfigurasi melalui .env variable `NEXT_PUBLIC_API_URL`. Pastikan mengarah ke backend API yang sudah berjalan.
+Endpoint API dikonfigurasi melalui .env variable `PATH_URL`. Berisi Path Proxy Backend.
 
 ### Authentication
 
@@ -216,7 +211,7 @@ pnpm start
 1. Push code ke GitHub
 2. Import project ke platform deployment
 3. Set environment variables:
-   - `NEXT_PUBLIC_API_URL` — URL backend API
+   - `PATH_URL` — Path Proxy Backend
 4. Deploy
 
 ### Self-hosted
@@ -230,7 +225,7 @@ npm start
 
 ## API Integration
 
-Semua fungsi API ada di `src/lib/api.ts` menggunakan Axios. Pastikan backend sudah running dan `NEXT_PUBLIC_API_URL` sudah dikonfigurasi.
+Semua fungsi API ada di `src/lib/api.ts` menggunakan Axios. Pastikan backend sudah running dan `PATH_URL` sudah dikonfigurasi.
 
 ### Contoh Penggunaan API
 
@@ -266,7 +261,7 @@ npm run dev -- -p 3001
 
 Pastikan:
 1. Backend API sudah running
-2. `NEXT_PUBLIC_API_URL` di `.env.local` sudah benar
+2. `PATH_URL` di `.env.local` sudah benar
 3. Tidak ada CORS issue di backend
 
 ### Build Error
