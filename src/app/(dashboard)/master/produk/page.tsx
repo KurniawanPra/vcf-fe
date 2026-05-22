@@ -278,7 +278,7 @@ export default function ProdukPage() {
                     <tr key={item.id} className="border-b border-white/5 hover:bg-bg-card-hover transition-colors group">
                       <td className="px-6 py-4 text-sm text-secondary font-mono text-center">{(currentPage - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-white">{item.nama}</div>
+                        <div className="font-medium text-text-primary dark:text-white">{item.nama}</div>
                         {item.keterangan && <div className="text-[10px] text-secondary mt-0.5">{item.keterangan}</div>}
                       </td>
                       <td className="px-6 py-4"><span className="font-mono text-[10px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-secondary">{item.kode}</span></td>
