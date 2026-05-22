@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
@@ -57,10 +57,13 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [vcfs, setVcfs] = useState<Vcf[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tanggalDari, setTanggalDari] = useState(firstDay);
   const [tanggalSampai, setTanggalSampai] = useState(lastDay);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [lastPage, setLastPage] = useState(1);
 
   // Reject State
   const [rejectingId, setRejectingId] = useState<number | null>(null);
@@ -86,11 +89,22 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     }
   };
 
-  const fetchVcfs = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset ke halaman 1 ketika filter/search berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, tanggalDari, tanggalSampai, stageFilter]);
+
+  const fetchVcfs = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = {
-        per_page: "100",
+        per_page: "15",
+        page: String(currentPage),
       };
       if (tanggalDari) params.tanggal_dari = tanggalDari;
       if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
@@ -98,21 +112,30 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       if (STAGE_FILTERS[stageFilter]) {
         params.status = STAGE_FILTERS[stageFilter];
       }
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       const res = await vcfApi.getList(params);
-      setVcfs(res.data.data || res.data);
+      const responseData = res.data;
+      // Support Laravel paginate() response shape: { data: [], total, last_page, ... }
+      if (responseData.data && Array.isArray(responseData.data)) {
+        setVcfs(responseData.data);
+        setTotalItems(responseData.total ?? responseData.data.length);
+        setLastPage(responseData.last_page ?? 1);
+      } else {
+        setVcfs(responseData);
+        setTotalItems(responseData.length);
+        setLastPage(1);
+      }
     } catch (err: any) {
       console.error("Error fetching VCF list:", err);
       alert("Gagal mengambil data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
     } finally {
       setLoading(false);
     }
-  };
+  }, [stageFilter, tanggalDari, tanggalSampai, debouncedSearch, currentPage]);
 
   useEffect(() => {
-    setCurrentPage(1);
     fetchVcfs();
-  }, [stageFilter, search, tanggalDari, tanggalSampai]);
+  }, [fetchVcfs]);
 
   // Dispatch modal events for reject modal
   useEffect(() => {
@@ -281,29 +304,21 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
         {/* Filter Section - Unified for Mobile/Desktop */}
         <div className="glass-card p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             {/* Search Input */}
             <div className="md:col-span-6 relative">
-              <label className="form-label mb-2 block font-bold text-xs uppercase tracking-wider opacity-60">Pencarian Cepat</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Cari No. Polisi atau Supir..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1.5px solid var(--border)",
-                    color: "var(--text-primary)",
-                  }}
-                />
-              </div>
+              <label className="form-label mb-2 block font-bold text-xs uppercase tracking-wider opacity-60">Pencarian</label>
+              <div className="relative flex-1 max-w-md">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+          </div>
+          <input type="text" placeholder="Cari No. Urut, No. Polisi, Supir, No. SIM, Transporter, Produk, Tipe, Status..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-11 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
+            style={{ background: "var(--bg-secondary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            onFocus={(e) => { e.currentTarget.style.border = "1.5px solid rgba(59,130,246,0.5)"; e.currentTarget.style.background = "var(--bg-card-hover)"; }}
+            onBlur={(e) => { e.currentTarget.style.border = "1.5px solid var(--border)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
+          />
+        </div>
             </div>
 
             {/* Date Filters */}
@@ -319,7 +334,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             </div>
 
             {/* Reset Actions */}
-            <div className="md:col-span-2 flex items-center">
+            <div className="md:col-span-2 flex items-end">
               <button
                 onClick={() => {
                   setSearch("");
@@ -328,7 +343,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                 }}
                 className="btn btn-secondary btn-sm w-full"
               >
-                Reset Filter
+                Reset
               </button>
             </div>
           </div>
@@ -362,7 +377,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                    {vcfs.map((vcf) => (
                       <tr key={vcf.id}>
                         <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
                         <td className="text-xs">{vcf.tanggal}</td>
@@ -421,7 +436,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                   </tbody>
                 </table>
                 <div className="px-6 pb-4">
-                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
               </>
             )}
@@ -438,7 +453,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-                  {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                  {vcfs.map((vcf) => (
                     <div key={vcf.id} className="glass-card p-5 space-y-4 hover:border-blue-500/40 transition-all group relative overflow-hidden flex flex-col">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-blue-400 text-sm tracking-tight">{vcf.nomor_urut}</span>
@@ -485,7 +500,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                   ))}
                 </div>
                 <div className="px-6 pb-4">
-                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
               </>
             )}
