@@ -745,7 +745,7 @@ export default function VcfRegisterPage() {
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-text-primary">Rujukan Timbangan Asal (Optional)</h2>
+            <h2 className="text-xl font-bold text-text-primary">Rujukan Timbangan Asal</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -758,6 +758,7 @@ export default function VcfRegisterPage() {
                 placeholder="Masukkan Bruto Asal"
                 value={brutoFrom}
                 onChange={(e) => setBrutoFrom(e.target.value)}
+                required
               />
             </div>
             <div>
@@ -769,6 +770,7 @@ export default function VcfRegisterPage() {
                 placeholder="Masukkan Tarra Asal"
                 value={taraFrom}
                 onChange={(e) => setTaraFrom(e.target.value)}
+                required
               />
             </div>
           </div>
