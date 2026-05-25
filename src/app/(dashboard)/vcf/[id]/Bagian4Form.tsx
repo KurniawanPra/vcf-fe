@@ -18,7 +18,7 @@ interface VcfData {
   transporter?: { nama_transporter: string };
   driver?: { nama_supir: string };
   vcf_keluar?: { jam_keluar: string; emergency_respon_kontak: string; keterangan?: string };
-  segel_keluar?: { jumlah_segel: number; nomor_segel: { nomor_segel: string }[] };
+  segel_keluar?: { jumlah_segel: number; nomor_segel: { nomor_segel: string }[]; keterangan?: string };
   timbangan?: { bruto_from?: number | null; tara_from?: number | null; netto_from?: number | null; bruto?: number | null; tara?: number | null; netto?: number | null };
   status: string;
   catatan?: string;
@@ -223,6 +223,7 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
           await vcfApi.createSegelKeluar(vcfId, {
             jumlah_segel: validSegel.length,
             nomor_segel: validSegel,
+            keterangan: vcfData.segel_keluar?.keterangan || undefined,
           });
         }
       }
@@ -258,6 +259,7 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
           await vcfApi.createSegelKeluar(vcfId, {
             jumlah_segel: validSegel.length,
             nomor_segel: validSegel,
+            keterangan: vcfData.segel_keluar?.keterangan || undefined,
           });
         }
       }

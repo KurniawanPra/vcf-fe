@@ -61,8 +61,8 @@ interface VcfDetail {
   pemeriksaan_keluar?: { id: number; item_id: number; nilai: string; keterangan?: string; item: { nama_item: string }; petugas?: { nama: string }; waktu_input?: string; created_at?: string }[];
   beban_tambahan_masuk?: { jenis_beban: string; ada: boolean };
   beban_tambahan_keluar?: { jenis_beban: string; ada: boolean };
-  segel_masuk?: { jumlah_segel: number; kondisi?: string; nomor_segel: { nomor_segel: string }[]; petugas?: { nama: string }; waktu_input?: string; created_at?: string };
-  segel_keluar?: { jumlah_segel: number; kondisi?: string; nomor_segel: { nomor_segel: string }[]; petugas?: { nama: string }; waktu_input?: string; created_at?: string };
+  segel_masuk?: { jumlah_segel: number; kondisi?: string; nomor_segel: { nomor_segel: string }[]; petugas?: { nama: string }; waktu_input?: string; created_at?: string; keterangan?: string };
+  segel_keluar?: { jumlah_segel: number; kondisi?: string; nomor_segel: { nomor_segel: string }[]; petugas?: { nama: string }; waktu_input?: string; created_at?: string; keterangan?: string };
   vcf_keluar?: { jam_keluar: string; emergency_respon_kontak: string; keterangan?: string; petugas?: { nama: string }; waktu_input?: string; created_at?: string };
   vcf_bagian2?: { keterangan?: string };
   vcf_bagian3?: { keterangan?: string };
@@ -919,9 +919,9 @@ export default function VcfDetailPage() {
                             {formatTanggal(timestampWB)} {formatJam(timestampWB)} WIB
                           </p>
                         )}
-                        {vcf.vcf_bagian2?.keterangan && (
+                        {(vcf.segel_masuk?.keterangan || vcf.vcf_bagian2?.keterangan) && (
                           <p className="text-[10px] mt-1 italic" style={{ color: "#60a5fa" }}>
-                            &quot;{vcf.vcf_bagian2.keterangan}&quot;
+                            &quot;{vcf.segel_masuk?.keterangan || vcf.vcf_bagian2?.keterangan}&quot;
                           </p>
                         )}
                       </div>
@@ -954,7 +954,7 @@ export default function VcfDetailPage() {
                         <div className="w-0.5 flex-1 my-2" style={{ background: "var(--border)" }} />
                       </div>
                       <div className="flex-1 pb-4">
-                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Main Gate Keluar</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Weighbridge Keluar</p>
                         <p className="text-xs" style={{ color: petugasWBK ? "var(--text-muted)" : "var(--text-secondary)" }}>
                           {petugasWBK || "Menunggu proses..."}
                         </p>
@@ -963,9 +963,9 @@ export default function VcfDetailPage() {
                             {formatTanggal(timestampWBK)} {formatJam(timestampWBK)} WIB
                           </p>
                         )}
-                        {vcf.vcf_bagian3?.keterangan && (
+                        {(vcf.segel_keluar?.keterangan || vcf.vcf_bagian3?.keterangan) && (
                           <p className="text-[10px] mt-1 italic" style={{ color: "#60a5fa" }}>
-                            &quot;{vcf.vcf_bagian3.keterangan}&quot;
+                            &quot;{vcf.segel_keluar?.keterangan || vcf.vcf_bagian3?.keterangan}&quot;
                           </p>
                         )}
                       </div>

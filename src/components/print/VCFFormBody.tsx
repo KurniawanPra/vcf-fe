@@ -41,16 +41,6 @@ export interface VcfDetail {
   nama_petugas_wb_masuk?: string;
   nama_petugas_wb_keluar?: string;
   nama_petugas_main_gate_keluar?: string;
-  timbangan?: {
-    id: number;
-    vcf_id: number;
-    bruto_from?: number | null;
-    tara_from?: number | null;
-    netto_from?: number | null;
-    bruto?: number | null;
-    tara?: number | null;
-    netto?: number | null;
-  };
 }
 
 export interface VcfPrintMasters {
@@ -231,20 +221,6 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
               )}
             </td>
             <td colSpan={2} style={PRINT_STYLES.CELL}>
-              <div style={{ display: "flex", gap: 15, flexWrap: "wrap" }}>
-                <span>
-                  <strong>Bruto Asal</strong>:{" "}
-                  <UL w={50} val={vcf.timbangan?.bruto_from ? `${vcf.timbangan.bruto_from} kg` : "-"} />
-                </span>
-                <span>
-                  <strong>Tarra Asal</strong>:{" "}
-                  <UL w={50} val={vcf.timbangan?.tara_from ? `${vcf.timbangan.tara_from} kg` : "-"} />
-                </span>
-                <span>
-                  <strong>Netto Asal</strong>:{" "}
-                  <UL w={50} val={vcf.timbangan?.netto_from ? `${vcf.timbangan.netto_from} kg` : "-"} />
-                </span>
-              </div>
             </td>
           </tr>
 
@@ -589,20 +565,6 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
           </tr>
           <tr>
             <td colSpan={2} style={PRINT_STYLES.CELL}>
-              <div style={{ display: "flex", gap: 20 }}>
-                <span>
-                  <strong>Bruto INL</strong>:{" "}
-                  <UL w={60} val={hasBagian4Data && vcf.timbangan?.bruto ? `${vcf.timbangan.bruto} kg` : "-"} />
-                </span>
-                <span>
-                  <strong>Tarra INL</strong>:{" "}
-                  <UL w={60} val={hasBagian4Data && vcf.timbangan?.tara ? `${vcf.timbangan.tara} kg` : "-"} />
-                </span>
-                <span>
-                  <strong>Netto INL</strong>:{" "}
-                  <UL w={60} val={hasBagian4Data && vcf.timbangan?.netto ? `${vcf.timbangan.netto} kg` : "-"} />
-                </span>
-              </div>
             </td>
           </tr>
           {isLoading && (

@@ -81,7 +81,7 @@ export default function ViolationWarningCard({ data }: Props) {
   const hasVehicleViolation = (vehicle?.violations?.length ?? 0) > 0;
 
   const isDriverBlacklisted = driverStatus === "blacklist";
-  const isDriverWarning = driverStatus === "warning" || (driverStatus === "normal" && hasDriverViolation);
+  const isDriverWarning = driverStatus === "warning";
 
   if (!isDriverBlacklisted && !isDriverWarning && !hasVehicleViolation) return null;
 

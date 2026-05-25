@@ -413,9 +413,9 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                       </span>
                     ))}
                   </div>
-                  {vcfData.segel_masuk.keterangan && (
+                  {/* {vcfData.segel_masuk.keterangan && (
                     <p className="text-[10px] text-amber-500/60 mt-2 italic">{vcfData.segel_masuk.keterangan}</p>
-                  )}
+                  )} */}
                 </div>
               )}
             </div>

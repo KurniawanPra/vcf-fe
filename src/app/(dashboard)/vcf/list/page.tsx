@@ -89,6 +89,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   // Print Semua VCF (multi-page form, sesuai filter rentang tanggal)
   const [printingAllVcfs, setPrintingAllVcfs] = useState<any[] | null>(null);
   const [fetchingPrintAll, setFetchingPrintAll] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const handlePrint = async (id: number) => {
     setFetchingPrint(true);
@@ -140,6 +141,64 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       alert("Gagal memuat data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
     } finally {
       setFetchingPrintAll(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      const params: Record<string, string> = { per_page: "10000" };
+      if (tanggalDari) params.tanggal_dari = tanggalDari;
+      if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
+      if (STAGE_FILTERS[stageFilter]) params.status = STAGE_FILTERS[stageFilter];
+      if (debouncedSearch) params.search = debouncedSearch;
+
+      const res = await vcfApi.getList(params);
+      const list: any[] = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+      if (list.length === 0) {
+        alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
+        return;
+      }
+
+      const formattedData = list.map(v => [
+        v.nomor_urut,
+        v.tanggal,
+        v.jam_masuk?.substring(0, 5) || "-",
+        v.vcf_keluar?.jam_keluar?.substring(0, 5) || "-",
+        v.no_polisi,
+        v.driver?.nama_supir || "-",
+        v.driver?.no_sim || "-",
+        v.transporter?.nama_transporter || "-",
+        v.produk || "-",
+        v.tipe_kegiatan?.replace(/_/g, " "),
+        getStatusLabel(v.status),
+        formatSegel(v.segel_masuk),
+        formatSegel(v.segel_keluar),
+        v.beban_tambahan_masuk?.jenis_beban || "-",
+        v.beban_tambahan_keluar?.jenis_beban || "-",
+        v.keterangan || "-",
+        v.vcf_bagian2?.keterangan || v.segel_masuk?.keterangan || "-",
+        v.vcf_bagian3?.keterangan || v.segel_keluar?.keterangan || "-",
+        v.vcf_keluar?.keterangan || "-",
+      ]);
+
+      exportToExcel(
+        `VCF_Export_${stageFilter || 'Semua'}`,
+        exportHeaders,
+        formattedData,
+        `Daftar VCF — ${stageLabel}`,
+        `Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`
+      );
+    } catch (err: any) {
+      alert("Gagal memuat data VCF untuk export: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
+    } finally {
+      setExportingExcel(false);
     }
   };
 
@@ -387,11 +446,15 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               </svg>
               {fetchingPrintAll ? "Memuat..." : "Print Semua VCF"}
             </button>
-            <button onClick={() => exportToExcel(`VCF_Export_${stageFilter || 'Semua'}`, exportHeaders, exportData, `Daftar VCF — ${stageLabel}`, `Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`)} className="btn btn-primary btn-sm flex items-center gap-2 bg-green-500 hover:bg-green-600 border-none text-white">
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+              className="btn btn-primary btn-sm flex items-center gap-2 bg-green-500 hover:bg-green-600 border-none text-white disabled:opacity-60"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Excel
+              {exportingExcel ? "Memproses..." : "Excel"}
             </button>
           </div>
         </div>

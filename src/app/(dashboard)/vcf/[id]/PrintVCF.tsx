@@ -73,10 +73,8 @@
     timbangan?: {
       id: number;
       vcf_id: number;
-      bruto_from?: number | null;
       tara_from?: number | null;
       netto_from?: number | null;
-      bruto?: number | null;
       tara?: number | null;
       netto?: number | null;
     };

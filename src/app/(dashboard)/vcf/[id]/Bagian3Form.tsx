@@ -413,7 +413,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
               </div>
             )}
             
-            {vcfData.segel_keluar && (
+            {(vcfData.segel_keluar?.keterangan || vcfData.vcf_bagian3?.keterangan) && (
               <div className="mt-6 pt-6 border-t border-border">
                 <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                   <p className="form-label text-text-muted">Keterangan</p>
