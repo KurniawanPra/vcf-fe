@@ -8,6 +8,7 @@ import { isAdmin } from "@/lib/auth";
 import { getStatusLabel, getStatusColor, getErrorMessage } from "@/lib/utils";
 import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 import PrintVCF from "../[id]/PrintVCF";
+import PrintAllVCF from "@/components/print/PrintAllVCF";
 import PrintMasterTable from "@/components/print/PrintMasterTable";
 import Pagination from "@/components/Pagination";
 
@@ -27,8 +28,17 @@ interface Vcf {
     bruto?: number | null;
     tara_from?: number | null;
     tara?: number | null;
+    netto_from?: number | null;
     netto?: number | null;
   };
+  vcf_keluar?: { jam_keluar?: string; keterangan?: string };
+  vcf_bagian2?: { keterangan?: string };
+  vcf_bagian3?: { keterangan?: string };
+  segel_masuk?: { jumlah_segel?: number; nomor_segel?: any[]; keterangan?: string };
+  segel_keluar?: { jumlah_segel?: number; nomor_segel?: any[]; keterangan?: string };
+  beban_tambahan_masuk?: { jenis_beban?: string };
+  beban_tambahan_keluar?: { jenis_beban?: string };
+  keterangan?: string;
 }
 
 const STAGE_FILTERS: Record<string, string> = {
@@ -76,6 +86,9 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [fetchingPrint, setFetchingPrint] = useState(false);
   // Print daftar VCF (tabel)
   const [isPrinting, setIsPrinting] = useState(false);
+  // Print Semua VCF (multi-page form, sesuai filter rentang tanggal)
+  const [printingAllVcfs, setPrintingAllVcfs] = useState<any[] | null>(null);
+  const [fetchingPrintAll, setFetchingPrintAll] = useState(false);
 
   const handlePrint = async (id: number) => {
     setFetchingPrint(true);
@@ -86,6 +99,47 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       alert("Gagal mengambil detail VCF untuk pencetakan.");
     } finally {
       setFetchingPrint(false);
+    }
+  };
+
+  const handlePrintAll = async () => {
+    if (fetchingPrintAll) return;
+    setFetchingPrintAll(true);
+    try {
+      const params: Record<string, string> = { per_page: "1000" };
+      if (tanggalDari) params.tanggal_dari = tanggalDari;
+      if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
+      if (STAGE_FILTERS[stageFilter]) params.status = STAGE_FILTERS[stageFilter];
+      if (debouncedSearch) params.search = debouncedSearch;
+      const listRes = await vcfApi.getList(params);
+      const list: any[] = Array.isArray(listRes.data?.data)
+        ? listRes.data.data
+        : Array.isArray(listRes.data)
+          ? listRes.data
+          : [];
+      if (list.length === 0) {
+        alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
+        return;
+      }
+      if (list.length > 200) {
+        const ok = confirm(
+          `Akan mencetak ${list.length} VCF (1 VCF = 1 halaman). Lanjutkan?`
+        );
+        if (!ok) return;
+      }
+      const details = await Promise.all(
+        list.map((v) => vcfApi.getDetail(v.id).then((r) => r.data).catch(() => null))
+      );
+      const validDetails = details.filter(Boolean);
+      if (validDetails.length === 0) {
+        alert("Gagal memuat detail VCF untuk dicetak.");
+        return;
+      }
+      setPrintingAllVcfs(validDetails);
+    } catch (err: any) {
+      alert("Gagal memuat data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
+    } finally {
+      setFetchingPrintAll(false);
     }
   };
 
@@ -167,6 +221,21 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     };
   }, [printingVcf]);
 
+  // Dispatch modal events for PrintAllVCF
+  useEffect(() => {
+    if (printingAllVcfs) {
+      document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal-open"));
+    } else {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.dispatchEvent(new CustomEvent("modal-close"));
+    };
+  }, [printingAllVcfs]);
+
   // Dispatch modal events for PrintMasterTable
   useEffect(() => {
     if (isPrinting) {
@@ -234,22 +303,36 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     }
   };
 
-  const exportHeaders = ["No. Urut", "Tanggal", "No. Polisi", "Supir", "No. SIM", "Transporter", "Produk", "Tipe", "Status", "Bruto Asal", "Bruto WB", "Tara Asal", "Tara WB", "Netto"];
+  const formatSegel = (segel?: { jumlah_segel?: number; nomor_segel?: any[] }) => {
+    if (!segel || !segel.nomor_segel || segel.nomor_segel.length === 0) return "-";
+    return segel.nomor_segel.map((s: any) => typeof s === 'string' ? s : s.nomor_segel).join(", ");
+  };
+  const exportHeaders = [
+    "No. Urut", "Tanggal", "Jam Masuk", "Jam Keluar", "No. Polisi", "Supir", "No. SIM", "Transporter", "Produk", "Tipe", "Status",
+    "Segel Masuk", "Segel Keluar",
+    "Beban Tambahan Masuk", "Beban Tambahan Keluar",
+    "Keterangan 1", "Keterangan 2", "Keterangan 3", "Keterangan 4",
+  ];
   const exportData = vcfs.map(v => [
     v.nomor_urut,
     v.tanggal,
+    v.jam_masuk?.substring(0, 5) || "-",
+    v.vcf_keluar?.jam_keluar?.substring(0, 5) || "-",
     v.no_polisi,
-    v.driver?.nama_supir || "—",
-    v.driver?.no_sim || "—",
-    v.transporter?.nama_transporter || "—",
-    v.produk || "—",
+    v.driver?.nama_supir || "-",
+    v.driver?.no_sim || "-",
+    v.transporter?.nama_transporter || "-",
+    v.produk || "-",
     v.tipe_kegiatan?.replace(/_/g, " "),
     getStatusLabel(v.status),
-    v.timbangan?.bruto_from || "—",
-    v.timbangan?.bruto || "—",
-    v.timbangan?.tara_from || "—",
-    v.timbangan?.tara || "—",
-    v.timbangan?.netto || "—",
+    formatSegel(v.segel_masuk),
+    formatSegel(v.segel_keluar),
+    v.beban_tambahan_masuk?.jenis_beban || "-",
+    v.beban_tambahan_keluar?.jenis_beban || "-",
+    v.keterangan || "-",
+    v.vcf_bagian2?.keterangan || v.segel_masuk?.keterangan || "-",
+    v.vcf_bagian3?.keterangan || v.segel_keluar?.keterangan || "-",
+    v.vcf_keluar?.keterangan || "-",
   ]);
 
   return (
@@ -292,6 +375,17 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                 <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
               </svg>
               Print HTML
+            </button>
+            <button
+              onClick={handlePrintAll}
+              disabled={fetchingPrintAll}
+              className="btn btn-primary btn-sm flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border-none text-white disabled:opacity-60"
+              title="Cetak Semua VCF (Form Lengkap) dalam rentang tanggal terpilih — 1 VCF per halaman"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
+              </svg>
+              {fetchingPrintAll ? "Memuat..." : "Print Semua VCF"}
             </button>
             <button onClick={() => exportToExcel(`VCF_Export_${stageFilter || 'Semua'}`, exportHeaders, exportData, `Daftar VCF — ${stageLabel}`, `Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`)} className="btn btn-primary btn-sm flex items-center gap-2 bg-green-500 hover:bg-green-600 border-none text-white">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -369,9 +463,6 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                       <th className="text-center">Transporter</th>
                       <th className="text-center">Produk</th>
                       <th className="text-center">Tipe</th>
-                      <th className="text-center">Bruto (Asal/WB)</th>
-                      <th className="text-center">Tara (Asal/WB)</th>
-                      <th className="text-center">Netto</th>
                       <th className="text-center">Status</th>
                       <th className="w-40 text-center">Aksi</th>
                     </tr>
@@ -381,13 +472,9 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                       <tr key={vcf.id}>
                         <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
                         <td className="text-xs">{vcf.tanggal}</td>
-                        <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white">{vcf.no_polisi}</td>
-                        <td className="text-xs">
-                          {vcf.driver?.nama_supir || "—"}
-                        </td>
-                        <td className="text-xs">
-                          {vcf.driver?.no_sim || "—"}
-                        </td>
+                        <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white whitespace-nowrap">{vcf.no_polisi}</td>
+                        <td className="text-xs font-semibold text-text-primary dark:text-white">{vcf.driver?.nama_supir || "—"}</td>
+                        <td className="text-xs font-mono text-slate-400 dark:text-slate-500">{vcf.driver?.no_sim || "—"}</td>
                         <td className="text-xs">{vcf.transporter?.nama_transporter || "—"}</td>
                         <td>
                           {vcf.produk ? (
@@ -399,15 +486,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                             {vcf.tipe_kegiatan?.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="text-xs text-center font-mono">
-                          <span className="text-slate-500">{vcf.timbangan?.bruto_from || "-"}</span> / <span className="text-blue-500 font-bold">{vcf.timbangan?.bruto || "-"}</span>
-                        </td>
-                        <td className="text-xs text-center font-mono">
-                          <span className="text-slate-500">{vcf.timbangan?.tara_from || "-"}</span> / <span className="text-purple-500 font-bold">{vcf.timbangan?.tara || "-"}</span>
-                        </td>
-                        <td className="text-xs text-center font-bold text-emerald-500 font-mono">
-                          {vcf.timbangan?.netto || "-"}
-                        </td>
+
                         <td className="w-32 min-w-32 text-center">
                           <span className={`status-badge ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
                         </td>
@@ -528,6 +607,15 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
       {/* Printing individual VCF */}
       {printingVcf && <PrintVCF vcf={printingVcf} onClose={() => setPrintingVcf(null)} />}
+
+      {/* Print Semua VCF (1 VCF per halaman, sesuai rentang tanggal) */}
+      {printingAllVcfs && (
+        <PrintAllVCF
+          vcfs={printingAllVcfs}
+          subtitle={`Periode: ${tanggalDari} s/d ${tanggalSampai}${stageFilter ? ` · ${stageLabel}` : ""}${search ? ` · Pencarian: "${search}"` : ""}`}
+          onClose={() => setPrintingAllVcfs(null)}
+        />
+      )}
 
       {/* Print daftar VCF */}
       {isPrinting && (

@@ -121,11 +121,17 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
   const [tujuan, setTujuan] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [checklist, setChecklist] = useState<Record<number, boolean | null>>({});
-
   const [muatanDibawa, setMuatanDibawa] = useState<Record<number, { checked: boolean; nilai: string }>>({});
+
   const [muatanDiisi, setMuatanDiisi] = useState<Record<number, { checked: boolean; nilai: string }>>({});
-  const [muatanDibawaLainnya, setMuatanDibawaLainnya] = useState({ checked: false, nilai: "" });
-  const [muatanDiisiLainnya, setMuatanDiisiLainnya] = useState({ checked: false, nilai: "" });
+  const [muatanDibawaLainnya, setMuatanDibawaLainnya] = useState({ checked: null as boolean | null, nilai: "" });
+  const [muatanDiisiLainnya, setMuatanDiisiLainnya] = useState({ checked: null as boolean | null, nilai: "" });
+
+  const initialTipeKegiatan = useRef<TipeKegiatan | "">("");
+  const initialMuatanDbw = useRef<any>(null);
+  const initialMuatanDsi = useRef<any>(null);
+  const initialLainnyaDbw = useRef<any>(null);
+  const initialLainnyaDsi = useRef<any>(null);
 
   const parseKeterangan = (raw: string) => {
     if (!raw || raw === "-") return { note: "", dibawa: "", diisi: "" };
@@ -197,7 +203,6 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
         setTipeKendaraan((v.tipe_kendaraan as TipeKendaraan) || "");
         setTahunKendaraan(v.tahun_kendaraan ? String(v.tahun_kendaraan) : "");
         setTujuan(v.asal_tujuan && v.asal_tujuan !== "-" ? v.asal_tujuan : "");
-
         const { note, dibawa, diisi } = parseKeterangan(v.keterangan || "");
         setKeterangan(note);
         if (dibawa) setMuatanDibawaLainnya({ checked: true, nilai: dibawa });
@@ -215,36 +220,44 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
         const initDibawa: Record<number, { checked: boolean; nilai: string }> = {};
         const initDiisi: Record<number, { checked: boolean; nilai: string }> = {};
         
-        // Initialize based on master items, but don't force "checked" if not needed
+        // Initialize based on master items
         mData?.muatanItems.forEach((m: any) => {
-          if (m.jenis === "dibawa" || m.jenis === "both") initDibawa[m.id] = { checked: false, nilai: "0" };
-          if (m.jenis === "diisi" || m.jenis === "both") initDiisi[m.id] = { checked: false, nilai: "0" };
+          if (m.jenis === "dibawa" || m.jenis === "both") initDibawa[m.id] = { checked: true, nilai: "NO" };
+          if (m.jenis === "diisi" || m.jenis === "both") initDiisi[m.id] = { checked: true, nilai: "NO" };
         });
 
-        // Reset Others state
-        setMuatanDibawaLainnya({ checked: false, nilai: "" });
-        setMuatanDiisiLainnya({ checked: false, nilai: "" });
-
+        let hasLainnyaDibawa = false;
         (v.muatan_dibawa || []).forEach((m: any) => {
           const val = m.nilai?.toString() || "";
           if (m.item_muatan_id && initDibawa[m.item_muatan_id]) {
             initDibawa[m.item_muatan_id] = { checked: true, nilai: val || "1" };
-          } else if (val && val !== "0" && val !== "-") {
+          } else if (val && val !== "0" && val !== "-" && val !== "NO") {
             setMuatanDibawaLainnya({ checked: true, nilai: val });
+            hasLainnyaDibawa = true;
           }
         });
+        if (!hasLainnyaDibawa) setMuatanDibawaLainnya({ checked: false, nilai: "" });
 
+        let hasLainnyaDiisi = false;
         (v.muatan_diisi || []).forEach((m: any) => {
           const val = m.nilai?.toString() || "";
           if (m.item_muatan_id && initDiisi[m.item_muatan_id]) {
             initDiisi[m.item_muatan_id] = { checked: true, nilai: val || "1" };
-          } else if (val && val !== "0" && val !== "-") {
+          } else if (val && val !== "0" && val !== "-" && val !== "NO") {
             setMuatanDiisiLainnya({ checked: true, nilai: val });
+            hasLainnyaDiisi = true;
           }
         });
+        if (!hasLainnyaDiisi) setMuatanDiisiLainnya({ checked: false, nilai: "" });
 
         setMuatanDibawa(initDibawa);
         setMuatanDiisi(initDiisi);
+
+        initialTipeKegiatan.current = v.tipe_kegiatan;
+        initialMuatanDbw.current = initDibawa;
+        initialMuatanDsi.current = initDiisi;
+        initialLainnyaDbw.current = hasLainnyaDibawa ? { checked: true, nilai: (v.muatan_dibawa||[]).find((m:any) => !m.item_muatan_id)?.nilai?.toString() ?? "" } : { checked: false, nilai: "" };
+        initialLainnyaDsi.current = hasLainnyaDiisi ? { checked: true, nilai: (v.muatan_diisi||[]).find((m:any) => !m.item_muatan_id)?.nilai?.toString() ?? "" } : { checked: false, nilai: "" };
 
         setMasterProgress(100);
       } catch (err: any) {
@@ -258,6 +271,27 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
 
   const isLoading = tipeKegiatan.startsWith("loading");
   const isUnloading = tipeKegiatan.startsWith("unloading");
+
+  useEffect(() => {
+    if (!initialTipeKegiatan.current || !muatanItems.length) return;
+    if (tipeKegiatan === initialTipeKegiatan.current) {
+      if (initialMuatanDbw.current) setMuatanDibawa(initialMuatanDbw.current);
+      if (initialMuatanDsi.current) setMuatanDiisi(initialMuatanDsi.current);
+      if (initialLainnyaDbw.current) setMuatanDibawaLainnya(initialLainnyaDbw.current);
+      if (initialLainnyaDsi.current) setMuatanDiisiLainnya(initialLainnyaDsi.current);
+    } else {
+      const initDibawa: Record<number, { checked: boolean; nilai: string }> = {};
+      const initDiisi: Record<number, { checked: boolean; nilai: string }> = {};
+      muatanItems.forEach((m) => {
+        if (m.jenis === "dibawa" || m.jenis === "both") initDibawa[m.id] = { checked: true, nilai: "NO" };
+        if (m.jenis === "diisi" || m.jenis === "both") initDiisi[m.id] = { checked: true, nilai: "NO" };
+      });
+      setMuatanDibawa(initDibawa);
+      setMuatanDiisi(initDiisi);
+      setMuatanDibawaLainnya({ checked: false, nilai: "" });
+      setMuatanDiisiLainnya({ checked: false, nilai: "" });
+    }
+  }, [tipeKegiatan, muatanItems]);
 
   const validateForm = (): boolean => {
     const errors: Record<string, boolean> = {};
@@ -309,6 +343,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
     setFieldErrors({});
 
     if (!validateForm()) {
+      const modalBody = document.getElementById("edit-modal-body");
+      if (modalBody) modalBody.scrollTo({ top: 0, behavior: "smooth" });
+      toast.error("Validasi Gagal", "Silakan periksa kembali isian form yang ditandai merah.");
       return;
     }
     setValidationErrors([]);
@@ -323,7 +360,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
 
     const buildMuatanPayload = (src: Record<number, { checked: boolean; nilai: string }>, lainnya: { checked: boolean; nilai: string }) => {
       const payload: Array<{ item_muatan_id: number | null; nilai: string; keterangan: string }> = Object.entries(src)
-        .filter(([, v]) => v.checked)
+        .filter(([, v]) => v.checked && v.nilai !== "NO" && v.nilai !== "0")
         .map(([id, v]) => ({
           item_muatan_id: parseInt(id, 10),
           nilai: v.nilai?.trim() ? v.nilai.trim() : "1",
@@ -345,8 +382,8 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
         jenis_kendaraan_id: parseInt(jenisKendaraanId), no_polisi: noPolisi.toUpperCase(),
         tipe_kendaraan: tipeKendaraan || "-", tahun_kendaraan: tahunKendaraan ? parseInt(tahunKendaraan, 10) : null,
         transporter_id: parseInt(transporterId), driver_id: parseInt(driverId), jam_masuk: jamMasuk,
-        kelengkapan_supir: kelengkapanSupir, muatan_dibawa: isUnloading ? buildMuatanPayload(muatanDibawa, muatanDibawaLainnya) : [],
-        muatan_diisi: isLoading ? buildMuatanPayload(muatanDiisi, muatanDiisiLainnya) : [],
+        kelengkapan_supir: kelengkapanSupir, muatan_dibawa: isUnloading ? buildMuatanPayload(muatanDibawa, { checked: !!muatanDibawaLainnya.checked, nilai: muatanDibawaLainnya.nilai }) : [],
+        muatan_diisi: isLoading ? buildMuatanPayload(muatanDiisi, { checked: !!muatanDiisiLainnya.checked, nilai: muatanDiisiLainnya.nilai }) : [],
         keterangan: keteranganFinal, qr_signature: qrSignature,
       };
 
@@ -398,7 +435,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
           </button>
         </div>
 
-        <div className="p-8 overflow-y-auto flex-1 bg-white dark:bg-bg-card relative">
+        <div id="edit-modal-body" className="p-8 overflow-y-auto flex-1 bg-white dark:bg-bg-card relative">
           {showSuccess && (
             <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-white/95 dark:bg-slate-900/98 backdrop-blur-sm animate-fadeIn">
               <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center border-2 border-emerald-100 mb-4">
@@ -439,7 +476,19 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                 </div>
                 <div id="field-jam-masuk" data-field-error={fieldErrors.jamMasuk ? "true" : undefined}>
                   <label className="form-label">Jam Masuk (WIB) *</label>
-                  <input type="text" className={`form-input text-lg font-mono transition-all duration-300 ${fieldErrors.jamMasuk ? 'bg-red-50 dark:bg-red-500/10 border-red-500 shadow-lg shadow-red-500/10' : ''}`} value={jamMasuk} onChange={(e) => { let v = e.target.value.replace(/[^\d]/g, ""); if (v.length > 4) v = v.slice(0, 4); setJamMasuk(v.length > 2 ? v.slice(0, 2) + ":" + v.slice(2) : v); if (fieldErrors.jamMasuk) setFieldErrors(prev => ({ ...prev, jamMasuk: false })); }} placeholder="HH:MM" maxLength={5} />
+                  <div className="flex items-center gap-2 w-full">
+                    <input type="text" className={`form-input flex-1 text-lg font-mono transition-all duration-300 ${fieldErrors.jamMasuk ? 'bg-red-50 dark:bg-red-500/10 border-red-500 shadow-lg shadow-red-500/10' : ''}`} value={jamMasuk} onChange={(e) => { let v = e.target.value.replace(/[^\d]/g, ""); if (v.length > 4) v = v.slice(0, 4); setJamMasuk(v.length > 2 ? v.slice(0, 2) + ":" + v.slice(2) : v); if (fieldErrors.jamMasuk) setFieldErrors(prev => ({ ...prev, jamMasuk: false })); }} placeholder="HH:MM" maxLength={5} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setJamMasuk(formatTime());
+                        setFieldErrors((prev) => ({ ...prev, jamMasuk: false }));
+                      }}
+                      className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase hover:bg-blue-500/20 transition-colors"
+                    >
+                      NOW
+                    </button>
+                  </div>
                   {fieldErrors.jamMasuk && <p className="text-[11px] text-red-500 mt-1">Jam masuk wajib diisi format HH:MM</p>}
                 </div>
               </div>
@@ -537,7 +586,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div id="field-tahun-kendaraan" data-field-error={fieldErrors.tahunKendaraan ? "true" : undefined}>
                   <label className="form-label">Tahun Kendaraan</label>
                   <input type="number" className={`form-input ${fieldErrors.tahunKendaraan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`} placeholder="Contoh: 2022" value={tahunKendaraan} onChange={e => { setTahunKendaraan(e.target.value); if (fieldErrors.tahunKendaraan) setFieldErrors(prev => ({ ...prev, tahunKendaraan: false })); }} />
@@ -548,6 +597,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                   <input type="text" className="form-input" placeholder="Masukkan tujuan" value={tujuan} onChange={e => setTujuan(e.target.value)} />
                 </div>
               </div>
+
+
+
             </div>
 
             {/* SECTION 3: PEMERIKSAAN KELENGKAPAN */}
@@ -613,8 +665,16 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-text-primary dark:text-slate-300 text-sm">{m.nama_item}</span>
                             <div className="flex gap-2">
-                               <button type="button" onClick={() => { const reset: Record<number, { checked: boolean; nilai: string }> = {}; muatanItems.filter(x => x.jenis === 'dibawa' || x.jenis === 'both').forEach(x => { reset[x.id] = { checked: true, nilai: "0" }; }); reset[m.id] = { checked: true, nilai: "1" }; setMuatanDibawa(p => ({ ...p, ...reset })); setMuatanDibawaLainnya({ checked: true, nilai: "0" }); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.checked && muatanDibawa[m.id]?.nilai !== "0" ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'}`}>Ya</button>
-                               <button type="button" onClick={() => setMuatanDibawa(p => ({ ...p, [m.id]: { checked: true, nilai: "0" } }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.checked && muatanDibawa[m.id]?.nilai === "0" ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'}`}>Tidak</button>
+                               <button type="button" onClick={() => {
+                                 const reset: Record<number, { checked: boolean; nilai: string }> = {};
+                                 muatanItems.filter(x => x.jenis === 'dibawa' || x.jenis === 'both').forEach(x => {
+                                   reset[x.id] = { checked: true, nilai: "NO" };
+                                 });
+                                 reset[m.id] = { checked: true, nilai: "1" };
+                                 setMuatanDibawa(reset);
+                                 setMuatanDibawaLainnya(prev => ({ ...prev, checked: false }));
+                               }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.nilai === "1" ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
+                               <button type="button" onClick={() => setMuatanDibawa(p => ({ ...p, [m.id]: { checked: true, nilai: "NO" } }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.nilai === "NO" ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
                              </div>
                           </div>
                         </div>
@@ -624,11 +684,18 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-text-muted text-sm italic">Lainnya</span>
                           <div className="flex gap-2">
-                            <button type="button" onClick={() => { const reset: Record<number, { checked: boolean; nilai: string }> = {}; muatanItems.filter(x => x.jenis === 'dibawa' || x.jenis === 'both').forEach(x => { reset[x.id] = { checked: true, nilai: "0" }; }); setMuatanDibawa(p => ({ ...p, ...reset })); setMuatanDibawaLainnya(prev => ({ checked: true, nilai: prev.nilai === "0" ? "" : prev.nilai })); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${muatanDibawaLainnya.checked && muatanDibawaLainnya.nilai !== "0" ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : (muatanDibawaLainnya.checked ? 'bg-blue-500 text-white shadow-lg shadow-blue-200' : 'bg-bg-secondary dark:bg-white/10 text-text-muted border border-slate-100 dark:border-white/10')}`}>Ya</button>
-                            <button type="button" onClick={() => setMuatanDibawaLainnya({ checked: false, nilai: "0" })} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${!muatanDibawaLainnya.checked ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'bg-bg-secondary dark:bg-white/10 text-text-muted border border-slate-100 dark:border-white/10'}`}>Tidak</button>
+                            <button type="button" onClick={() => {
+                              const reset: Record<number, { checked: boolean; nilai: string }> = {};
+                              muatanItems.filter(x => x.jenis === 'dibawa' || x.jenis === 'both').forEach(x => {
+                                reset[x.id] = { checked: true, nilai: "NO" };
+                              });
+                              setMuatanDibawa(reset);
+                              setMuatanDibawaLainnya(prev => ({ checked: true, nilai: prev.nilai }));
+                            }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawaLainnya.checked === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
+                            <button type="button" onClick={() => setMuatanDibawaLainnya(prev => ({ ...prev, checked: false }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawaLainnya.checked === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
                           </div>
                         </div>
-                        {muatanDibawaLainnya.checked && (
+                        {muatanDibawaLainnya.checked === true && (
                           <div className="mt-2">
                             <input type="text" className="form-input text-xs" placeholder="Sebutkan muatan lainnya..." value={muatanDibawaLainnya.nilai} onChange={(e) => setMuatanDibawaLainnya({ checked: true, nilai: e.target.value })} />
                           </div>
@@ -648,8 +715,16 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-text-primary dark:text-slate-300 text-sm">{m.nama_item}</span>
                             <div className="flex gap-2">
-                              <button type="button" onClick={() => { const reset: Record<number, { checked: boolean; nilai: string }> = {}; muatanItems.filter(x => x.jenis === 'diisi' || x.jenis === 'both').forEach(x => { reset[x.id] = { checked: true, nilai: "0" }; }); reset[m.id] = { checked: true, nilai: "1" }; setMuatanDiisi(reset); setMuatanDiisiLainnya({ checked: false, nilai: "0" }); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${muatanDiisi[m.id]?.nilai === "1" ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-bg-secondary dark:bg-white/10 text-text-muted border border-slate-100 dark:border-white/10'}`}>Ya</button>
-                              <button type="button" onClick={() => { setMuatanDiisi(p => ({ ...p, [m.id]: { checked: true, nilai: "0" } })); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${muatanDiisi[m.id] !== undefined && muatanDiisi[m.id]?.nilai === "0" ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'bg-bg-secondary dark:bg-white/10 text-text-muted border border-slate-100 dark:border-white/10'}`}>Tidak</button>
+                              <button type="button" onClick={() => {
+                                const reset: Record<number, { checked: boolean; nilai: string }> = {};
+                                muatanItems.filter(x => x.jenis === 'diisi' || x.jenis === 'both').forEach(x => {
+                                  reset[x.id] = { checked: true, nilai: "NO" };
+                                });
+                                reset[m.id] = { checked: true, nilai: "1" };
+                                setMuatanDiisi(reset);
+                                setMuatanDiisiLainnya(prev => ({ ...prev, checked: false }));
+                              }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDiisi[m.id]?.nilai === "1" ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
+                              <button type="button" onClick={() => setMuatanDiisi(p => ({ ...p, [m.id]: { checked: true, nilai: "NO" } }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDiisi[m.id]?.nilai === "NO" ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
                             </div>
                           </div>
                         </div>
@@ -660,11 +735,18 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-text-muted text-sm italic">Lainnya</span>
                           <div className="flex gap-2">
-                            <button type="button" onClick={() => { const reset: Record<number, { checked: boolean; nilai: string }> = {}; muatanItems.filter(x => x.jenis === 'diisi' || x.jenis === 'both').forEach(x => { reset[x.id] = { checked: true, nilai: "0" }; }); setMuatanDiisi(reset); setMuatanDiisiLainnya(prev => ({ checked: true, nilai: prev.nilai && prev.nilai !== "0" ? prev.nilai : "", })); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${muatanDiisiLainnya.checked ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-bg-secondary dark:bg-white/10 text-text-muted border border-slate-100 dark:border-white/10'}`}>Ya</button>
-                            <button type="button" onClick={() => setMuatanDiisiLainnya({ checked: false, nilai: "0" })} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${!muatanDiisiLainnya.checked ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'bg-bg-secondary dark:bg-white/10 text-text-muted border border-slate-100 dark:border-white/10'}`}>Tidak</button>
+                            <button type="button" onClick={() => {
+                              const reset: Record<number, { checked: boolean; nilai: string }> = {};
+                              muatanItems.filter(x => x.jenis === 'diisi' || x.jenis === 'both').forEach(x => {
+                                reset[x.id] = { checked: true, nilai: "NO" };
+                              });
+                              setMuatanDiisi(reset);
+                              setMuatanDiisiLainnya(prev => ({ checked: true, nilai: prev.nilai }));
+                            }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDiisiLainnya.checked === true ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
+                            <button type="button" onClick={() => setMuatanDiisiLainnya(prev => ({ ...prev, checked: false }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDiisiLainnya.checked === false ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
                           </div>
                         </div>
-                        {muatanDiisiLainnya.checked && (
+                        {muatanDiisiLainnya.checked === true && (
                           <div className="mt-2">
                             <input type="text" className="form-input text-xs" placeholder="Sebutkan muatan lainnya..." value={muatanDiisiLainnya.nilai} onChange={(e) => setMuatanDiisiLainnya({ checked: true, nilai: e.target.value })} />
                           </div>

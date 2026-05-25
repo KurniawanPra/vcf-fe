@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { vcfApi, masterApi, violationApi, timbanganApi } from "@/lib/api";
+import { vcfApi, masterApi, violationApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { VCF_STATUS } from "@/constants/vcfStatus";
@@ -36,19 +36,28 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [pemeriksaanItems, setPemeriksaanItems] = useState<CheckItem[]>([]);
   const [pemeriksaan, setPemeriksaan] = useState<Record<number, string>>({});
 
-  // States for detail fields (triggered by specific item codes)
+  // States for detail fields
   const [jenisBeban, setJenisBeban] = useState("");
-  const [jumlahSegel, setJumlahSegel] = useState("");
-  const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
   const [keteranganUmum, setKeteranganUmum] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [scaleWeight, setScaleWeight] = useState("");
+
+  // Segel Masuk — for Unloading flow (input at WB Masuk)
+  const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
+  const [jumlahSegel, setJumlahSegel] = useState("1");
+
+  const syncJumlahSegel = (val: string) => {
+    const n = Math.max(1, Math.min(20, parseInt(val) || 1));
+    setJumlahSegel(String(n));
+    setNomorSegel(prev => {
+      const arr = [...prev];
+      while (arr.length < n) arr.push("");
+      return arr.slice(0, n);
+    });
+  };
 
   const activityType = vcfData?.tipe_kegiatan || "";
   const isLoading = activityType.startsWith("loading");
   const isUnloading = activityType.startsWith("unloading");
-  const existingWeight = isLoading ? vcfData?.timbangan?.tara : vcfData?.timbangan?.bruto;
-  const hasExistingWeight = existingWeight !== null && existingWeight !== undefined;
 
   // Dispatch modal events for isEditing
   useEffect(() => {
@@ -115,7 +124,11 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
     const fetchItems = async () => {
       try {
         setDataLoading(true);
-        const res = await masterApi.getItemPemeriksaanMasuk();
+        // Ekstrak tipe dasar: 'loading' atau 'unloading' dari tipe_kegiatan VCF
+        const tipeBase = activityType.startsWith('loading') ? 'loading'
+          : activityType.startsWith('unloading') ? 'unloading'
+          : undefined;
+        const res = await masterApi.getItemPemeriksaanMasuk(tipeBase ? { tipe_kegiatan: tipeBase } : undefined);
         const items = (res.data.data || res.data).filter(
           (i: CheckItem & { is_active?: boolean }) => i.is_active !== false
         );
@@ -127,20 +140,17 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
         setPemeriksaan(initial);
 
         // If data exists, it means we are in edit mode or viewing existing data
-        // We will call the mapping logic here
-        if (vcfData && (vcfData.pemeriksaan_masuk?.length > 0 || vcfData.status !== VCF_STATUS.BAGIAN1_SELESAI)) {
-          // Logic formerly in handleEdit
+        if (vcfData) {
           mapExistingData(items, vcfData);
         }
       } catch (e) {
         console.error(e);
       } finally {
-        // Add a small delay to ensure smooth transition
         setTimeout(() => setDataLoading(false), 500);
       }
     };
     fetchItems();
-  }, [vcfId]);
+  }, [vcfId, activityType]);
 
   const mapExistingData = (items: CheckItem[], data: any) => {
     // 1. Map existing pemeriksaan data
@@ -163,66 +173,20 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       setJenisBeban(data.beban_tambahan_masuk.jenis_beban || "");
     }
 
-    // 3. Map segel detail
+    // 3. Map segel masuk data (unloading: segel diinput di WB Masuk)
     if (data.segel_masuk) {
-      setJumlahSegel(data.segel_masuk.jumlah_segel?.toString() || "");
-      if (data.segel_masuk.nomor_segel) {
-        // Handle both object array and string
-        if (typeof data.segel_masuk.nomor_segel === 'string') {
-          setNomorSegel(data.segel_masuk.nomor_segel.split(",").map((s: string) => s.trim()));
-        } else if (Array.isArray(data.segel_masuk.nomor_segel)) {
-          setNomorSegel(data.segel_masuk.nomor_segel.map((s: any) => s.nomor_segel || s));
-        }
+      const nums = data.segel_masuk.nomor_segel?.map((s: any) => s.nomor_segel || s) || [];
+      if (nums.length > 0) {
+        setNomorSegel(nums);
+        setJumlahSegel(String(nums.length));
+      } else if (data.segel_masuk.jumlah_segel > 0) {
+        setJumlahSegel(String(data.segel_masuk.jumlah_segel));
+        setNomorSegel(Array(data.segel_masuk.jumlah_segel).fill(""));
       }
     }
 
     // 4. Map Keterangan Umum
     setKeteranganUmum(data.segel_masuk?.keterangan || data.vcf_bagian2?.keterangan || "");
-  };
-
-  // Reset segel fields when segel value is not 'Terpasang'
-  useEffect(() => {
-    const segelItem = pemeriksaanItems.find(i => i.kode === "SGM");
-    if (segelItem && pemeriksaan[segelItem.id] !== "Terpasang") {
-      setJumlahSegel("");
-      setNomorSegel([""]);
-    }
-  }, [pemeriksaan, pemeriksaanItems]);
-
-  const updateSegel = (idx: number, val: string) => {
-    setNomorSegel((prev) => {
-      const next = [...prev];
-      next[idx] = val;
-      return next;
-    });
-  };
-
-  const addSegelInput = () => {
-    setNomorSegel((prev) => {
-      const next = [...prev, ""];
-      setJumlahSegel(String(next.length));
-      return next;
-    });
-  };
-
-  const removeSegelInput = (idx: number) => {
-    setNomorSegel((prev) => {
-      if (prev.length <= 1) return prev;
-      const next = prev.filter((_, i) => i !== idx);
-      setJumlahSegel(String(next.length));
-      return next;
-    });
-  };
-
-  const syncJumlahSegel = (val: string) => {
-    const n = parseInt(val) || 1;
-    setJumlahSegel(val);
-    setNomorSegel((prev) => {
-      const next = [...prev];
-      while (next.length < n) next.push("");
-      while (next.length > n) next.pop();
-      return next;
-    });
   };
 
   const handleReject = async () => {
@@ -285,7 +249,6 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
     const errors: Record<number, boolean> = {};
     let hasError = false;
 
-    // Validasi setiap item pemeriksaan harus diisi
     pemeriksaanItems.forEach((item) => {
       const value = pemeriksaan[item.id];
       if (!value || value.trim() === "" || value === "—") {
@@ -295,9 +258,6 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
     });
 
     const btmItem = pemeriksaanItems.find(i => i.kode === "BTM");
-    const sgmItem = pemeriksaanItems.find(i => i.kode === "SGM");
-
-    // Validasi beban tambahan - jika "Ada" harus isi jenis beban
     if (btmItem && pemeriksaan[btmItem.id] === "Ada" && !jenisBeban.trim()) {
       errors[btmItem.id] = true;
       hasError = true;
@@ -305,23 +265,12 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       return { valid: false, message: "Jenis beban tambahan wajib diisi jika memilih 'Ada'." };
     }
 
-    // Validasi segel - jika "Terpasang" harus isi nomor segel
-    if (sgmItem && pemeriksaan[sgmItem.id] === "Terpasang") {
-      const validSegel = nomorSegel.filter(s => s.trim()).length > 0;
-      if (!validSegel) {
-        errors[sgmItem.id] = true;
-        hasError = true;
-        setFieldErrors(errors);
-        return { valid: false, message: "Nomor segel wajib diisi jika memilih 'Terpasang'." };
-      }
-    }
-
     setFieldErrors(errors);
     return { valid: !hasError, message: hasError ? "Harap lengkapi semua pemeriksaan yang belum diisi." : undefined };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError("");
 
     // Validasi client-side sebelum submit
@@ -333,23 +282,11 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       return;
     }
 
-    if (!hasExistingWeight && !isEditing) {
-      if (!scaleWeight || isNaN(parseFloat(scaleWeight)) || parseFloat(scaleWeight) <= 0) {
-        toast.error("Validasi Gagal", `Berat ${isLoading ? 'Tara' : 'Bruto'} wajib diisi dengan angka positif.`);
-        return;
-      }
-    }
+
+
 
     setLoading(true);
     try {
-      if (!hasExistingWeight && !isEditing) {
-        const weightNum = parseFloat(scaleWeight);
-        if (isLoading) {
-          await timbanganApi.updateTara(vcfId, weightNum);
-        } else {
-          await timbanganApi.updateBruto(vcfId, weightNum);
-        }
-      }
 
       const pemItems = pemeriksaanItems.map((item) => ({
         item_id: item.id,
@@ -358,18 +295,20 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       }));
 
       const btmItem = pemeriksaanItems.find(i => i.kode === "BTM");
+
       const sgmItem = pemeriksaanItems.find(i => i.kode === "SGM");
+      const segelTerpasang = isUnloading
+        ? (sgmItem ? pemeriksaan[sgmItem.id] === "Terpasang" : nomorSegel.some(s => s.trim()))
+        : false;
+      const validSegel = nomorSegel.filter(s => s.trim());
 
       const payload = {
         pemeriksaan: pemItems,
         beban_tambahan_ada: btmItem ? pemeriksaan[btmItem.id] === "Ada" : false,
         jenis_beban: jenisBeban || null,
-        segel_terpasang: sgmItem ? pemeriksaan[sgmItem.id] === "Terpasang" : false,
-        jumlah_segel:
-          sgmItem && pemeriksaan[sgmItem.id] === "Terpasang"
-            ? (jumlahSegel ? parseInt(jumlahSegel, 10) : nomorSegel.length)
-            : null,
-        nomor_segel: (sgmItem && pemeriksaan[sgmItem.id] === "Terpasang") ? nomorSegel.map((s) => s.trim()).filter(Boolean) : [],
+        segel_terpasang: segelTerpasang,
+        jumlah_segel: segelTerpasang ? (jumlahSegel ? parseInt(jumlahSegel) : validSegel.length) : null,
+        nomor_segel: segelTerpasang ? validSegel : [],
         keterangan: keteranganUmum || null,
       };
 
@@ -451,73 +390,64 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
             ))}
           </div>
 
-          {(vcfData.beban_tambahan_masuk || vcfData.segel_masuk) && (
+          {(vcfData.beban_tambahan_masuk || (isUnloading && vcfData.segel_masuk)) && (
             <div className="mt-6 pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-6">
               {vcfData.beban_tambahan_masuk && (
                 <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
                   <p className="form-label text-blue-500">Beban Tambahan</p>
-                  <span className="px-2 py-1 bg-blue-500/1  0 rounded text-[16px] font-mono text-blue-500 font-bold">
-                    {vcfData.beban_tambahan_masuk.jenis_beban}{/* <p className="text-sm font-bold  bg-blue-500/10 rounded text-blue-500">{vcfData.beban_tambahan_masuk.jenis_beban}</p> */}
+                  <span className="px-2 py-1 bg-blue-500/10 rounded text-[16px] font-mono text-blue-500 font-bold">
+                    {vcfData.beban_tambahan_masuk.jenis_beban}
                   </span>
                 </div>
               )}
-              {vcfData.segel_masuk && (
-                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                  <p className="form-label text-emerald-400">Segel ({vcfData.segel_masuk.jumlah_segel} Unit)</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
+              {isUnloading && vcfData.segel_masuk && (
+                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <p className="form-label text-amber-500 mb-0">Segel Masuk ({vcfData.segel_masuk.jumlah_segel} Unit)</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
                     {vcfData.segel_masuk.nomor_segel?.map((s: any, i: number) => (
-                      <span key={i} className="px-2 py-1 bg-emerald-500/10 rounded text-[14px] font-mono text-emerald-500 font-bold">
-                        {s.nomor_segel}
+                      <span key={i} className="px-2.5 py-1 bg-amber-500/10 rounded-lg text-xs font-mono text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">
+                        {typeof s === 'string' ? s : s.nomor_segel}
                       </span>
                     ))}
                   </div>
+                  {vcfData.segel_masuk.keterangan && (
+                    <p className="text-[10px] text-amber-500/60 mt-2 italic">{vcfData.segel_masuk.keterangan}</p>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Timbangan Weighbridge Masuk Result */}
-          <div className="mt-6 pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-              <p className="form-label text-blue-500 font-bold">Berat Masuk ({isLoading ? "Tarra" : "Bruto"})</p>
-              <span className="px-2.5 py-1 bg-blue-500/10 rounded-lg text-lg font-mono text-blue-600 dark:text-blue-400 font-bold">
-                {isLoading 
-                  ? (vcfData?.timbangan?.tara ? `${vcfData.timbangan.tara} kg` : "—") 
-                  : (vcfData?.timbangan?.bruto ? `${vcfData.timbangan.bruto} kg` : "—")}
-              </span>
-            </div>
-            
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-              <p className="form-label text-text-muted font-bold">Rujukan Timbangan Asal</p>
-              <div className="grid grid-cols-2 gap-2 text-sm mt-1">
-                <div>
-                  <span className="text-xs text-text-muted">Bruto Asal:</span>
-                  <p className="font-bold text-text-primary">{vcfData?.timbangan?.bruto_from ? `${vcfData.timbangan.bruto_from} kg` : "—"}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-text-muted">Tarra Asal:</span>
-                  <p className="font-bold text-text-primary">{vcfData?.timbangan?.tara_from ? `${vcfData.timbangan.tara_from} kg` : "—"}</p>
-                </div>
-              </div>
+          {/* Keterangan WB Masuk */}
+          <div className="mt-6 pt-6 border-t border-border">
+            <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+              <p className="form-label text-text-muted">Keterangan WB Masuk</p>
+              <p className="text-sm text-text-primary dark:text-slate-200">{vcfData.vcf_bagian2?.keterangan || vcfData.segel_masuk?.keterangan || "Tidak ada keterangan"}</p>
             </div>
           </div>
-
-          {vcfData.segel_masuk && (
-            <div className="mt-6 pt-6 border-t border-border">
-              <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                <p className="form-label text-text-muted">Keterangan</p>
-                <p className="text-sm text-text-primary dark:text-slate-200">{vcfData.segel_masuk?.keterangan || vcfData.vcf_bagian2?.keterangan || "Tidak ada keterangan"}</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
   ) : null;
 
   const formView = (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-28 md:pb-0">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Quick VCF Info Banner for petugas */}
+      <div className="glass-card p-3 md:p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs">
+          <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg font-bold">{vcfData?.no_polisi}</span>
+          <span className="text-text-muted">•</span>
+          <span className="font-medium text-text-primary">{vcfData?.driver?.nama_supir || "—"}</span>
+          <span className="text-text-muted">•</span>
+          <span className="font-bold uppercase text-amber-600 dark:text-amber-400">{activityType.replace("_", " ")}</span>
+          {vcfData?.produk && <><span className="text-text-muted">•</span><span className="text-text-muted">{vcfData.produk}</span></>}
+        </div>
+      </div>
       <ViolationWarningCard data={violationData} />
 
       {error && (
@@ -530,60 +460,16 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* WEIGHING SCALE INPUT */}
-        {!hasExistingWeight && (
-          <div className="glass-card p-6 shadow-sm border border-blue-500/20 bg-blue-50/5 dark:bg-blue-500/[0.02]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-text-primary">Timbangan Weighbridge Masuk</h3>
-                <p className="text-xs text-text-muted">Input berat kendaraan saat masuk</p>
-              </div>
-            </div>
+  
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="form-label font-bold text-blue-600">
-                  {isLoading ? "Berat Tarra Masuk (kg) *" : "Berat Bruto Masuk (kg) *"}
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  className="form-input text-lg font-mono"
-                  placeholder={`Masukkan berat ${isLoading ? 'tara' : 'bruto'}...`}
-                  value={scaleWeight}
-                  onChange={(e) => setScaleWeight(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-text-muted mt-1">
-                  Proses: <span className="font-bold uppercase text-blue-500">{isLoading ? "Loading (Masuk = Tara)" : "Unloading (Masuk = Bruto)"}</span>
-                </p>
-              </div>
-              
-              {/* Reference Weight from Registration */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex flex-col justify-center">
-                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Rujukan Timbangan Asal</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-xs text-text-muted">Bruto Asal:</span>
-                    <p className="font-bold text-text-primary">{vcfData?.timbangan?.bruto_from ? `${vcfData.timbangan.bruto_from} kg` : "—"}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-text-muted">Tarra Asal:</span>
-                    <p className="font-bold text-text-primary">{vcfData?.timbangan?.tara_from ? `${vcfData.timbangan.tara_from} kg` : "—"}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+
+        {/* CHECKLIST — Android section style */}
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2 px-1 mb-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-blue-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span className="text-[11px] font-black uppercase tracking-widest text-blue-500">Pemeriksaan Weighbridge Masuk</span>
+            <span className="ml-auto text-[10px] text-text-muted">{Object.values(pemeriksaan).filter(v => v && v !== '').length}/{pemeriksaanItems.length} terisi</span>
           </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-4">
           {pemeriksaanItems.map((item) => {
             const options = item.tipe_jawaban && item.tipe_jawaban.includes(',') ? item.tipe_jawaban.split(',').map(o => o.trim()) : null;
             const isSelect = Array.isArray(options) && options.length > 0;
@@ -591,41 +477,44 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
             const hasError = fieldErrors[item.id];
 
             return (
-              <div key={item.id} className="group transition-all duration-300" data-error={hasError ? "true" : undefined}>
-                <div className={`p-5 rounded-2xl border transition-all duration-300 ${hasError 
-                  ? 'bg-red-50/50 dark:bg-red-500/5 border-red-500 shadow-sm' 
-                  : value 
-                    ? 'bg-white dark:bg-white/5 border-blue-500/30 shadow-sm' 
-                    : 'bg-slate-50/50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 hover:border-slate-200'
-                }`}>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <span className="font-bold text-text-primary dark:text-slate-200">{item.nama_item}</span>
+              <div key={item.id} data-error={hasError ? "true" : undefined}>
+                <div className={`px-4 py-3.5 rounded-2xl border-l-4 bg-white dark:bg-white/[0.03] border border-l-4 transition-all duration-200
+                  ${hasError
+                    ? 'border-l-rose-500 border-rose-200 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-500/5'
+                    : value
+                      ? (value === options?.[options.length-1]
+                        ? 'border-l-rose-400 border-slate-100 dark:border-white/5'
+                        : 'border-l-emerald-400 border-slate-100 dark:border-white/5')
+                      : 'border-l-slate-200 dark:border-l-white/10 border-slate-100 dark:border-white/5'
+                  }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${value ? (value === (options?.[options.length-1]) ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-300 dark:bg-slate-600'}`} />
+                      <span className="font-semibold text-base text-text-primary dark:text-slate-200">{item.nama_item}</span>
                     </div>
 
                     {isSelect ? (
-                      <div className="flex flex-wrap gap-2">
-                        {options.map((opt: string) => {
+                      <div className="flex gap-2 flex-wrap">
+                        {options!.map((opt: string, idx: number) => {
                           const isSelected = value?.toString().trim().toLowerCase() === opt.trim().toLowerCase();
-                          const isWarning = opt === "Rusak" || opt === "Tidak Terpasang" || opt === "Tidak Ada";
+                          const isLastOption = idx === options!.length - 1;
+                          const isNegative = isLastOption;
                           return (
                             <label
                               key={opt}
                               className={`
-                                cursor-pointer px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border
-                                ${isSelected 
-                                  ? (isWarning ? 'bg-red-500 border-red-500 text-white shadow-sm' : 'bg-blue-500 border-blue-500 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/30')
-                                  : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'
+                                cursor-pointer min-w-[64px] min-h-[44px] px-5 py-2.5 rounded-full text-sm font-bold
+                                transition-all duration-150 border-2 flex items-center justify-center select-none
+                                ${isSelected
+                                  ? isNegative
+                                    ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-200 dark:shadow-rose-900/30'
+                                    : 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200 dark:shadow-emerald-900/30'
+                                  : 'bg-transparent border-slate-200 dark:border-white/15 text-slate-500 hover:border-blue-400 hover:text-blue-500'
                                 }
                               `}
                             >
-                              <input
-                                type="radio"
-                                className="hidden"
-                                name={`pem-${item.id}`}
-                                checked={isSelected}
-                                onChange={() => setPemeriksaan((p) => ({ ...p, [item.id]: opt }))}
-                              />
+                              <input type="radio" className="hidden" name={`pem-${item.id}`} checked={isSelected}
+                                onChange={() => setPemeriksaan((p) => ({ ...p, [item.id]: opt }))} />
                               {opt}
                             </label>
                           );
@@ -656,47 +545,78 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                     </div>
                   )}
 
-                  {item.kode === "SGM" && value === "Terpasang" && (
-                    <div className="mt-4 pt-4 border-t border-emerald-500/10 animate-slideDown space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="form-label text-emerald-400">Nomor Segel Kendaraan</label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-emerald-500/60 uppercase">Jumlah:</span>
-                          <input
-                            type="number"
-                            className="w-16 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400 text-center focus:outline-none focus:border-emerald-500"
-                            value={jumlahSegel || String(nomorSegel.length)}
-                            onChange={(e) => syncJumlahSegel(e.target.value)}
-                            min={1}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {nomorSegel.map((segel, idx) => (
-                          <div key={idx} className="relative group/segel">
-                            <input
-                              type="text"
-                              className="form-input form-input-sm bg-emerald-500/5 border-emerald-500/10 focus:border-emerald-500 pr-10"
-                              placeholder={`Segel #${idx + 1}`}
-                              value={segel}
-                              onChange={(e) => updateSegel(idx, e.target.value)}
-                            />
-                            {nomorSegel.length > 1 && (
-                              <button
-                                type="button"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center opacity-0 group-hover/segel:opacity-100"
-                                onClick={() => removeSegelInput(idx)}
-                              >✕</button>
-                            )}
+                  {/* Segel — unloading only */}
+                  {item.kode === "SGM" && isUnloading && (
+                    <>
+                      {/* Read-only reference: tampilkan segel yang sudah ada dari data VCF */}
+                      {!isEditing && vcfData?.segel_masuk && (
+                        <div className="mt-3 pt-3 border-t border-amber-500/10 animate-slideDown">
+                          <div className="flex items-center gap-2 mb-2">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span className="text-[10px] uppercase font-black text-amber-500 tracking-widest">Segel Masuk ({vcfData.segel_masuk.jumlah_segel} Unit)</span>
                           </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        className="w-full py-2 border-2 border-dashed border-emerald-500/30 rounded-xl text-[10px] font-bold text-emerald-500 uppercase hover:bg-emerald-500/5 transition-colors"
-                        onClick={addSegelInput}
-                      >+ Tambah Baris Segel</button>
-                    </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {vcfData.segel_masuk.nomor_segel?.map((s: any, i: number) => (
+                              <span key={i} className="px-2.5 py-1 bg-amber-500/10 rounded-lg text-xs font-mono text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">
+                                {typeof s === 'string' ? s : s.nomor_segel}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {!isEditing && !vcfData?.segel_masuk && (
+                        <div className="mt-3 pt-3 border-t border-amber-500/10">
+                          <p className="text-[11px] text-text-muted italic px-1">Belum ada data segel masuk.</p>
+                        </div>
+                      )}
+
+                      {/* Editable segel input — only in edit mode */}
+                      {isEditing && value === "Terpasang" && (
+                        <div className="mt-4 pt-4 border-t border-amber-500/10 animate-slideDown">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                              <span className="text-[10px] uppercase font-black text-amber-500 tracking-widest">Nomor Segel Masuk</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-slate-400">Jumlah:</span>
+                              <input type="number" min={1} max={20}
+                                className="w-14 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs font-bold text-amber-600 dark:text-amber-400 text-center focus:outline-none focus:border-amber-500"
+                                value={jumlahSegel} onChange={(e) => syncJumlahSegel(e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {nomorSegel.map((segel, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-slate-400 w-6 text-right">{idx+1}.</span>
+                                <input type="text"
+                                  className="form-input flex-1 font-mono bg-amber-500/5 border-amber-500/15 focus:border-amber-500"
+                                  placeholder={`No. Segel ${idx+1}`}
+                                  value={segel}
+                                  onChange={(e) => setNomorSegel(prev => { const n=[...prev]; n[idx]=e.target.value; return n; })} />
+                                {nomorSegel.length > 1 && (
+                                  <button type="button"
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 transition-colors shrink-0"
+                                    onClick={() => {
+                                      setNomorSegel(prev => prev.filter((_, i) => i !== idx));
+                                      setJumlahSegel(String(nomorSegel.length - 1));
+                                    }}
+                                    title="Hapus baris segel"
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button"
+                            className="mt-2 w-full py-2 border-2 border-dashed border-amber-400/40 rounded-xl text-[10px] font-bold text-amber-500 uppercase hover:bg-amber-500/5 transition-colors"
+                            onClick={() => syncJumlahSegel(String(nomorSegel.length + 1))}>
+                            + Tambah Baris Segel
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -714,11 +634,12 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* Action Bar */}
+        <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-4xl mx-auto pb-8">
           {!isEditing && (
             <button
               type="button"
-              className="btn btn-danger flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-2 text-sm sm:text-base order-2 sm:order-1"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 active:bg-rose-500/20 transition-all order-2 sm:order-1"
               onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
               disabled={loading}
             >
@@ -734,14 +655,12 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
             <>
               <button
                 type="button"
-                className="btn btn-secondary py-2.5 sm:py-2 text-sm sm:text-base order-3 sm:order-2"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border border-slate-200 dark:border-white/10 active:bg-slate-200 dark:active:bg-white/10 transition-all order-3 sm:order-2"
                 onClick={() => {
                   const resetObj: Record<number, string> = {};
                   pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
                   setPemeriksaan(resetObj);
                   setJenisBeban("");
-                  setJumlahSegel("");
-                  setNomorSegel([""]);
                   setKeteranganUmum("");
                   setError("");
                 }}
@@ -751,10 +670,10 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               </button>
               <button
                 type="submit"
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-2 text-sm sm:text-base order-1 sm:order-3"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all order-1 sm:order-3"
                 disabled={loading}
               >
-                {loading ? <><span className="spinner" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
+                {loading ? <><span className="spinner border-white" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
               </button>
             </>
           )}

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -32,17 +32,20 @@
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.14.0",
     "next": "14.2.35",
+    "next-pwa": "^5.6.0",
     "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.75.0",
     "react-qr-code": "^2.0.21",
+    "sharp": "^0.34.5",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18",

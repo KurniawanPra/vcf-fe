@@ -2,13 +2,16 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // used in RegisterButton
 import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
-import { getStatusLabel, getStatusColor } from "@/lib/utils";
+import { getStatusLabel, getStatusColor, getActionButtonStyle, getActionLabel} from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import MobileCardSkeleton from "@/components/MobileCardSkeleton";
+import TableRowSkeleton from "@/components/TableRowSkeleton";
+import RegisterButton from "@/components/RegisterButton";
+
 
 interface VcfSummary {
   id: number;
@@ -18,100 +21,7 @@ interface VcfSummary {
   tipe_kegiatan: string;
   tanggal: string;
   transporter?: { nama_transporter: string };
-  driver?: { nama_supir: string };
-}
-
-function RegisterButton() {
-  const router = useRouter();
-  const [nav, setNav] = useState(false);
-  return (
-    <button
-      onClick={() => { setNav(true); router.push("/vcf/register"); }}
-      disabled={nav}
-      className="action-btn action-btn-blue group"
-      style={{ padding: "10px 24px", fontSize: "13px", borderRadius: "9999px" }}
-    >
-      <span className="relative flex items-center gap-2">
-        {nav ? (
-          <div className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
-        ) : (
-          <svg 
-            width="16" 
-            height="16" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="transition-transform duration-300 group-hover:rotate-180"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v8M8 12h8" />
-          </svg>
-        )}
-        <span className="tracking-wide">{nav ? "Memuat..." : "Registrasi Baru"}</span>
-      </span>
-    </button>
-  );
-}
-
-const getActionLabel = (status: string) => {
-  const map: Record<string, string> = {
-    bagian1_selesai: "Isi WB Masuk",
-    bagian2_selesai: "Isi WB Keluar",
-    loading_unloading_proses: "Lihat Operasional",
-    loading_unloading_selesai: "Isi WB Keluar",
-    bagian3_selesai: "Isi MG Keluar",
-    weighbridge_keluar: "Isi MG Keluar",
-    selesai: "Lihat Detail",
-    reject: "Lihat Detail",
-  };
-  return map[status] ?? "Detail";
-};
-
-const getActionButtonStyle = (status: string) => {
-  switch (status) {
-    case "bagian1_selesai": return "action-btn action-btn-amber";
-    case "bagian2_selesai": return "action-btn action-btn-indigo";
-    case "loading_unloading_proses":
-    case "loading_unloading_selesai": return "action-btn action-btn-violet";
-    case "bagian3_selesai": return "action-btn action-btn-emerald";
-    case "selesai":
-    case "reject": return "action-btn action-btn-slate";
-    default: return "action-btn action-btn-blue";
-  }
-};
-
-// Skeleton Components
-function TableRowSkeleton() {
-  return (
-    <tr>
-      <td><div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" /></td>
-      <td><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" /></td>
-      <td><div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" /></td>
-      <td><div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" /></td>
-      <td><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" /></td>
-      <td><div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" /></td>
-    </tr>
-  );
-}
-
-function MobileCardSkeleton() {
-  return (
-    <div className="p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        </div>
-        <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      </div>
-    </div>
-  );
+  driver?: { nama_supir: string; no_sim?: string };
 }
 
 export default function VcfQuickAccessPage() {
@@ -188,7 +98,7 @@ export default function VcfQuickAccessPage() {
           <h1 className="text-2xl font-bold text-primary" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Operasional VCF
           </h1>
-          <p className="text-secondary text-sm">Akses cepat formulir pemeriksaan kendaraan PT INL</p>
+          <p className="text-secondary text-sm">Data VCF Hari Ini</p>
         </div>
         <button
           onClick={() => setShowGuide(!showGuide)}
@@ -331,7 +241,10 @@ export default function VcfQuickAccessPage() {
                       </div>
                       <div className="mb-3">
                         <p className="font-bold text-text-primary dark:text-white text-base leading-tight">{vcf.no_polisi}</p>
-                        <p className="text-[11px] text-secondary mt-0.5">{vcf.driver?.nama_supir || "—"}</p>
+                        <div className="flex flex-col mt-0.5">
+                          <span className="text-[11px] text-secondary font-semibold">{vcf.driver?.nama_supir || "—"}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{vcf.driver?.no_sim || "—"}</span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
@@ -378,8 +291,13 @@ export default function VcfQuickAccessPage() {
                     {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
                       <tr key={vcf.id}>
                         <td><span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span></td>
-                        <td className="font-semibold">{vcf.no_polisi}</td>
-                        <td className="text-secondary text-sm">{vcf.driver?.nama_supir || "—"}</td>
+                        <td className="font-semibold whitespace-nowrap">{vcf.no_polisi}</td>
+                        <td className="text-secondary text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-text-primary dark:text-white">{vcf.driver?.nama_supir || "—"}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{vcf.driver?.no_sim || "—"}</span>
+                          </div>
+                        </td>
                         <td className="text-secondary text-sm">{vcf.transporter?.nama_transporter || "—"}</td>
                         <td>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">

@@ -15,7 +15,6 @@ const Bagian3Form = lazy(() => import("./Bagian3Form"));
 const Bagian4Form = lazy(() => import("./Bagian4Form"));
 const PrintVCF = lazy(() => import("./PrintVCF"));
 const Bagian1EditModal = lazy(() => import("./Bagian1EditModal"));
-const AdminTimbanganModal = lazy(() => import("./AdminTimbanganModal"));
 
 // Form loading skeleton
 function FormSkeleton() {
@@ -83,6 +82,7 @@ interface VcfDetail {
     vcf_id: number;
     bruto_from?: number | null;
     tara_from?: number | null;
+    netto_from?: number | null;
     bruto?: number | null;
     tara?: number | null;
     netto?: number | null;
@@ -148,11 +148,10 @@ export default function VcfDetailPage() {
   const [vcf, setVcf] = useState<VcfDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"info" | "bagian2" | "bagian3" | "bagian4" | "reject_detail">("info");
-  const [hasInitializedTab, setHasInitializedTab] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showBagian1Edit, setShowBagian1Edit] = useState(false);
-  const [showAdminTimbangan, setShowAdminTimbangan] = useState(false);
+  const [hasInitializedTab, setHasInitializedTab] = useState(false);
 
   const fetchVcf = useCallback(async () => {
     try {
@@ -465,23 +464,29 @@ export default function VcfDetailPage() {
         {/* Desktop */}
         <div className="hidden md:flex items-center w-full">
           {[
-            { n: 1, label: "Registrasi", sub: "Masuk" },
-            { n: 2, label: "Weighbridge", sub: "Masuk" },
-            { n: 3, label: "Weighbridge", sub: "Keluar" },
-            { n: 4, label: "Selesai", sub: "" },
+            { n: 1, label: "Registrasi", sub: "Masuk", tab: "info" },
+            { n: 2, label: "Weighbridge", sub: "Masuk", tab: "bagian2" },
+            { n: 3, label: "Weighbridge", sub: "Keluar", tab: "bagian3" },
+            { n: 4, label: "MG Keluar", sub: "/ Selesai", tab: "bagian4" },
           ].map((step, idx, arr) => {
             const completed = step.n < currentStep || isDone
             const active = step.n === currentStep
+            const accessible = step.n === 1 || step.n <= currentStep || isDone
 
             return (
               <React.Fragment key={step.n}>
-                <div className="flex flex-col items-center shrink-0">
+                <div
+                  className={`flex flex-col items-center shrink-0 ${accessible ? 'cursor-pointer group' : 'cursor-default'}`}
+                  onClick={() => accessible && setActiveTab(step.tab as any)}
+                  title={accessible ? `Buka ${step.label} ${step.sub}` : 'Belum tersedia'}
+                >
                   <div
                     className={`
                       w-12 h-12 rounded-2xl border-2
                       flex items-center justify-center
                       font-bold text-sm
                       transition-all duration-300
+                      ${accessible && !active ? 'group-hover:scale-110 group-hover:shadow-md' : ''}
                     `}
                     style={
                       completed
@@ -538,92 +543,42 @@ export default function VcfDetailPage() {
           })}
         </div>
 
-        {/* Mobile */}
-        <div className="md:hidden flex flex-col gap-3">
+        {/* Mobile — horizontal scrollable chips */}
+        <div className="md:hidden flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {[
-            { n: 1, label: "Registrasi Masuk" },
-            { n: 2, label: "Weighbridge Masuk" },
-            { n: 3, label: "Weighbridge Keluar" },
-            { n: 4, label: "Selesai" },
+            { n: 1, label: "Registrasi", tab: "info" },
+            { n: 2, label: "WB Masuk", tab: "bagian2" },
+            { n: 3, label: "WB Keluar", tab: "bagian3" },
+            { n: 4, label: "MG Keluar", tab: "bagian4" },
           ].map((step) => {
             const completed = step.n < currentStep || isDone
             const active = step.n === currentStep
+            const isActiveTab = activeTab === step.tab
+            const accessible = step.n === 1 || step.n <= currentStep || isDone
 
             return (
-              <div
+              <button
                 key={step.n}
+                type="button"
+                onClick={() => accessible && setActiveTab(step.tab as any)}
+                disabled={!accessible}
                 className={`
-                  flex items-center gap-3
-                  rounded-2xl border p-3
-                  transition-all duration-300
+                  flex items-center gap-2 flex-shrink-0
+                  rounded-full border px-3 py-2
+                  transition-all duration-200 text-xs font-bold
+                  ${isActiveTab ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                    completed ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' :
+                    active && isRejected ? 'border-red-500/40 bg-red-500/5 text-red-500' :
+                    accessible ? 'border-border text-text-secondary hover:border-blue-400' :
+                    'border-border/40 text-text-muted opacity-50'}
                 `}
-                style={
-                  completed
-                    ? {
-                        borderColor: "#10b98155",
-                        background: "rgba(16,185,129,0.08)",
-                      }
-                    : active
-                      ? isRejected
-                        ? {
-                            borderColor: "#ef444455",
-                            background: "rgba(239,68,68,0.08)",
-                          }
-                        : {
-                            borderColor: "#3b82f655",
-                            background: "rgba(59,130,246,0.08)",
-                          }
-                      : {}
-                }
               >
-                <div
-                  className={`
-                    w-10 h-10 rounded-xl border-2
-                    flex items-center justify-center
-                    font-bold text-sm shrink-0
-                  `}
-                  style={
-                    completed
-                      ? {
-                          borderColor: "#10b981",
-                          color: "#10b981",
-                        }
-                      : active
-                        ? isRejected
-                          ? {
-                              borderColor: "#ef4444",
-                              color: "#f87171",
-                            }
-                          : {
-                              borderColor: "#3b82f6",
-                              color: "#60a5fa",
-                            }
-                        : {}
-                  }
-                >
-                  {completed
-                    ? "✓"
-                    : active && isRejected
-                      ? "×"
-                      : step.n}
-                </div>
-
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-text-primary dark:text-white">
-                    {step.label}
-                  </p>
-
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {completed
-                      ? "Step selesai"
-                      : active
-                        ? isRejected
-                          ? `Ditolak oleh ${getRejectingPetugas(vcf, step.n)}`
-                          : "Sedang berjalan"
-                        : "Menunggu proses"}
-                  </p>
-                </div>
-              </div>
+                <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black shrink-0
+                  ${completed ? 'border-emerald-500 text-emerald-500' : active && isRejected ? 'border-red-500 text-red-500' : isActiveTab ? 'border-blue-500 text-blue-500' : 'border-current'}`}>
+                  {completed ? '✓' : active && isRejected ? '×' : step.n}
+                </span>
+                {step.label}
+              </button>
             )
           })}
         </div>
@@ -663,32 +618,21 @@ export default function VcfDetailPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-        {[
-          { key: "info", label: "Data Registrasi VCF", always: true },
-          { key: "reject_detail", label: "Detail Penolakan", always: isRejected },
-          { key: "bagian2", label: "Weighbridge Masuk", always: !isRejected && (currentStep >= 2 || canFillBagian2 || (vcf?.pemeriksaan_masuk && vcf.pemeriksaan_masuk.length > 0)) },
-          { key: "bagian3", label: "Weighbridge Keluar", always: !isRejected && (currentStep >= 3 || canFillBagian3 || (vcf?.pemeriksaan_keluar && vcf.pemeriksaan_keluar.length > 0)) },
-          { key: "bagian4", label: "Main Gate Keluar", always: !isRejected && (currentStep >= 4 || canFillBagian4 || vcf?.status === "selesai") },
-        ]
-          .filter((t) => t.always)
-          .map((tab) => (
-            <button
-              key={tab.key}
-              id={`tab-${tab.key}`}
-              className="btn btn-sm flex-shrink-0"
-              style={
-                activeTab === tab.key
-                  ? { background: "rgba(59,130,246,0.2)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)" }
-                  : { background: "rgba(255,255,255,0.04)", color: "var(--text-secondary)", border: "1px solid var(--border-light)" }
-              }
-              onClick={() => setActiveTab(tab.key as any)}
-            >
-              {tab.label}
-            </button>
-          ))}
-      </div>
+      {/* reject_detail tab only shown when rejected */}
+      {isRejected && (
+        <div className="flex gap-2 mb-4">
+          <button
+            className="btn btn-sm flex-shrink-0"
+            style={activeTab === 'info' ? { background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' } : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', border: '1px solid var(--border-light)' }}
+            onClick={() => setActiveTab('info')}
+          >Data Registrasi</button>
+          <button
+            className="btn btn-sm flex-shrink-0"
+            style={activeTab === 'reject_detail' ? { background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' } : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', border: '1px solid var(--border-light)' }}
+            onClick={() => setActiveTab('reject_detail')}
+          >Detail Penolakan</button>
+        </div>
+      )}
       {activeTab === "reject_detail" && (
         <div className="p-6">
           <div className="border border-red-200 dark:border-red-900/40 rounded-xl overflow-hidden bg-white dark:bg-transparent">
@@ -884,75 +828,7 @@ export default function VcfDetailPage() {
                 </div>
               </div>
 
-              {/* Timbangan Section */}
-              {vcf.timbangan && (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs uppercase tracking-wider font-bold flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                      Data Timbangan Weighbridge
-                    </h4>
-                    {isAdmin() && (
-                      <button
-                        onClick={() => setShowAdminTimbangan(true)}
-                        className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                        </svg>
-                        Edit (Admin)
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Timbangan Asal */}
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <p className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-2">Rujukan Timbangan Asal</p>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-[10px] text-text-muted">Bruto Asal:</span>
-                          <p className="font-bold text-text-primary mt-0.5">{vcf.timbangan.bruto_from ? `${vcf.timbangan.bruto_from} kg` : "—"}</p>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-text-muted">Tarra Asal:</span>
-                          <p className="font-bold text-text-primary mt-0.5">{vcf.timbangan.tara_from ? `${vcf.timbangan.tara_from} kg` : "—"}</p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Timbangan Masuk & Keluar */}
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 md:col-span-2">
-                      <p className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-2">Hasil Timbang Weighbridge</p>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-[10px] text-text-muted">WB Masuk ({vcf.tipe_kegiatan?.startsWith("loading") ? "Tarra" : "Bruto"}):</span>
-                          <p className="font-bold text-blue-600 dark:text-blue-400 text-base mt-0.5">
-                            {vcf.timbangan.tara && vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.tara} kg` : 
-                             vcf.timbangan.bruto && !vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.bruto} kg` : "—"}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-text-muted">WB Keluar ({vcf.tipe_kegiatan?.startsWith("loading") ? "Bruto" : "Tarra"}):</span>
-                          <p className="font-bold text-purple-600 dark:text-purple-400 text-base mt-0.5">
-                            {vcf.timbangan.bruto && vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.bruto} kg` : 
-                             vcf.timbangan.tara && !vcf.tipe_kegiatan?.startsWith("loading") ? `${vcf.timbangan.tara} kg` : "—"}
-                          </p>
-                        </div>
-                        <div className="border-l border-border pl-4">
-                          <span className="text-[10px] text-emerald-500 font-bold uppercase">Netto (Bruto - Tarra):</span>
-                          <p className="font-black text-emerald-600 dark:text-emerald-400 text-lg mt-0.5">
-                            {vcf.timbangan.netto ? `${vcf.timbangan.netto} kg` : "—"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Keterangan Petugas */}
               {vcf.keterangan ? (
@@ -1382,18 +1258,7 @@ export default function VcfDetailPage() {
         </Suspense>
       )}
 
-      {/* Admin Timbangan Override Modal */}
-      {showAdminTimbangan && vcf && (
-        <Suspense fallback={null}>
-          <AdminTimbanganModal
-            isOpen={showAdminTimbangan}
-            onClose={() => setShowAdminTimbangan(false)}
-            vcfId={vcf.id}
-            initialData={vcf.timbangan}
-            onSuccess={fetchVcf}
-          />
-        </Suspense>
-      )}
+
     </div>
   );
 }

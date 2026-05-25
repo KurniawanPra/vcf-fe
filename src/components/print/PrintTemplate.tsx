@@ -13,6 +13,8 @@ interface PrintTemplateProps {
   onClose: () => void;
   children: React.ReactNode;
   isLoading?: boolean;
+  pageNumber?: number;
+  totalPages?: number;
   settings?: {
     company_name?: string;
     company_address?: string;
@@ -31,6 +33,8 @@ export default function PrintTemplate({
   onClose,
   children,
   isLoading = false,
+  pageNumber = 1,
+  totalPages = 1,
   settings = {},
 }: PrintTemplateProps) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -186,7 +190,7 @@ export default function PrintTemplate({
                   {title.toUpperCase()}
                 </td>
                 <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>Halaman</td>
-                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>1 dari 1</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>{pageNumber} dari {totalPages}</td>
               </tr>
             </tbody>
           </table>

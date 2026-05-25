@@ -6,13 +6,14 @@ import { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, Bor
 
 export type ExportFormat = 'pdf' | 'excel' | 'docx';
 
+
 export const exportToExcel = (filename: string, headers: string[], data: any[][], title?: string, subtitle?: string) => {
   // Create header rows mimicking the image
   const headerInfo: any[][] = [
-    ["PT. INDUSTRI NABATI LESTARI", "", "", "", "No. Dokumen", "FM-BSHS-42/01"],
-    ["PABRIK MINYAK GORENG", "", "", "", "Tgl berlaku", "13-Mar-25"],
-    ["Komp. KEK Sei Mangkei, Kav. 2-3, Kec. Bosar Maligas, Kab. Simalungun", "", "", "", "No. Revisi", "01"],
-    [title || "VEHICLE CONTROL FORM (VCF)", "", "", "", "Halaman", "1 dari 1"],
+    ["PT. INDUSTRI NABATI LESTARI", "", "", "", "No. Dokumen", ""],
+    ["PABRIK MINYAK GORENG", "", "", "", "Tgl berlaku", ""],
+    ["Komp. KEK Sei Mangkei, Kav. 2-3, Kec. Bosar Maligas, Kab. Simalungun", "", "", "", "No. Revisi", ""],
+    [title || "VEHICLE CONTROL FORM (VCF)",],
   ];
   if (subtitle) {
     headerInfo.push([subtitle]);
@@ -29,6 +30,9 @@ export const exportToExcel = (filename: string, headers: string[], data: any[][]
     { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
     { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
   ];
+
+  // Auto column widths based on headers
+  worksheet['!cols'] = headers.map((h: string) => ({ wch: Math.max(h.length + 2, 12) }));
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
@@ -114,7 +118,7 @@ const drawINLHeader = (doc: jsPDF, logoBase64: string | null, title: string) => 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   const labels = ["No. Dokumen", "Tgl berlaku", "No. Revisi", "Halaman"];
-  const values = ["FM-BSHS-42/01", "13-Mar-25", "01", "1 dari 1"];
+  const values = [" ", " ", " ", " "];
   
   labels.forEach((label, i) => {
     doc.text(label, rightBoxX + 2, startY + 5 + (i * 7.5));
@@ -130,7 +134,7 @@ export const exportToPDF = async (filename: string, title: string, headers: stri
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100);
-  doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 56);
+  doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID', { hour12: false })}`, 14, 56);
 
   let startY = 62;
   if (subtitle) {
@@ -187,9 +191,9 @@ export const exportToDocx = async (filename: string, title: string, headers: str
           }),
           new TableCell({ 
             children: [
-              new Paragraph({ text: "No. Dokumen: FM-BSHS-42/01" }),
-              new Paragraph({ text: "Tgl berlaku: 13-Mar-25" }),
-              new Paragraph({ text: "No. Revisi: 01" }),
+              new Paragraph({ text: "No. Dokumen: " }),
+              new Paragraph({ text: "Tgl berlaku: " }),
+              new Paragraph({ text: "No. Revisi: " }),
             ],
             width: { size: 30, type: WidthType.PERCENTAGE }
           }),
@@ -221,7 +225,7 @@ export const exportToDocx = async (filename: string, title: string, headers: str
         headerTable,
         new Paragraph({ text: "" }),
         new Paragraph({ text: title, heading: 'Heading2' }),
-        new Paragraph({ text: `Dicetak pada: ${new Date().toLocaleString('id-ID')}`, spacing: { after: 200 } }),
+        new Paragraph({ text: `Dicetak pada: ${new Date().toLocaleString('id-ID', { hour12: false })}`, spacing: { after: 200 } }),
         mainTable,
       ],
     }],

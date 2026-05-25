@@ -11,6 +11,7 @@ interface AdminTimbanganModalProps {
   initialData?: {
     bruto_from?: number | string | null;
     tara_from?: number | string | null;
+    netto_from?: number | string | null;
     bruto?: number | string | null;
     tara?: number | string | null;
   } | null;
@@ -29,6 +30,7 @@ export default function AdminTimbanganModal({
   const [formData, setFormData] = useState({
     bruto_from: "",
     tara_from: "",
+    netto_from: "",
     bruto: "",
     tara: "",
   });
@@ -40,6 +42,7 @@ export default function AdminTimbanganModal({
       setFormData({
         bruto_from: initialData?.bruto_from?.toString() || "",
         tara_from: initialData?.tara_from?.toString() || "",
+        netto_from: initialData?.netto_from?.toString() || "",
         bruto: initialData?.bruto?.toString() || "",
         tara: initialData?.tara?.toString() || "",
       });
@@ -63,9 +66,22 @@ export default function AdminTimbanganModal({
       const payload = {
         bruto_from: formData.bruto_from ? parseFloat(formData.bruto_from) : null,
         tara_from: formData.tara_from ? parseFloat(formData.tara_from) : null,
+        netto_from: formData.netto_from ? parseFloat(formData.netto_from) : null,
         bruto: formData.bruto ? parseFloat(formData.bruto) : null,
         tara: formData.tara ? parseFloat(formData.tara) : null,
       };
+
+      if (payload.bruto_from !== null && payload.tara_from !== null && payload.bruto_from < payload.tara_from) {
+        toast.error("Validasi Gagal", "Bruto Asal tidak boleh lebih kecil dari Tara Asal (Netto negatif).");
+        setLoading(false);
+        return;
+      }
+
+      if (payload.bruto !== null && payload.tara !== null && payload.bruto < payload.tara) {
+        toast.error("Validasi Gagal", "Bruto WB tidak boleh lebih kecil dari Tara WB (Netto negatif).");
+        setLoading(false);
+        return;
+      }
 
       await timbanganApi.updateAdmin(vcfId, payload);
       toast.success("Berhasil", "Data timbangan berhasil diubah oleh Admin");
@@ -121,8 +137,8 @@ export default function AdminTimbanganModal({
         <div className="p-6">
           <form id="admin-timbangan-form" onSubmit={handleSubmit} className="space-y-5">
             
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
-              <div className="col-span-2 mb-1">
+            <div className="grid grid-cols-3 gap-4 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+              <div className="col-span-3 mb-1">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tahap 1: Rujukan Timbangan Asal</p>
               </div>
               <div>
@@ -146,6 +162,14 @@ export default function AdminTimbanganModal({
                   className="form-input"
                   placeholder="0"
                 />
+              </div>
+              <div className="flex flex-col justify-end pb-2">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Netto Asal (Otomatis)</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-2">
+                  {formData.bruto_from && formData.tara_from && parseFloat(formData.bruto_from) >= parseFloat(formData.tara_from)
+                    ? `${(parseFloat(formData.bruto_from) - parseFloat(formData.tara_from)).toFixed(2)} kg`
+                    : "—"}
+                </span>
               </div>
             </div>
 

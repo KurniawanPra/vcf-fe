@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { vcfApi } from "@/lib/api";
+import { vcfApi, timbanganApi } from "@/lib/api";
 import { formatTime, isValidTime24h, getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { VCF_STATUS } from "@/constants/vcfStatus";
@@ -18,6 +18,8 @@ interface VcfData {
   transporter?: { nama_transporter: string };
   driver?: { nama_supir: string };
   vcf_keluar?: { jam_keluar: string; emergency_respon_kontak: string; keterangan?: string };
+  segel_keluar?: { jumlah_segel: number; nomor_segel: { nomor_segel: string }[] };
+  timbangan?: { bruto_from?: number | null; tara_from?: number | null; netto_from?: number | null; bruto?: number | null; tara?: number | null; netto?: number | null };
   status: string;
   catatan?: string;
 }
@@ -35,12 +37,35 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { toasts, removeToast, toast } = useToast();
-  const [fieldErrors, setFieldErrors] = useState<{ jamKeluar?: boolean; emergencyKontak?: boolean; keterangan?: boolean }>({});
-  const [jamKeluar, setJamKeluar] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ jamKeluar?: boolean; emergencyKontak?: boolean; keterangan?: boolean; segelTerpasang?: boolean }>({});
+  const [jamKeluar, setJamKeluar] = useState(formatTime());
+  const [isJamKeluarManual, setIsJamKeluarManual] = useState(false);
+  const [dramaticTime, setDramaticTime] = useState("");
   const [emergencyKontak, setEmergencyKontak] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Segel input for loading flow
+  const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
+  const [jumlahSegel, setJumlahSegel] = useState("1");
+
+  const syncJumlahSegel = (val: string) => {
+    const n = Math.max(1, parseInt(val) || 1);
+    setJumlahSegel(String(n));
+    setNomorSegel(prev => {
+      const next = [...prev];
+      while (next.length < n) next.push("");
+      while (next.length > n) next.pop();
+      return next;
+    });
+  };
+
+
+
+  const activityType = vcfData?.tipe_kegiatan || "";
+  const isLoading = activityType.startsWith("loading");
+  const isUnloading = activityType.startsWith("unloading");
 
   // Dispatch modal events for isEditing
   useEffect(() => {
@@ -69,12 +94,45 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
       setJamKeluar(formattedTime);
       setEmergencyKontak(vcfData.vcf_keluar.emergency_respon_kontak || "");
       setKeterangan(vcfData.vcf_keluar.keterangan || "");
+
       // If data exists and still before finalization, default to view mode (not editing)
       setIsEditing(false);
     } else if (canEdit) {
       setJamKeluar(formatTime());
     }
+
+    // Pre-fill segel if exists
+    if (vcfData.segel_keluar?.nomor_segel?.length) {
+      const nums = vcfData.segel_keluar.nomor_segel.map((s: any) => s.nomor_segel || s);
+      setNomorSegel(nums);
+    }
+
+
   }, [vcfData, canEdit]);
+
+  // Realtime clock for Jam Keluar if not previously filled and not manually edited
+  useEffect(() => {
+    if (!vcfData.vcf_keluar && canEdit && !isJamKeluarManual) {
+      setJamKeluar(formatTime());
+      const interval = setInterval(() => {
+        setJamKeluar(formatTime());
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [vcfData.vcf_keluar, canEdit, isJamKeluarManual]);
+
+  // Dramatic ticking for seconds and ms
+  useEffect(() => {
+    if (!vcfData.vcf_keluar && canEdit && !isJamKeluarManual) {
+      const interval = setInterval(() => {
+        const now = new Date();
+        const ss = String(now.getSeconds()).padStart(2, "0");
+        const ms = String(Math.floor(now.getMilliseconds() / 10)).padStart(2, "0");
+        setDramaticTime(`:${ss}.${ms}`);
+      }, 47); // 47ms for a nice dramatic tick
+      return () => clearInterval(interval);
+    }
+  }, [vcfData.vcf_keluar, canEdit, isJamKeluarManual]);
 
   // Dispatch modal events for showConfirm
   useEffect(() => {
@@ -93,25 +151,25 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
   const validateForm = (): { valid: boolean; message?: string } => {
     const errors: { jamKeluar?: boolean; emergencyKontak?: boolean; keterangan?: boolean } = {};
-    
+
     if (!jamKeluar || jamKeluar.trim() === "") {
       errors.jamKeluar = true;
     } else if (!isValidTime24h(jamKeluar)) {
       errors.jamKeluar = true;
     }
-    
+
     if (!emergencyKontak || emergencyKontak.trim() === "") {
       errors.emergencyKontak = true;
       setFieldErrors(errors);
       return { valid: false, message: "Emergency response kontak wajib diisi." };
     }
-    
+
     if (!keterangan || keterangan.trim() === "") {
       errors.keterangan = true;
       setFieldErrors(errors);
       return { valid: false, message: "Keterangan wajib diisi." };
     }
-    
+
     setFieldErrors(errors);
     return { valid: Object.keys(errors).length === 0 };
   };
@@ -135,20 +193,38 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const handleFinalize = async () => {
     setLoading(true);
     setError("");
+
+    // Auto-set jam keluar to current time on save
+    const currentJamKeluar = formatTime();
+    setJamKeluar(currentJamKeluar);
+
     try {
+      // Build payload
+      const payload: any = {
+        jam_keluar: currentJamKeluar,
+        emergency_respon_kontak: emergencyKontak,
+        keterangan: keterangan,
+      };
+
+
+
       // 1. Simpan/Update data Bagian 4 (Jam Keluar)
       if (!vcfData.vcf_keluar) {
-        await vcfApi.createBagian4(vcfId, {
-          jam_keluar: jamKeluar,
-          emergency_respon_kontak: emergencyKontak,
-          keterangan: keterangan,
-        });
+        await vcfApi.createBagian4(vcfId, payload);
       } else {
-        await vcfApi.updateBagian4(vcfId, {
-          jam_keluar: jamKeluar,
-          emergency_respon_kontak: emergencyKontak,
-          keterangan: keterangan,
-        });
+        await vcfApi.updateBagian4(vcfId, payload);
+      }
+
+      // 1b. Simpan/Update segel keluar untuk loading flow
+      if (isLoading) {
+        const validSegel = nomorSegel.filter(s => s.trim());
+        if (validSegel.length > 0) {
+          // updateOrCreate: hapus segel lama lalu buat baru (via createSegelKeluar yang akan ditangani oleh Bagian3 controller via store)
+          await vcfApi.createSegelKeluar(vcfId, {
+            jumlah_segel: validSegel.length,
+            nomor_segel: validSegel,
+          });
+        }
       }
 
       // 2. Langsung Finalisasi (Keluar Main Gate)
@@ -156,7 +232,7 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
       toast.success("VCF Selesai", "Kendaraan telah dikonfirmasi keluar dari Main Gate.");
       onSuccess();
-      setTimeout(() => router.push(`/vcf/${vcfId}`), 1000);
+      setTimeout(() => router.push(`/vcf`), 1000);
     } catch (err: unknown) {
       toast.error("Gagal", getErrorMessage(err, "Gagal memproses finalisasi VCF."));
       setShowConfirm(false);
@@ -174,6 +250,20 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
         emergency_respon_kontak: emergencyKontak,
         keterangan: keterangan,
       });
+
+      // Also update segel keluar for loading flow
+      if (isLoading) {
+        const validSegel = nomorSegel.filter(s => s.trim());
+        if (validSegel.length > 0) {
+          await vcfApi.createSegelKeluar(vcfId, {
+            jumlah_segel: validSegel.length,
+            nomor_segel: validSegel,
+          });
+        }
+      }
+
+
+
       toast.success("Berhasil", "Data Bagian 4 berhasil diperbarui.");
       setIsEditing(false);
       onSuccess();
@@ -207,6 +297,22 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 </p>
               </div>
             </div>
+
+            {/* Segel Keluar */}
+            {isLoading && vcfData.segel_keluar && (
+              <div className="mt-6 p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                <p className="text-[10px] uppercase font-bold text-amber-500 tracking-widest mb-3">Segel Keluar ({vcfData.segel_keluar.jumlah_segel} Unit)</p>
+                <div className="flex flex-wrap gap-2">
+                  {vcfData.segel_keluar.nomor_segel?.map((s: any, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-amber-500/10 rounded-lg text-sm font-mono text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">
+                      {typeof s === 'string' ? s : s.nomor_segel}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
 
             {vcfData.vcf_keluar?.keterangan && (
               <div className="mt-6 pt-6 border-t border-border">
@@ -265,6 +371,22 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 <p className="text-xl font-bold text-slate-700 dark:text-white">{vcfData.vcf_keluar?.emergency_respon_kontak}</p>
               </div>
             </div>
+
+            {/* Segel Keluar */}
+            {isLoading && vcfData.segel_keluar && (
+              <div className="mt-4 p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                <p className="text-[10px] uppercase font-bold text-amber-500 tracking-widest mb-3">Segel Keluar ({vcfData.segel_keluar.jumlah_segel} Unit)</p>
+                <div className="flex flex-wrap gap-2">
+                  {vcfData.segel_keluar.nomor_segel?.map((s: any, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-amber-500/10 rounded-lg text-sm font-mono text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">
+                      {typeof s === 'string' ? s : s.nomor_segel}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
 
             <div className="mt-4 p-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
               <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-2">Keterangan</p>
@@ -346,22 +468,46 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
       <form onSubmit={handleSubmitInitial} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className={`p-6 rounded-2xl bg-white dark:bg-white/5 border-2 ${isAlreadyFilled ? "border-emerald-500/30" : "border-slate-100 dark:border-white/10"} focus-within:border-blue-500 transition-all`}>
-            <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-3 block">Jam Keluar (WIB)</label>
-            <input
-              type="text"
-              className={`w-full bg-transparent text-2xl font-black font-mono focus:outline-none ${isAlreadyFilled ? "text-emerald-500" : ""}`}
-              value={jamKeluar}
-              onChange={(e) => {
-                if (isReadOnly) return;
-                let v = e.target.value.replace(/[^\d]/g, "");
-                if (v.length > 4) v = v.slice(0, 4);
-                setJamKeluar(v.length > 2 ? v.slice(0, 2) + ":" + v.slice(2) : v);
-              }}
-              readOnly={isReadOnly}
-              placeholder="HH:MM"
-              maxLength={5}
-              required
-            />
+            <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-3 block">Jam Keluar (WIB) *</label>
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex items-baseline gap-1 flex-1">
+                <input
+                  type="text"
+                  className={`form-input w-full text-lg font-mono transition-all duration-300 ${fieldErrors.jamKeluar ? 'bg-red-50 dark:bg-red-500/10 border-red-500 shadow-lg shadow-red-500/10' : ''} ${isAlreadyFilled ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}
+                  value={jamKeluar}
+                  onChange={(e) => {
+                    if (isReadOnly) return;
+                    setIsJamKeluarManual(true);
+                    let v = e.target.value.replace(/[^\d]/g, "");
+                    if (v.length > 4) v = v.slice(0, 4);
+                    if (v.length > 2) v = v.slice(0, 2) + ":" + v.slice(2);
+                    setJamKeluar(v);
+                    setFieldErrors((prev) => ({ ...prev, jamKeluar: false }));
+                  }}
+                  readOnly={isReadOnly}
+                  placeholder="HH:MM"
+                  maxLength={5}
+                  required
+                />
+                {!isAlreadyFilled && !isJamKeluarManual && dramaticTime && (
+                  <span className="text-sm font-black font-mono text-blue-500/80 tracking-tighter w-12 text-left animate-pulse">
+                    {dramaticTime}
+                  </span>
+                )}
+              </div>
+              {!isAlreadyFilled && isJamKeluarManual && !isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsJamKeluarManual(false);
+                    setFieldErrors((prev) => ({ ...prev, jamKeluar: false }));
+                  }}
+                  className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase hover:bg-blue-500/20 transition-colors"
+                >
+                  NOW
+                </button>
+              )}
+            </div>
           </div>
           <div data-field-error={fieldErrors.emergencyKontak ? "true" : undefined} className={`p-6 rounded-2xl bg-white dark:bg-white/5 border-2 ${isAlreadyFilled ? "border-emerald-500/30" : fieldErrors.emergencyKontak ? "border-red-500 bg-red-50/30" : "border-slate-100 dark:border-white/10"} focus-within:border-blue-500 transition-all`}>
             <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-3 block">Emergency Response Kontak *</label>
@@ -406,6 +552,64 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
           )}
         </div>
 
+        {/* Segel Keluar — loading only */}
+        {isLoading && (
+          <div className={`p-6 rounded-2xl bg-white dark:bg-white/5 border-2 ${isAlreadyFilled ? "border-amber-500/30" : "border-slate-100 dark:border-white/10"} transition-all`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <label className="text-[10px] uppercase font-black text-amber-500 tracking-widest">Segel Keluar (Loading)</label>
+              </div>
+              {!isReadOnly && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-400">Jumlah:</span>
+                  <input type="number" min={1} max={20}
+                    className="w-14 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs font-bold text-amber-600 dark:text-amber-400 text-center focus:outline-none focus:border-amber-500"
+                    value={jumlahSegel} onChange={(e) => syncJumlahSegel(e.target.value)} />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {nomorSegel.map((segel, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-400 w-6 text-right">{idx+1}.</span>
+                  <input type="text"
+                    className="form-input flex-1 font-mono bg-amber-500/5 border-amber-500/15 focus:border-amber-500"
+                    placeholder={`No. Segel ${idx+1}`}
+                    value={segel}
+                    onChange={(e) => {
+                      if (isReadOnly) return;
+                      setNomorSegel(prev => { const n=[...prev]; n[idx]=e.target.value; return n; });
+                    }}
+                    readOnly={isReadOnly}
+                  />
+                  {!isReadOnly && nomorSegel.length > 1 && (
+                    <button type="button"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 transition-colors shrink-0"
+                      onClick={() => {
+                        setNomorSegel(prev => prev.filter((_, i) => i !== idx));
+                        setJumlahSegel(String(nomorSegel.length - 1));
+                      }}
+                      title="Hapus baris segel"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {!isReadOnly && (
+              <button type="button"
+                className="mt-2 w-full py-2 border-2 border-dashed border-amber-400/40 rounded-xl text-[10px] font-bold text-amber-500 uppercase hover:bg-amber-500/5 transition-colors"
+                onClick={() => syncJumlahSegel(String(nomorSegel.length + 1))}>
+                + Tambah Baris Segel
+              </button>
+            )}
+          </div>
+        )}
+
+
+
         <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10">
           <p className="text-[10px] font-bold text-amber-500 uppercase leading-relaxed text-center">
             {isAlreadyFilled 
@@ -414,9 +618,11 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
           </p>
         </div>
 
+        {/* Action Bar — sticky on mobile */}
+        <div className="fixed bottom-0 left-0 right-0 md:static z-40 bg-bg-card/95 backdrop-blur-lg md:bg-transparent border-t border-border md:border-0 px-4 py-3 md:p-0">
         <div className="flex flex-col sm:flex-row gap-3">
         {!isEditing && (
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             {isAlreadyFilled && canEdit && (
               <button
                 type="button"
@@ -445,13 +651,14 @@ export default function Bagian4Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
             <button
               type="submit"
-              className="btn btn-success flex-1"
+              className="btn btn-success flex-1 py-3"
               disabled={loading}
             >
               {loading ? "Memproses..." : (isAlreadyFilled ? "Konfirmasi Keluar Sekarang" : "Simpan & Selesaikan")}
             </button>
           </div>
         )}
+        </div>
         </div>
 
       </form>

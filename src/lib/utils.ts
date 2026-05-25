@@ -39,6 +39,7 @@ export function formatDateTime(dateStr: string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 }
 
@@ -108,3 +109,30 @@ export function getErrorMessage(err: any, defaultMsg: string = "Terjadi kesalaha
   // Fallback to message or error field
   return data?.message || data?.error || defaultMsg;
 }
+
+export function getActionButtonStyle (status: string) {
+  switch (status) {
+    case "bagian1_selesai": return "action-btn action-btn-amber";
+    case "bagian2_selesai": return "action-btn action-btn-indigo";
+    case "loading_unloading_proses":
+    case "loading_unloading_selesai": return "action-btn action-btn-violet";
+    case "bagian3_selesai": return "action-btn action-btn-emerald";
+    case "selesai":
+    case "reject": return "action-btn action-btn-slate";
+    default: return "action-btn action-btn-blue";
+  }
+};
+
+export function getActionLabel (status: string) {
+  const map: Record<string, string> = {
+    bagian1_selesai: "Isi WB Masuk",
+    bagian2_selesai: "Isi WB Keluar",
+    loading_unloading_proses: "Lihat Operasional",
+    loading_unloading_selesai: "Isi WB Keluar",
+    bagian3_selesai: "Isi MG Keluar",
+    weighbridge_keluar: "Isi MG Keluar",
+    selesai: "Lihat Detail",
+    reject: "Lihat Detail",
+  };
+  return map[status] ?? "Detail";
+};

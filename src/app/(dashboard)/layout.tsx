@@ -45,7 +45,7 @@ export default function DashboardLayout({
       />
       
       {/* Mobile overlay */}
-      {isMobile && mobileOpen && (
+      {isMobile && (
         <div
           onClick={() => setMobileOpen(false)}
           style={{
@@ -55,7 +55,9 @@ export default function DashboardLayout({
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
             zIndex: 40,
-            transition: "all 0.3s ease",
+            opacity: mobileOpen ? 1 : 0,
+            pointerEvents: mobileOpen ? "auto" : "none",
+            transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
       )}
@@ -87,15 +89,20 @@ export default function DashboardLayout({
               justifyContent: "center",
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              transform: mobileOpen ? "rotate(90deg) scale(1.05)" : "rotate(0deg) scale(1)",
+              transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           >
             {mobileOpen ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}>
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}>
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="18" x2="21" y2="18" />

@@ -29,7 +29,7 @@ const ADMIN_NAV = [
         icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" /></svg>,
       },
       {
-        href: "/vcf", label: "Input VCF",
+        href: "/vcf", label: "Operasional VCF",
         icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
       },
       {
@@ -158,8 +158,11 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
         left: isMobile ? 0 : "auto",
         top: isMobile ? 0 : "auto",
         zIndex: isMobile ? 50 : "auto",
-        transition: isMobile ? "transform 0.3s cubic-bezier(0.4,0,0.2,1)" : "width 0.25s cubic-bezier(0.4,0,0.2,1)",
+        transition: isMobile 
+          ? "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)" 
+          : "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         transform: isMobile && !mobileOpen ? "translateX(-100%)" : "translateX(0)",
+        opacity: isMobile && !mobileOpen ? 0 : 1,
         background: theme === "dark"
           ? "linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(9,18,38,0.98) 100%)"
           : "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.95) 100%)",

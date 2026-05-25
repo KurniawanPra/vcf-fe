@@ -81,7 +81,7 @@ export default function PrintMasterTable({
     setTimeout(() => { if (w.document.readyState !== "complete") { w.print(); w.close(); } }, 2000);
   };
 
-  const now = new Date().toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const now = new Date().toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-y-auto py-4 sm:py-10">

@@ -1,0 +1,93 @@
+{
+  "name": "VCF System — INL",
+  "short_name": "VCF INL",
+  "description": "Vehicle Control Form (VCF) Digital System — PT. Industri Nabati Lestari",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#0f172a",
+  "theme_color": "#1e3a6e",
+  "orientation": "portrait-primary",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrasi VCF",
+      "short_name": "Register",
+      "description": "Buka form registrasi VCF baru",
+      "url": "/vcf/register",
+      "icons": [{ "src": "/logo_primary.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Daftar VCF Aktif",
+      "short_name": "VCF Aktif",
+      "description": "Lihat semua kendaraan yang sedang di area",
+      "url": "/vcf",
+      "icons": [{ "src": "/logo_primary.png", "sizes": "96x96" }]
+    }
+  ]
+}

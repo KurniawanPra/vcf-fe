@@ -96,12 +96,27 @@ export const QRCodeSign = ({ nama, timestamp, label }: { nama?: string; timestam
     );
   }
 
-  const formattedTime = timestamp
-    ? new Date(timestamp).toLocaleString("id-ID", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    })
-    : null;
+  // Parse string manually to guarantee strict 24-hour DD/MM/YYYY HH:mm WIB format
+  let formattedTime = timestamp;
+  if (timestamp) {
+    let safeTs = timestamp.replace(" ", "T");
+    
+    // If the timestamp doesn't have timezone info (raw MySQL datetime), treat it as UTC
+    if (!safeTs.endsWith("Z") && !safeTs.match(/[+-]\d{2}:\d{2}$/)) {
+      safeTs += "Z";
+    }
+
+    const date = new Date(safeTs);
+    if (!isNaN(date.getTime())) {
+      const datePart = date.toLocaleDateString("id-ID", {
+        day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Jakarta"
+      });
+      const timePart = date.toLocaleTimeString("en-GB", {
+        hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta"
+      });
+      formattedTime = `${datePart} ${timePart} WIB`;
+    }
+  }
 
   const qrValue = `Verified: ${nama}${formattedTime ? " | " + formattedTime : ""}`;
 
