@@ -35,6 +35,7 @@ interface VcfStats {
   total: number;
   today: number;
   active: number;
+  completed: number;
   system_speed: number;
 }
 
@@ -81,6 +82,7 @@ export default function DashboardPage() {
     total: 0,
     today: 0,
     active: 0,
+    completed: 0,
     system_speed: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -349,6 +351,18 @@ export default function DashboardPage() {
       ),
     },
     {
+      key: "completed",
+      label: "VCF Selesai",
+      sub: "Total VCF selesai",
+      color: "#22c55e",
+      value: stats.completed,
+      icon: (
+        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
       key: "system_speed",
       label: "Kecepatan Sistem",
       sub: "Response time (ms)",
@@ -432,7 +446,7 @@ export default function DashboardPage() {
           }
           @media (min-width: 1024px) {
             [data-stat-grid] {
-              grid-template-columns: repeat(4, 1fr) !important;
+              grid-template-columns: repeat(5, 1fr) !important;
               gap: 16px !important;
             }
           }

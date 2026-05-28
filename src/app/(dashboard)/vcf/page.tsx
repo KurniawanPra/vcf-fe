@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
@@ -11,6 +11,19 @@ import Pagination from "@/components/Pagination";
 import MobileCardSkeleton from "@/components/MobileCardSkeleton";
 import TableRowSkeleton from "@/components/TableRowSkeleton";
 import RegisterButton from "@/components/RegisterButton";
+
+/** Get today's date string in WIB (Asia/Jakarta) as YYYY-MM-DD */
+function getTodayWIB(): string {
+  const now = new Date();
+  return now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }); // sv-SE gives YYYY-MM-DD
+}
+
+/** Check if a VCF's tanggal is before today (i.e. from a previous day) */
+function isPreviousDay(tanggal: string): boolean {
+  if (!tanggal) return false;
+  const vcfDate = tanggal.split("T")[0]; // handle both "2026-05-28" and "2026-05-28T..." formats
+  return vcfDate < getTodayWIB();
+}
 
 
 interface VcfSummary {
@@ -34,6 +47,11 @@ export default function VcfQuickAccessPage() {
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [showGuide, setShowGuide] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [completedToday, setCompletedToday] = useState(0);
+
+  // Derived stats: count of previous-day unfinished VCFs
+  const pendingPrevDays = useMemo(() => vcfs.filter(v => isPreviousDay(v.tanggal)).length, [vcfs]);
+  const todayCount = useMemo(() => vcfs.filter(v => !isPreviousDay(v.tanggal)).length, [vcfs]);
 
   // Debounce search input
   useEffect(() => {
@@ -61,13 +79,23 @@ export default function VcfQuickAccessPage() {
   const fetchActive = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await vcfApi.getList({
-        status: filter,
-        search: debouncedSearch,
-        per_page: 15
-      });
-      const items = res.data.data || res.data;
+      const [activeRes, selesaiRes] = await Promise.all([
+        vcfApi.getList({
+          status: filter,
+          search: debouncedSearch,
+          per_page: 9999
+        }),
+        vcfApi.getList({
+          status: "selesai",
+          search: "",
+          per_page: 1,
+        }),
+      ]);
+      const items = activeRes.data.data || activeRes.data;
       setVcfs(items.filter((v: VcfSummary) => v.status !== "selesai" && v.status !== "reject"));
+
+      // Total completed VCFs (use total from paginated response)
+      setCompletedToday(selesaiRes.data.total ?? (Array.isArray(selesaiRes.data.data) ? selesaiRes.data.data.length : (Array.isArray(selesaiRes.data) ? selesaiRes.data.length : 0)));
     } catch (err: any) {
       console.error("Error fetching VCF data:", err);
     } finally {
@@ -165,11 +193,25 @@ export default function VcfQuickAccessPage() {
         {/* Right Side Controls */}
         <div className="flex items-center gap-3 flex-shrink-0">
           
-          {/* Total Badge */}
-          <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[80px]">
+          {/* Stat Badges */}
+          <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]">
             <p className="text-[9px] font-bold text-secondary uppercase leading-none mb-0.5">Total</p>
             <p className="text-xl font-bold text-blue-500 leading-none">{vcfs.length}</p>
           </div>
+          <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(16,185,129,0.3)" }}>
+            <p className="text-[9px] font-bold text-emerald-500 uppercase leading-none mb-0.5">Hari Ini</p>
+            <p className="text-xl font-bold text-emerald-500 leading-none">{todayCount}</p>
+          </div>
+          {pendingPrevDays > 0 && (
+            <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
+              <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Tertunda</p>
+              <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
+            </div>
+          )}
+          {/* <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(34,197,94,0.3)" }}>
+            <p className="text-[9px] font-bold text-green-500 uppercase leading-none mb-0.5">Selesai</p>
+            <p className="text-xl font-bold text-green-500 leading-none">{completedToday}</p>
+          </div> */}
 
           {/* View Mode Toggle */}
           <div className="glass-card h-12 px-3 flex items-center justify-center">
@@ -226,7 +268,9 @@ export default function VcfQuickAccessPage() {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                  {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => {
+                    const isOverdue = isPreviousDay(vcf.tanggal);
+                    return (
                     <Link
                       key={vcf.id}
                       href={`/vcf/${vcf.id}`}
@@ -234,7 +278,14 @@ export default function VcfQuickAccessPage() {
                       style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
                     >
                       <div className="flex items-start justify-between mb-3">
-                        <span className="font-mono font-bold text-blue-400 text-sm">{vcf.nomor_urut}</span>
+                        <div className="flex flex-col">
+                          <span className="font-mono font-bold text-blue-400 text-sm">{vcf.nomor_urut}</span>
+                          {isOverdue && (
+                            <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                               {new Date(vcf.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                          )}
+                        </div>
                         <span className={`status-badge text-[9px] ${getStatusColor(vcf.status)}`}>
                           {getStatusLabel(vcf.status)}
                         </span>
@@ -255,7 +306,8 @@ export default function VcfQuickAccessPage() {
                         </span>
                       </div>
                     </Link>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="px-4 pb-4">
                   <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
@@ -288,9 +340,20 @@ export default function VcfQuickAccessPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => (
+                    {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => {
+                      const isOverdue = isPreviousDay(vcf.tanggal);
+                      return (
                       <tr key={vcf.id}>
-                        <td><span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span></td>
+                        <td>
+                          <div className="flex flex-col">
+                            <span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span>
+                            {isOverdue && (
+                              <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 whitespace-nowrap">
+                                 {new Date(vcf.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="font-semibold whitespace-nowrap">{vcf.no_polisi}</td>
                         <td className="text-secondary text-sm">
                           <div className="flex flex-col">
@@ -318,7 +381,8 @@ export default function VcfQuickAccessPage() {
                           </Link>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
                 <div className="px-6 pb-4">
