@@ -451,7 +451,50 @@ export default function DashboardPage() {
             }
           }
         `}</style>
-        {statsLoading ? [1,2,3,4].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => (
+        {statsLoading ? [1,2,3,4,5].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => {
+          if (card.key === "system_speed") {
+            const speed = typeof card.value === "number" ? card.value : parseFloat(String(card.value)) || 0;
+            let speedColor = "#10b981"; // Emerald
+            let speedLabel = "Sangat Cepat";
+            if (speed > 200) { speedColor = "#ef4444"; speedLabel = "Lambat"; }
+            else if (speed > 50) { speedColor = "#f59e0b"; speedLabel = "Normal"; }
+            
+            return (
+              <div key={card.key} className="relative overflow-hidden flex flex-col justify-between" style={{
+                borderRadius: 14, padding: "18px 16px",
+                background: "var(--bg-card)", border: `1.5px solid ${speedColor}40`,
+                boxShadow: `0 4px 20px -2px ${speedColor}25`,
+                minWidth: 0,
+              }}>
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: speedColor }}></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: speedColor }}></span>
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{card.label}</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg" style={{ color: speedColor, background: `${speedColor}15` }}>
+                    {card.icon}
+                  </div>
+                </div>
+                <div className="text-center mt-1 mb-1 relative z-10">
+                  <p className="font-extrabold text-slate-900 dark:text-white leading-none font-sans flex items-baseline justify-center gap-1">
+                    <span className="text-3xl tracking-tight" style={{ color: speedColor }}>{card.value}</span>
+                    <span className="text-xs font-bold opacity-80" style={{ color: speedColor }}>ms</span>
+                  </p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest mt-2" style={{ color: speedColor }}>
+                    Status: {speedLabel}
+                  </p>
+                </div>
+                {/* Enhanced glow effect */}
+                <div className="absolute right-0 bottom-0 w-28 h-28 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ backgroundColor: speedColor }} />
+                <div className="absolute left-0 top-0 w-16 h-16 rounded-full blur-2xl opacity-10 pointer-events-none" style={{ backgroundColor: speedColor }} />
+              </div>
+            );
+          }
+
+          return (
             <div key={card.key} style={{
               borderRadius: 14, padding: "18px 16px", position: "relative", overflow: "hidden",
               background: "var(--bg-card)", border: `2px solid ${card.color}25`,
@@ -472,7 +515,8 @@ export default function DashboardPage() {
               {/* Soft background glow */}
               <div className="absolute right-0 bottom-0 w-16 h-16 rounded-full blur-2xl opacity-15 pointer-events-none" style={{ backgroundColor: card.color }} />
             </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── ACTIVITY LOGS PANEL ───────────────────── */}
