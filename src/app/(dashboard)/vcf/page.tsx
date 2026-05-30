@@ -191,53 +191,56 @@ export default function VcfQuickAccessPage() {
         </div>
 
         {/* Right Side Controls */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 flex-shrink-0">
           
           {/* Stat Badges */}
-          <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]">
-            <p className="text-[9px] font-bold text-secondary uppercase leading-none mb-0.5">Total</p>
-            <p className="text-xl font-bold text-blue-500 leading-none">{vcfs.length}</p>
-          </div>
-          <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(16,185,129,0.3)" }}>
-            <p className="text-[9px] font-bold text-emerald-500 uppercase leading-none mb-0.5">Hari Ini</p>
-            <p className="text-xl font-bold text-emerald-500 leading-none">{todayCount}</p>
-          </div>
-          {pendingPrevDays > 0 && (
-            <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
-              <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Tertunda</p>
-              <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]">
+              <p className="text-[9px] font-bold text-secondary uppercase leading-none mb-0.5">Total</p>
+              <p className="text-xl font-bold text-blue-500 leading-none">{vcfs.length}</p>
             </div>
-          )}
-          {/* <div className="glass-card h-12 px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(34,197,94,0.3)" }}>
-            <p className="text-[9px] font-bold text-green-500 uppercase leading-none mb-0.5">Selesai</p>
-            <p className="text-xl font-bold text-green-500 leading-none">{completedToday}</p>
-          </div> */}
-
-          {/* View Mode Toggle */}
-          <div className="glass-card h-12 px-3 flex items-center justify-center">
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/10 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("table")}
-                className={`p-1.5 rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode("card")}
-                className={`p-1.5 rounded-md transition-all ${viewMode === "card" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-                </svg>
-              </button>
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(16,185,129,0.3)" }}>
+              <p className="text-[9px] font-bold text-emerald-500 uppercase leading-none mb-0.5">Hari Ini</p>
+              <p className="text-xl font-bold text-emerald-500 leading-none">{todayCount}</p>
             </div>
+            {pendingPrevDays > 0 && (
+              <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
+                <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Tertunda</p>
+                <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
+              </div>
+            )}
           </div>
 
-          {/* Register Button */}
-          <RegisterButton />
+          {/* Action Buttons */}
+          <div className="flex items-stretch gap-2 w-full sm:w-auto">
+            {/* View Mode Toggle */}
+            <div className="glass-card h-12 px-2 flex items-center justify-center flex-1 sm:flex-none">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/10 rounded-lg p-1 w-full sm:w-auto justify-center h-full sm:h-auto py-1 sm:py-1">
+                <button
+                  onClick={() => setViewMode("table")}
+                  className={`p-1.5 flex-1 sm:flex-none flex justify-center rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("card")}
+                  className={`p-1.5 flex-1 sm:flex-none flex justify-center rounded-md transition-all ${viewMode === "card" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Register Button */}
+            <div className="flex-[2] sm:flex-none [&>button]:w-full [&>button]:h-12 [&>button]:justify-center">
+              <RegisterButton />
+            </div>
+          </div>
 
         </div>
       </div>

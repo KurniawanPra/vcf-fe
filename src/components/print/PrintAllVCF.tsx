@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { masterApi, settingsApi } from "@/lib/api";
 import { PRINT_STYLES } from "./PrintElements";
@@ -143,6 +144,13 @@ export default function PrintAllVCF({
 }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   const [masters, setMasters] = useState<VcfPrintMasters>({
     masterJenis: [],
     masterProduk: [],
@@ -238,38 +246,68 @@ export default function PrintAllVCF({
       </html>
     `);
 
-    w.document.close();
-
-    w.onload = () => {
+    const doPrint = () => {
       setTimeout(() => {
         w.print();
         w.close();
       }, 500);
     };
 
-    setTimeout(() => {
-      if (w.document.readyState !== "complete") {
-        w.print();
-        w.close();
-      }
-    }, 2000);
+    if (w.document.readyState === "complete") {
+      doPrint();
+    } else {
+      w.onload = doPrint;
+      // Fallback
+      setTimeout(doPrint, 2000);
+    }
+
+    w.document.close();
   };
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-4 sm:py-10"
-      style={{ overflowX: "auto" }}
-    >
-      <div
+  if (!mounted) return null;
+
+  return createPortal(
+    <>
+      {/* Fixed Backdrop */}
+      <div 
+        className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm" 
         style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+        }}
+        onClick={onClose} 
+      />
+
+      {/* Scrollable Container */}
+      <div 
+        className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-auto flex justify-center py-4 sm:py-10 pointer-events-none"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+        }}
+      >
+        <div style={{
           width: "210mm",
           minWidth: "210mm",
           height: "fit-content",
           background: "#fff",
           flexShrink: 0,
+          pointerEvents: "auto",
         }}
-        className="print-preview-container"
-      >
+          className="print-preview-container shadow-2xl">
         {/* Toolbar (Hidden in Print) */}
         <div
           className="no-print"
@@ -331,5 +369,6 @@ export default function PrintAllVCF({
         </div>
       </div>
     </div>
-  );
+  </>
+  , document.body);
 }

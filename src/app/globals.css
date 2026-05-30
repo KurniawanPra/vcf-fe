@@ -1085,3 +1085,28 @@ body {
   from { width: 100%; }
   to   { width: 0%; }
 }
+
+/* Print fallback styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-preview-container,
+  .print-preview-container * {
+    visibility: visible;
+  }
+  .print-preview-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .no-print,
+  .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

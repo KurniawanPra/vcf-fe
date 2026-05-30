@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { PRINT_STYLES } from "./PrintElements";
 import { settingsApi } from "@/lib/api";
@@ -30,6 +31,12 @@ export default function PrintMasterTable({
 }: PrintMasterTableProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const [printSettings, setPrintSettings] = useState({
     company_name: "PT. INDUSTRI NABATI LESTARI",
@@ -76,25 +83,72 @@ export default function PrintMasterTable({
         <body><div style="padding:10mm 12mm;">${html}</div></body>
       </html>
     `);
+    const doPrint = () => {
+      setTimeout(() => {
+        w.print();
+        w.close();
+      }, 500);
+    };
+
+    if (w.document.readyState === "complete") {
+      doPrint();
+    } else {
+      w.onload = doPrint;
+      // Fallback
+      setTimeout(doPrint, 2000);
+    }
+
     w.document.close();
-    w.onload = () => { setTimeout(() => { w.print(); w.close(); }, 500); };
-    setTimeout(() => { if (w.document.readyState !== "complete") { w.print(); w.close(); } }, 2000);
   };
 
   const now = new Date().toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-y-auto py-4 sm:py-10">
+  if (!mounted) return null;
+
+  return createPortal(
+    <>
+      {/* Fixed Backdrop */}
       <div 
-        ref={containerRef}
-        style={{ 
-          width: orientation === "landscape" ? "297mm" : "210mm", 
-          height: "fit-content", 
-          background: "#fff", 
-          flexShrink: 0,
-          maxWidth: "100%",
+        className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm" 
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
         }}
-        className="print-preview-container">
+        onClick={onClose} 
+      />
+
+      {/* Scrollable Container */}
+      <div 
+        className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-auto flex justify-center py-4 sm:py-10 pointer-events-none"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+        }}
+      >
+        <div 
+          ref={containerRef}
+          style={{ 
+            width: orientation === "landscape" ? "297mm" : "210mm", 
+            height: "fit-content", 
+            background: "#fff", 
+            flexShrink: 0,
+            maxWidth: "100%",
+            pointerEvents: "auto",
+          }}
+          className="print-preview-container shadow-2xl">
 
         {/* Toolbar */}
         <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px", background: "#1e293b", color: "#fff" }}>
@@ -209,5 +263,6 @@ export default function PrintMasterTable({
         </div>
       </div>
     </div>
-  );
+  </>
+  , document.body);
 }

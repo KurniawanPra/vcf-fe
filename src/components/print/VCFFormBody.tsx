@@ -121,7 +121,7 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
   const segelKeluarAda = (vcf.segel_keluar?.jumlah_segel ?? 0) > 0 || findPK("segel")?.nilai?.toLowerCase() === "terpasang";
 
   const hasBagian1Data = vcf.status && vcf.status !== "";
-  const hasBagian2Data = vcf.status === "bagian2_selesai" || vcf.status === "loading_unloading_selesai" || vcf.status === "bagian3_selesai" || vcf.status === "weighbridge_keluar" || vcf.status === "selesai";
+  const hasBagian2Data = vcf.status === "bagian2_selesai" || vcf.status === "loading_unloading_proses" || vcf.status === "loading_unloading_selesai" || vcf.status === "bagian3_selesai" || vcf.status === "weighbridge_keluar" || vcf.status === "selesai";
   const hasBagian3Data = vcf.status === "bagian3_selesai" || vcf.status === "weighbridge_keluar" || vcf.status === "selesai";
   const hasBagian4Data = vcf.status === "selesai";
 
@@ -382,8 +382,6 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
               const nm = item.nama_item?.toLowerCase() ?? "";
               const isBTK = item.kode === "BTK" || nm.includes("beban");
               const isSGL = item.kode === "SGK" || item.kode === "SGL" || nm.includes("segel");
-              const hasSpecialData = (isBTK && vcf.beban_tambahan_masuk) || (isSGL && vcf.segel_masuk);
-              if (!pm?.nilai && !hasSpecialData) return null;
               const val = pm?.nilai;
               const opts = item.tipe_jawaban && item.tipe_jawaban !== "input"
                 ? item.tipe_jawaban.split(",").map(s => s.trim())
@@ -404,8 +402,8 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
                       label={label2} highlight />
                   </td>
                   <td style={PRINT_STYLES.CELL}>
-                    {isBTK && <span>Jenis: <UL w={100} val={vcf.beban_tambahan_masuk?.jenis_beban} /></span>}
-                    {!isBTK && !isSGL && val && opts.length === 0 && <span><UL w={120} val={val} /></span>}
+                    {isBTK && <span>Jenis: <UL w={100} val={hasBagian2Data ? vcf.beban_tambahan_masuk?.jenis_beban : ""} /></span>}
+                    {!isBTK && !isSGL && val && opts.length === 0 && <span><UL w={120} val={hasBagian2Data ? val : ""} /></span>}
                   </td>
                 </tr>
               );
@@ -416,7 +414,7 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
                 <td style={PRINT_STYLES.CELL}>a. Kondisi Tangki</td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian2Data && isPosValue(pmTangki?.nilai)} label="Bagus" highlight /></td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian2Data && isNegValue(pmTangki?.nilai)} label="Tidak" highlight /></td>
-                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={vcf.beban_tambahan_masuk?.jenis_beban} /></td>
+                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={hasBagian2Data ? vcf.beban_tambahan_masuk?.jenis_beban : ""} /></td>
               </tr>
               <tr>
                 <td style={PRINT_STYLES.CELL}>b. Penutup Valve</td>
@@ -428,7 +426,7 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
                 <td style={PRINT_STYLES.CELL}>c. Beban Tambahan</td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian2Data && btmAda} label="Ada" highlight /></td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian2Data && !btmAda} label="Tidak" highlight /></td>
-                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={vcf.beban_tambahan_masuk?.jenis_beban} /></td>
+                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={hasBagian2Data ? vcf.beban_tambahan_masuk?.jenis_beban : ""} /></td>
               </tr>
               <tr>
                 <td style={PRINT_STYLES.CELL}>d. Segel</td>
@@ -448,12 +446,12 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
         <tbody>
           <tr>
             <td style={{ ...PRINT_STYLES.CELL, fontStyle: "italic", verticalAlign: "top" }}>
-              Keterangan: <UL w={280} val={cleanKeterangan(vcf.segel_masuk?.keterangan || vcf.vcf_bagian2?.keterangan)} textAlign="left" />
+              Keterangan: <UL w={280} val={hasBagian2Data ? cleanKeterangan(vcf.segel_masuk?.keterangan || vcf.vcf_bagian2?.keterangan) : ""} textAlign="left" />
             </td>
             <td style={{ ...PRINT_STYLES.CELL, textAlign: "center", padding: "3px", verticalAlign: "middle" }}>
               <QRCodeSign
-                nama={vcf.nama_petugas_wb_masuk || vcf.pemeriksaan_masuk?.[0]?.petugas?.nama || vcf.segel_masuk?.petugas?.nama}
-                timestamp={vcf.pemeriksaan_masuk?.[0]?.waktu_input || vcf.pemeriksaan_masuk?.[0]?.created_at || vcf.segel_masuk?.created_at}
+                nama={hasBagian2Data ? (vcf.nama_petugas_wb_masuk || vcf.pemeriksaan_masuk?.[0]?.petugas?.nama || vcf.segel_masuk?.petugas?.nama) : ""}
+                timestamp={hasBagian2Data ? (vcf.pemeriksaan_masuk?.[0]?.waktu_input || vcf.pemeriksaan_masuk?.[0]?.created_at || vcf.segel_masuk?.created_at) : ""}
                 label="Petugas WB Masuk"
               />
             </td>
@@ -476,8 +474,6 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
               const nm = item.nama_item?.toLowerCase() ?? "";
               const isBTK = item.kode === "BTK" || nm.includes("beban");
               const isSGL = item.kode === "SGK" || item.kode === "SGL" || nm.includes("segel");
-              const hasSpecialData = (isBTK && vcf.beban_tambahan_keluar) || (isSGL && vcf.segel_keluar);
-              if (!pk?.nilai && !hasSpecialData) return null;
               const val = pk?.nilai;
               const opts = item.tipe_jawaban && item.tipe_jawaban !== "input"
                 ? item.tipe_jawaban.split(",").map(s => s.trim())
@@ -498,8 +494,8 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
                       label={label2} highlight />
                   </td>
                   <td style={PRINT_STYLES.CELL}>
-                    {isBTK && <span>Jenis: <UL w={100} val={vcf.beban_tambahan_keluar?.jenis_beban} /></span>}
-                    {!isBTK && !isSGL && val && opts.length === 0 && <span><UL w={120} val={val} /></span>}
+                    {isBTK && <span>Jenis: <UL w={100} val={hasBagian3Data ? vcf.beban_tambahan_keluar?.jenis_beban : ""} /></span>}
+                    {!isBTK && !isSGL && val && opts.length === 0 && <span><UL w={120} val={hasBagian3Data ? val : ""} /></span>}
                   </td>
                 </tr>
               );
@@ -516,13 +512,13 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
                 <td style={PRINT_STYLES.CELL}>b. Penutup Valve</td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian3Data && isPkValveAda} label="Ada" highlight /></td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian3Data && isPkValveTidak} label="Tidak" highlight /></td>
-                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={vcf.beban_tambahan_keluar?.jenis_beban} /></td>
+                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={hasBagian3Data ? vcf.beban_tambahan_keluar?.jenis_beban : ""} /></td>
               </tr>
               <tr>
                 <td style={PRINT_STYLES.CELL}>c. Beban Tambahan</td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian3Data && btkAda} label="Ada" highlight /></td>
                 <td style={{ ...PRINT_STYLES.CELL, textAlign: "center" }}><CK checked={hasBagian3Data && !btkAda} label="Tidak" highlight /></td>
-                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={vcf.beban_tambahan_keluar?.jenis_beban} /></td>
+                <td style={PRINT_STYLES.CELL}>Jenis: <UL w={100} val={hasBagian3Data ? vcf.beban_tambahan_keluar?.jenis_beban : ""} /></td>
               </tr>
               <tr>
                 <td style={PRINT_STYLES.CELL}>d. Segel</td>
@@ -542,12 +538,12 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
         <tbody>
           <tr>
             <td style={{ ...PRINT_STYLES.CELL, fontStyle: "italic", verticalAlign: "top" }}>
-              Keterangan: <UL w={280} val={cleanKeterangan(vcf.segel_keluar?.keterangan || vcf.vcf_bagian3?.keterangan)} textAlign="left" />
+              Keterangan: <UL w={280} val={hasBagian3Data ? cleanKeterangan(vcf.segel_keluar?.keterangan || vcf.vcf_bagian3?.keterangan) : ""} textAlign="left" />
             </td>
             <td style={{ ...PRINT_STYLES.CELL, textAlign: "center", padding: "3px", verticalAlign: "middle" }}>
               <QRCodeSign
-                nama={vcf.nama_petugas_wb_keluar || vcf.pemeriksaan_keluar?.[0]?.petugas?.nama || vcf.segel_keluar?.petugas?.nama}
-                timestamp={vcf.pemeriksaan_keluar?.[0]?.waktu_input || vcf.pemeriksaan_keluar?.[0]?.created_at || vcf.segel_keluar?.created_at}
+                nama={hasBagian3Data ? (vcf.nama_petugas_wb_keluar || vcf.pemeriksaan_keluar?.[0]?.petugas?.nama || vcf.segel_keluar?.petugas?.nama) : ""}
+                timestamp={hasBagian3Data ? (vcf.pemeriksaan_keluar?.[0]?.waktu_input || vcf.pemeriksaan_keluar?.[0]?.created_at || vcf.segel_keluar?.created_at) : ""}
                 label="Petugas WB Keluar"
               />
             </td>
@@ -560,8 +556,8 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
         <colgroup><col style={{ width: "50%" }} /><col style={{ width: "50%" }} /></colgroup>
         <tbody>
           <tr>
-            <td style={PRINT_STYLES.CELL}><strong>Jam Keluar</strong>: <UL w={80} val={vcf.vcf_keluar?.jam_keluar} /> WIB</td>
-            <td style={PRINT_STYLES.CELL}><strong>Emergency Respon</strong>: <UL w={110} val={vcf.vcf_keluar?.emergency_respon_kontak} /></td>
+            <td style={PRINT_STYLES.CELL}><strong>Jam Keluar</strong>: <UL w={80} val={hasBagian4Data ? vcf.vcf_keluar?.jam_keluar : ""} /> WIB</td>
+            <td style={PRINT_STYLES.CELL}><strong>Emergency Respon</strong>: <UL w={110} val={hasBagian4Data ? vcf.vcf_keluar?.emergency_respon_kontak : ""} /></td>
           </tr>
           <tr>
             <td colSpan={2} style={PRINT_STYLES.CELL}>
@@ -570,7 +566,7 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
           {isLoading && (
             <tr>
               <td colSpan={2} style={PRINT_STYLES.CELL}>
-                <strong>Segel Keluar</strong>: Jml: {vcf.segel_keluar?.jumlah_segel || 0} &nbsp; No: ({vcf.segel_keluar?.nomor_segel?.map(s => s.nomor_segel).join(", ") || ""})
+                <strong>Segel Keluar</strong>: Jml: {hasBagian4Data ? (vcf.segel_keluar?.jumlah_segel || 0) : ""} &nbsp; No: ({hasBagian4Data ? (vcf.segel_keluar?.nomor_segel?.map(s => s.nomor_segel).join(", ") || "") : ""})
               </td>
             </tr>
           )}
@@ -585,12 +581,12 @@ export default function VCFFormBody({ vcf, masters }: { vcf: VcfDetail; masters:
         <tbody>
           <tr>
             <td style={{ ...PRINT_STYLES.CELL, fontStyle: "italic", verticalAlign: "top" }}>
-              Keterangan: <UL w={240} val={cleanKeterangan(vcf.vcf_keluar?.keterangan)} textAlign="left" />
+              Keterangan: <UL w={240} val={hasBagian4Data ? cleanKeterangan(vcf.vcf_keluar?.keterangan) : ""} textAlign="left" />
             </td>
             <td style={{ ...PRINT_STYLES.CELL, textAlign: "center", padding: "3px", verticalAlign: "middle" }}>
               <QRCodeSign
-                nama={vcf.nama_petugas_main_gate_keluar || vcf.vcf_keluar?.petugas?.nama}
-                timestamp={vcf.vcf_keluar?.waktu_input || vcf.vcf_keluar?.created_at}
+                nama={hasBagian4Data ? (vcf.nama_petugas_main_gate_keluar || vcf.vcf_keluar?.petugas?.nama) : ""}
+                timestamp={hasBagian4Data ? (vcf.vcf_keluar?.waktu_input || vcf.vcf_keluar?.created_at) : ""}
                 label="Petugas Main Gate"
               />
             </td>

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { PRINT_STYLES } from "./PrintElements";
 
@@ -38,6 +39,12 @@ export default function PrintTemplate({
   settings = {},
 }: PrintTemplateProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const {
     company_name = "PT. INDUSTRI NABATI LESTARI",
@@ -89,43 +96,78 @@ export default function PrintTemplate({
       </html>
     `);
 
-    w.document.close();
-
-    w.onload = () => {
+    // Register onload BEFORE closing the document to avoid race conditions
+    const doPrint = () => {
       setTimeout(() => {
         w.print();
         w.close();
       }, 500);
     };
 
-    // Fallback
-    setTimeout(() => {
-      if (w.document.readyState !== 'complete') {
-        w.print();
-        w.close();
-      }
-    }, 2000);
+    if (w.document.readyState === 'complete') {
+      doPrint();
+    } else {
+      w.onload = doPrint;
+      // Fallback
+      setTimeout(doPrint, 2000);
+    }
+
+    w.document.close();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/80 overflow-auto py-4 sm:py-10" style={{ overflowX: "auto" }}>
-      <div style={{ 
-        width: "210mm",
-        minWidth: "210mm",
-        height: "fit-content", 
-        background: "#fff", 
-        flexShrink: 0,
-      }}
-      className="print-preview-container">
-        
+  if (!mounted) return null;
+
+  return createPortal(
+    <>
+      {/* Fixed Backdrop */}
+      <div 
+        className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm" 
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+        }}
+        onClick={onClose} 
+      />
+
+      {/* Scrollable Container */}
+      <div 
+        className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-auto flex justify-center py-4 sm:py-10 pointer-events-none"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+        }}
+      >
+        <div style={{
+          width: "210mm",
+          minWidth: "210mm",
+          height: "fit-content",
+          background: "#fff",
+          flexShrink: 0,
+          pointerEvents: "auto",
+        }}
+          className="print-preview-container shadow-2xl">
+
         {/* Toolbar (Hidden in Print) */}
-        <div className="no-print" style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between", 
-          padding: "12px 24px", 
-          background: "#1e293b", 
-          color: "#fff" 
+        <div className="no-print" style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 24px",
+          background: "#1e293b",
+          color: "#fff"
         }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 13 }}>{title}</div>
@@ -139,8 +181,8 @@ export default function PrintTemplate({
             >
               {isLoading ? "Memuat..." : "PRINT"}
             </button>
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="btn btn-secondary btn-sm"
             >
               CLOSE
@@ -150,7 +192,7 @@ export default function PrintTemplate({
 
         {/* Print Content Area */}
         <div ref={printRef} style={{ padding: "8mm 10mm", background: "#fff", color: "#000" }}>
-          
+
           {/* ── SHARED HEADER ── */}
           <table style={{ width: "100%", marginBottom: 0, borderCollapse: "collapse" }}>
             <colgroup>
@@ -168,7 +210,7 @@ export default function PrintTemplate({
                   </div>
                 </td>
                 <td rowSpan={3} style={{ ...PRINT_STYLES.CELL, textAlign: "center", verticalAlign: "middle", padding: "4px 6px" }}>
-                  <div style={{ fontWeight: "bold", fontSize: 11, letterSpacing: 0.3 , textDecoration: "underline"}}>{company_name}</div>
+                  <div style={{ fontWeight: "bold", fontSize: 11, letterSpacing: 0.3, textDecoration: "underline" }}>{company_name}</div>
                   <div style={{ fontSize: 9, marginTop: 1 }}>PABRIK MINYAK GORENG</div>
                   <div style={{ fontSize: 8, marginTop: 2, lineHeight: 1.4 }}>
                     {company_address}
@@ -210,5 +252,6 @@ export default function PrintTemplate({
         </div>
       </div>
     </div>
-  );
+  </>
+  , document.body);
 }

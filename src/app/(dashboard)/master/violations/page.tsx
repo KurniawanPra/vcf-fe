@@ -378,6 +378,10 @@ export default function ViolationsPage() {
   const [confirmUnlockDriver, setConfirmUnlockDriver] = useState<Driver | null>(null);
   const [unlocking, setUnlocking] = useState(false);
 
+  // Confirm delete modal
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => { setMounted(true); }, []);
 
   const fetchAll = useCallback(async () => {
@@ -451,14 +455,22 @@ export default function ViolationsPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Hapus data pelanggaran ini?")) return;
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmId === null) return;
+    setDeleting(true);
     try {
-      await violationApi.delete(id);
+      await violationApi.delete(deleteConfirmId);
       toast.success("Dihapus", "Data pelanggaran dihapus.");
       fetchAll();
+      setDeleteConfirmId(null);
     } catch (err: any) {
       toast.error("Gagal", getErrorMessage(err, "Gagal menghapus."));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -674,7 +686,37 @@ export default function ViolationsPage() {
               <div className="flex gap-3 mt-5">
                 <button className="btn btn-secondary flex-1" onClick={() => setConfirmUnlockDriver(null)} disabled={unlocking}>Batal</button>
                 <button className="btn flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 font-bold" onClick={handleUnlockDriver} disabled={unlocking}>
-                  {unlocking ? <><span className="spinner" /> Memproses...</> : "Ya, Buka Blacklist"}
+                  {unlocking ? <><span className="spinner border-white" /> Memproses...</> : "Ya, Buka Blacklist"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Confirm delete violation modal — portal */}
+      {mounted && deleteConfirmId !== null && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => { if (!deleting) setDeleteConfirmId(null); }}
+        >
+          <div className="bg-white dark:bg-bg-card w-full max-w-sm rounded-3xl shadow-2xl border border-white/10 overflow-hidden animate-slideUp" onClick={e => e.stopPropagation()}>
+            <div className="h-1 w-full bg-gradient-to-r from-rose-500 to-red-500" />
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-rose-500">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </div>
+              <h3 className="font-bold text-text-primary text-lg mb-2">Hapus Pelanggaran?</h3>
+              <p className="text-sm text-text-muted mb-6">
+                Data pelanggaran ini akan dihapus secara permanen dari sistem.
+              </p>
+              <div className="flex gap-3 mt-5">
+                <button type="button" className="btn btn-secondary flex-1" onClick={() => setDeleteConfirmId(null)} disabled={deleting}>Batal</button>
+                <button type="button" className="btn bg-rose-500 hover:bg-rose-600 text-white flex-[2] font-bold" onClick={handleConfirmDelete} disabled={deleting}>
+                  {deleting ? <><span className="spinner border-white" /> Menghapus...</> : "Ya, Hapus"}
                 </button>
               </div>
             </div>

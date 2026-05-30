@@ -635,48 +635,50 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
         </div>
 
         {/* Action Bar */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-4xl mx-auto pb-8">
-          {!isEditing && (
-            <button
-              type="button"
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 active:bg-rose-500/20 transition-all order-2 sm:order-1"
-              onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
-              disabled={loading}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
-                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span className="sm:hidden">TOLAK</span>
-              <span className="hidden sm:inline">REJECT VCF</span>
-            </button>
-          )}
-          {!isEditing && (
-            <>
+        <div className="fixed bottom-0 left-0 right-0 md:static z-40 bg-bg-card/95 backdrop-blur-lg md:bg-transparent border-t border-border md:border-0 px-4 py-3 md:p-0 md:pt-4">
+          <div className="flex flex-row items-center justify-end gap-2 max-w-4xl mx-auto w-full">
+            {!isEditing && (
               <button
                 type="button"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border border-slate-200 dark:border-white/10 active:bg-slate-200 dark:active:bg-white/10 transition-all order-3 sm:order-2"
-                onClick={() => {
-                  const resetObj: Record<number, string> = {};
-                  pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
-                  setPemeriksaan(resetObj);
-                  setJenisBeban("");
-                  setKeteranganUmum("");
-                  setError("");
-                }}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-3.5 rounded-xl md:rounded-full text-xs md:text-sm font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 active:bg-rose-500/20 transition-all"
+                onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
                 disabled={loading}
               >
-                RESET
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="hidden sm:block">
+                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span className="sm:hidden">TOLAK</span>
+                <span className="hidden sm:inline">REJECT VCF</span>
               </button>
-              <button
-                type="submit"
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all order-1 sm:order-3"
-                disabled={loading}
-              >
-                {loading ? <><span className="spinner border-white" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
-              </button>
-            </>
-          )}
+            )}
+            {!isEditing && (
+              <>
+                <button
+                  type="button"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-3.5 rounded-xl md:rounded-full text-xs md:text-sm font-bold bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border border-slate-200 dark:border-white/10 active:bg-slate-200 dark:active:bg-white/10 transition-all"
+                  onClick={() => {
+                    const resetObj: Record<number, string> = {};
+                    pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
+                    setPemeriksaan(resetObj);
+                    setJenisBeban("");
+                    setKeteranganUmum("");
+                    setError("");
+                  }}
+                  disabled={loading}
+                >
+                  RESET
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] md:flex-none flex items-center justify-center gap-2 px-4 md:px-8 py-3 md:py-3.5 rounded-xl md:rounded-full text-xs md:text-sm font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all"
+                  disabled={loading}
+                >
+                  {loading ? <><span className="spinner border-white" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </form>
 

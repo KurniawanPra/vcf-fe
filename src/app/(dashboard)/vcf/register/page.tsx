@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { vcfApi, violationApi } from "@/lib/api";
 import { fetchAndCacheMasterData, getCachedMasterData } from "@/lib/masterDataCache";
@@ -164,6 +165,12 @@ export default function VcfRegisterPage() {
   // Modal konfirmasi pelanggaran
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [violationModalAcknowledged, setViolationModalAcknowledged] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Dispatch modal events for showGuide
   useEffect(() => {
@@ -484,6 +491,53 @@ export default function VcfRegisterPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setShowResetModal(true);
+  };
+
+  const confirmReset = () => {
+    setTanggal(formatDate());
+    setJamMasuk(formatTime());
+    setIsJamMasukManual(false);
+    setTipeKegiatan("");
+    setProdukKode("");
+    setProdukLainnya("");
+    setTransporterId("");
+    setDriverId("");
+    setNoPolisi("");
+    setJenisKendaraanId("");
+    setTipeKendaraan("");
+    setTahunKendaraan("");
+    setTujuan("");
+    setKeterangan("");
+    setSegelTerpasang("");
+    setJumlahSegel("");
+    setNomorSegel([""]);
+    
+    const initialChecklist: Record<number, boolean | null> = {};
+    checklistItems.forEach((item) => { initialChecklist[item.id] = null; });
+    setChecklist(initialChecklist);
+    
+    const initDibawa: Record<number, { checked: boolean; nilai: string }> = {};
+    const initDiisi: Record<number, { checked: boolean; nilai: string }> = {};
+    muatanItems.forEach((m) => {
+      if (m.jenis === "dibawa" || m.jenis === "both") initDibawa[m.id] = { checked: false, nilai: "" };
+      if (m.jenis === "diisi" || m.jenis === "both") initDiisi[m.id] = { checked: false, nilai: "" };
+    });
+    setMuatanDibawa(initDibawa);
+    setMuatanDiisi(initDiisi);
+    setMuatanDibawaLainnya({ checked: null, nilai: "" });
+    setMuatanDiisiLainnya({ checked: null, nilai: "" });
+
+    setFieldErrors({});
+    setValidationErrors([]);
+    setViolationData({});
+    setViolationModalAcknowledged(false);
+    setShowResetModal(false);
+    
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const isLoading = tipeKegiatan.startsWith("loading");
@@ -1249,6 +1303,7 @@ export default function VcfRegisterPage() {
         {/* ACTIONS — sticky bottom bar on mobile */}
         <div className="fixed bottom-0 left-0 right-0 md:static z-40 bg-bg-card/95 backdrop-blur-lg md:bg-transparent border-t border-border md:border-0 px-4 py-3 md:p-0 md:pt-4">
           <div className="flex items-center justify-end gap-3 max-w-5xl mx-auto">
+          <button type="button" onClick={handleReset} className="btn btn-secondary px-6 md:px-8 py-3 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border-rose-500/30">Reset</button>
           <button type="button" onClick={() => router.back()} className="btn btn-secondary px-6 md:px-8 py-3">Batal</button>
           {isDriverBlacklisted ? (
             <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/30">
@@ -1265,6 +1320,31 @@ export default function VcfRegisterPage() {
           </div>
         </div>
       </form>
+
+      {/* Reset Confirmation Modal */}
+      {mounted && showResetModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowResetModal(false)}>
+          <div className="bg-white dark:bg-bg-card w-full max-w-sm rounded-3xl shadow-2xl border border-white/10 overflow-hidden animate-slideUp" onClick={e => e.stopPropagation()}>
+            <div className="h-1 w-full bg-gradient-to-r from-rose-500 to-red-500" />
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-rose-500">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-text-primary text-lg mb-2">Reset Form?</h3>
+              <p className="text-sm text-text-muted mb-6">
+                Semua data yang sudah Anda isi pada form ini akan dikosongkan. Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div className="flex gap-3">
+                <button type="button" className="btn btn-secondary flex-1" onClick={() => setShowResetModal(false)}>Batal</button>
+                <button type="button" className="btn bg-rose-500 hover:bg-rose-600 text-white flex-[2] font-bold" onClick={confirmReset}>Ya, Reset Form</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
