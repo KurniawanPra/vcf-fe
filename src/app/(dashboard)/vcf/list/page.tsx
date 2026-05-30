@@ -216,7 +216,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     setLoading(true);
     try {
       const params: Record<string, string> = {
-        per_page: "15",
+        per_page: "10",
         page: String(currentPage),
       };
       if (tanggalDari) params.tanggal_dari = tanggalDari;
@@ -585,7 +585,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                   </tbody>
                 </table>
                 <div className="px-6 pb-4">
-                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
+                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
               </>
             )}
@@ -649,7 +649,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                   ))}
                 </div>
                 <div className="px-6 pb-4">
-                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
+                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
               </>
             )}

@@ -388,7 +388,7 @@ function MonthList({
     setLoading(true);
     try {
       const params: Record<string, string> = {
-        per_page: "15",
+        per_page: "10",
         page: String(currentPage),
         tanggal_dari: firstDay,
         tanggal_sampai: lastDay,
@@ -711,7 +711,7 @@ function MonthList({
                 </tbody>
               </table>
               <div className="px-6 pb-4">
-                <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
+                <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
               </div>
             </>
           )}
@@ -776,7 +776,7 @@ function MonthList({
                 ))}
               </div>
               <div className="px-6 pb-4">
-                <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
+                <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
               </div>
             </>
           )}
