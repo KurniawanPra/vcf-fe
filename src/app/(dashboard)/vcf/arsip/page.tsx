@@ -8,7 +8,6 @@ import { getStatusLabel, getStatusColor, getErrorMessage } from "@/lib/utils";
 import { exportToExcel } from "@/lib/exportUtils";
 import PrintVCF from "../[id]/PrintVCF";
 import PrintAllVCF from "@/components/print/PrintAllVCF";
-import PrintMasterTable from "@/components/print/PrintMasterTable";
 import Pagination from "@/components/Pagination";
 import { useToast, ToastContainer } from "@/components/Toast";
 
@@ -254,8 +253,6 @@ function MonthList({
   // Printing individual VCF
   const [printingVcf, setPrintingVcf] = useState<any>(null);
   const [fetchingPrint, setFetchingPrint] = useState(false);
-  // Print daftar VCF (tabel)
-  const [isPrinting, setIsPrinting] = useState(false);
   // Print Semua VCF (multi-page form, sesuai filter rentang tanggal)
   const [printingAllVcfs, setPrintingAllVcfs] = useState<any[] | null>(null);
   const [fetchingPrintAll, setFetchingPrintAll] = useState(false);
@@ -446,20 +443,6 @@ function MonthList({
     };
   }, [printingAllVcfs]);
 
-  // Dispatch modal events for PrintMasterTable
-  useEffect(() => {
-    if (isPrinting) {
-      document.body.style.overflow = "hidden";
-      window.dispatchEvent(new CustomEvent("modal-open"));
-    } else {
-      document.body.style.overflow = "unset";
-      window.dispatchEvent(new CustomEvent("modal-close"));
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-      window.dispatchEvent(new CustomEvent("modal-close"));
-    };
-  }, [isPrinting]);
 
   const getActionLabel = (vcf: VcfItem) => {
     const map: Record<string, string> = {
@@ -498,27 +481,6 @@ function MonthList({
     "Beban Tambahan Masuk", "Beban Tambahan Keluar",
     "Keterangan 1", "Keterangan 2", "Keterangan 3", "Keterangan 4",
   ];
-  const exportData = vcfs.map(v => [
-    v.nomor_urut,
-    v.tanggal,
-    v.jam_masuk?.substring(0, 5) || "-",
-    v.vcf_keluar?.jam_keluar?.substring(0, 5) || "-",
-    v.no_polisi,
-    v.driver?.nama_supir || "-",
-    v.driver?.no_sim || "-",
-    v.transporter?.nama_transporter || "-",
-    v.produk || "-",
-    v.tipe_kegiatan?.replace(/_/g, " "),
-    getStatusLabel(v.status),
-    formatSegel(v.segel_masuk),
-    formatSegel(v.segel_keluar),
-    v.beban_tambahan_masuk?.jenis_beban || "-",
-    v.beban_tambahan_keluar?.jenis_beban || "-",
-    v.keterangan || "-",
-    v.vcf_bagian2?.keterangan || v.segel_masuk?.keterangan || "-",
-    v.vcf_bagian3?.keterangan || v.segel_keluar?.keterangan || "-",
-    v.vcf_keluar?.keterangan || "-",
-  ]);
 
   return (
     <div className="space-y-5">
@@ -573,14 +535,7 @@ function MonthList({
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 sm:flex sm:flex-row gap-2 sm:gap-3">
-            <button onClick={() => setIsPrinting(true)} className="btn btn-secondary btn-sm flex items-center justify-center gap-2 text-xs whitespace-nowrap">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
-              </svg>
-              <span className="hidden sm:inline">Print HTML</span>
-              <span className="sm:hidden">HTML</span>
-            </button>
+          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={handlePrintAll}
               disabled={fetchingPrintAll}
@@ -795,17 +750,7 @@ function MonthList({
         />
       )}
 
-      {/* Print daftar VCF */}
-      {isPrinting && (
-        <PrintMasterTable
-          title={`Daftar VCF — Arsip ${BULAN[month]} ${year}`}
-          subtitle={`Periode: ${firstDay} s/d ${lastDay}${search ? ` · Pencarian: "${search}"` : ""}`}
-          headers={exportHeaders}
-          data={exportData}
-          orientation="landscape"
-          onClose={() => setIsPrinting(false)}
-        />
-      )}
+
     </div>
   );
 }

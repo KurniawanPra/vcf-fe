@@ -41,19 +41,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [keteranganUmum, setKeteranganUmum] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Segel Masuk — for Unloading flow (input at WB Masuk)
-  const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
-  const [jumlahSegel, setJumlahSegel] = useState("1");
-
-  const syncJumlahSegel = (val: string) => {
-    const n = Math.max(1, Math.min(20, parseInt(val) || 1));
-    setJumlahSegel(String(n));
-    setNomorSegel(prev => {
-      const arr = [...prev];
-      while (arr.length < n) arr.push("");
-      return arr.slice(0, n);
-    });
-  };
+  // States nomorSegel and jumlahSegel removed because seals are now handled at Main Gate Masuk
 
   const activityType = vcfData?.tipe_kegiatan || "";
   const isLoading = activityType.startsWith("loading");
@@ -173,17 +161,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
       setJenisBeban(data.beban_tambahan_masuk.jenis_beban || "");
     }
 
-    // 3. Map segel masuk data (unloading: segel diinput di WB Masuk)
-    if (data.segel_masuk) {
-      const nums = data.segel_masuk.nomor_segel?.map((s: any) => s.nomor_segel || s) || [];
-      if (nums.length > 0) {
-        setNomorSegel(nums);
-        setJumlahSegel(String(nums.length));
-      } else if (data.segel_masuk.jumlah_segel > 0) {
-        setJumlahSegel(String(data.segel_masuk.jumlah_segel));
-        setNomorSegel(Array(data.segel_masuk.jumlah_segel).fill(""));
-      }
-    }
+    // No mapping of segel_masuk states because seals are now handled at Main Gate Masuk
 
     // 4. Map Keterangan Umum
     setKeteranganUmum(data.segel_masuk?.keterangan || data.vcf_bagian2?.keterangan || "");
@@ -296,19 +274,10 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
       const btmItem = pemeriksaanItems.find(i => i.kode === "BTM");
 
-      const sgmItem = pemeriksaanItems.find(i => i.kode === "SGM");
-      const segelTerpasang = isUnloading
-        ? (sgmItem ? pemeriksaan[sgmItem.id] === "Terpasang" : nomorSegel.some(s => s.trim()))
-        : false;
-      const validSegel = nomorSegel.filter(s => s.trim());
-
       const payload = {
         pemeriksaan: pemItems,
         beban_tambahan_ada: btmItem ? pemeriksaan[btmItem.id] === "Ada" : false,
         jenis_beban: jenisBeban || null,
-        segel_terpasang: segelTerpasang,
-        jumlah_segel: segelTerpasang ? (jumlahSegel ? parseInt(jumlahSegel) : validSegel.length) : null,
-        nomor_segel: segelTerpasang ? validSegel : [],
         keterangan: keteranganUmum || null,
       };
 
@@ -548,8 +517,8 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   {/* Segel — unloading only */}
                   {item.kode === "SGM" && isUnloading && (
                     <>
-                      {/* Read-only reference: tampilkan segel yang sudah ada dari data VCF */}
-                      {!isEditing && vcfData?.segel_masuk && (
+                      {/* Read-only reference: always display the incoming seal from the VCF data */}
+                      {vcfData?.segel_masuk ? (
                         <div className="mt-3 pt-3 border-t border-amber-500/10 animate-slideDown">
                           <div className="flex items-center gap-2 mb-2">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -563,57 +532,9 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                             ))}
                           </div>
                         </div>
-                      )}
-                      {!isEditing && !vcfData?.segel_masuk && (
+                      ) : (
                         <div className="mt-3 pt-3 border-t border-amber-500/10">
                           <p className="text-[11px] text-text-muted italic px-1">Belum ada data segel masuk.</p>
-                        </div>
-                      )}
-
-                      {/* Editable segel input — only in edit mode */}
-                      {isEditing && value === "Terpasang" && (
-                        <div className="mt-4 pt-4 border-t border-amber-500/10 animate-slideDown">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                              <span className="text-[10px] uppercase font-black text-amber-500 tracking-widest">Nomor Segel Masuk</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-slate-400">Jumlah:</span>
-                              <input type="number" min={1} max={20}
-                                className="w-14 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs font-bold text-amber-600 dark:text-amber-400 text-center focus:outline-none focus:border-amber-500"
-                                value={jumlahSegel} onChange={(e) => syncJumlahSegel(e.target.value)} />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {nomorSegel.map((segel, idx) => (
-                              <div key={idx} className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-slate-400 w-6 text-right">{idx+1}.</span>
-                                <input type="text"
-                                  className="form-input flex-1 font-mono bg-amber-500/5 border-amber-500/15 focus:border-amber-500"
-                                  placeholder={`No. Segel ${idx+1}`}
-                                  value={segel}
-                                  onChange={(e) => setNomorSegel(prev => { const n=[...prev]; n[idx]=e.target.value; return n; })} />
-                                {nomorSegel.length > 1 && (
-                                  <button type="button"
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 transition-colors shrink-0"
-                                    onClick={() => {
-                                      setNomorSegel(prev => prev.filter((_, i) => i !== idx));
-                                      setJumlahSegel(String(nomorSegel.length - 1));
-                                    }}
-                                    title="Hapus baris segel"
-                                  >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <button type="button"
-                            className="mt-2 w-full py-2 border-2 border-dashed border-amber-400/40 rounded-xl text-[10px] font-bold text-amber-500 uppercase hover:bg-amber-500/5 transition-colors"
-                            onClick={() => syncJumlahSegel(String(nomorSegel.length + 1))}>
-                            + Tambah Baris Segel
-                          </button>
                         </div>
                       )}
                     </>

@@ -828,7 +828,42 @@ export default function VcfDetailPage() {
                 </div>
               </div>
 
-
+              {/* Segel Masuk Section (Only for Unloading flow) */}
+              {vcf.tipe_kegiatan?.includes("unloading") && (
+                <div>
+                  <h4 className="text-xs uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Segel Kendaraan Masuk
+                  </h4>
+                  {vcf.segel_masuk ? (
+                    <div className="p-4 rounded-xl border border-border bg-slate-500/5 flex flex-col gap-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                          Jumlah Segel Masuk: <span className="font-bold text-emerald-500">{vcf.segel_masuk.jumlah_segel} Unit</span>
+                        </span>
+                        {vcf.segel_masuk.petugas && (
+                          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                            Petugas: {vcf.segel_masuk.petugas.nama}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {vcf.segel_masuk.nomor_segel?.map((s: any, i: number) => (
+                          <span key={i} className="px-2.5 py-1 bg-emerald-500/10 rounded-lg text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                            {typeof s === 'string' ? s : s.nomor_segel}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-dashed border-border text-center">
+                      <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>Belum ada data segel masuk.</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Keterangan Petugas */}
               {vcf.keterangan ? (

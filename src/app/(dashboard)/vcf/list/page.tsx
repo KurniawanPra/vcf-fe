@@ -58,18 +58,35 @@ function VcfSearchParams({ children }: { children: (stageFilter: string) => JSX.
   return <>{children(stageFilter)}</>;
 }
 
+/** Get today's date string in WIB (Asia/Jakarta) as YYYY-MM-DD */
+function getTodayWIB(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+}
+
+/** Get date 1 month ago in WIB. If overflow (e.g. May 31 → no April 31),
+ *  falls back to the 1st of the current month instead. */
+function getOneMonthAgoWIB(): string {
+  const todayStr = getTodayWIB();
+  const d = new Date(todayStr);
+  const targetMonth = d.getMonth() - 1;
+  d.setMonth(targetMonth);
+  if (d.getMonth() !== ((targetMonth + 12) % 12)) {
+    const first = new Date(todayStr);
+    first.setDate(1);
+    return first.toLocaleDateString("sv-SE");
+  }
+  return d.toLocaleDateString("sv-SE");
+}
+
 function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const router = useRouter();
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
   const [vcfs, setVcfs] = useState<Vcf[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [tanggalDari, setTanggalDari] = useState(firstDay);
-  const [tanggalSampai, setTanggalSampai] = useState(lastDay);
+  const [tanggalDari, setTanggalDari] = useState(getOneMonthAgoWIB);
+  const [tanggalSampai, setTanggalSampai] = useState(getTodayWIB);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -85,7 +102,8 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [printingVcf, setPrintingVcf] = useState<any>(null);
   const [fetchingPrint, setFetchingPrint] = useState(false);
   // Print daftar VCF (tabel)
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [fetchingPrintHtml, setFetchingPrintHtml] = useState(false);
+  const [printHtmlData, setPrintHtmlData] = useState<any[][] | null>(null);
   // Print Semua VCF (multi-page form, sesuai filter rentang tanggal)
   const [printingAllVcfs, setPrintingAllVcfs] = useState<any[] | null>(null);
   const [fetchingPrintAll, setFetchingPrintAll] = useState(false);
@@ -100,6 +118,57 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       alert("Gagal mengambil detail VCF untuk pencetakan.");
     } finally {
       setFetchingPrint(false);
+    }
+  };
+
+  const handlePrintHTML = async () => {
+    if (fetchingPrintHtml) return;
+    setFetchingPrintHtml(true);
+    try {
+      const params: Record<string, string> = { per_page: "10000" };
+      if (tanggalDari) params.tanggal_dari = tanggalDari;
+      if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
+      if (STAGE_FILTERS[stageFilter]) params.status = STAGE_FILTERS[stageFilter];
+      if (debouncedSearch) params.search = debouncedSearch;
+
+      const res = await vcfApi.getList(params);
+      const list: any[] = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+      if (list.length === 0) {
+        alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
+        return;
+      }
+
+      const formatted = list.map(v => [
+        v.nomor_urut,
+        v.tanggal,
+        v.jam_masuk?.substring(0, 5) || "-",
+        v.vcf_keluar?.jam_keluar?.substring(0, 5) || "-",
+        v.no_polisi,
+        v.driver?.nama_supir || "-",
+        v.driver?.no_sim || "-",
+        v.transporter?.nama_transporter || "-",
+        v.produk || "-",
+        v.tipe_kegiatan?.replace(/_/g, " "),
+        getStatusLabel(v.status),
+        formatSegel(v.segel_masuk),
+        formatSegel(v.segel_keluar),
+        v.beban_tambahan_masuk?.jenis_beban || "-",
+        v.beban_tambahan_keluar?.jenis_beban || "-",
+        v.keterangan || "-",
+        v.vcf_bagian2?.keterangan || v.segel_masuk?.keterangan || "-",
+        v.vcf_bagian3?.keterangan || v.segel_keluar?.keterangan || "-",
+        v.vcf_keluar?.keterangan || "-",
+      ]);
+      setPrintHtmlData(formatted);
+    } catch (err: any) {
+      alert("Gagal memuat data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
+    } finally {
+      setFetchingPrintHtml(false);
     }
   };
 
@@ -297,7 +366,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
   // Dispatch modal events for PrintMasterTable
   useEffect(() => {
-    if (isPrinting) {
+    if (printHtmlData) {
       document.body.style.overflow = "hidden";
       window.dispatchEvent(new CustomEvent("modal-open"));
     } else {
@@ -308,7 +377,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       document.body.style.overflow = "unset";
       window.dispatchEvent(new CustomEvent("modal-close"));
     };
-  }, [isPrinting]);
+  }, [printHtmlData]);
 
   const handleReject = async () => {
     if (!rejectingId || !rejectReason.trim()) return;
@@ -372,27 +441,6 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     "Beban Tambahan Masuk", "Beban Tambahan Keluar",
     "Keterangan 1", "Keterangan 2", "Keterangan 3", "Keterangan 4",
   ];
-  const exportData = vcfs.map(v => [
-    v.nomor_urut,
-    v.tanggal,
-    v.jam_masuk?.substring(0, 5) || "-",
-    v.vcf_keluar?.jam_keluar?.substring(0, 5) || "-",
-    v.no_polisi,
-    v.driver?.nama_supir || "-",
-    v.driver?.no_sim || "-",
-    v.transporter?.nama_transporter || "-",
-    v.produk || "-",
-    v.tipe_kegiatan?.replace(/_/g, " "),
-    getStatusLabel(v.status),
-    formatSegel(v.segel_masuk),
-    formatSegel(v.segel_keluar),
-    v.beban_tambahan_masuk?.jenis_beban || "-",
-    v.beban_tambahan_keluar?.jenis_beban || "-",
-    v.keterangan || "-",
-    v.vcf_bagian2?.keterangan || v.segel_masuk?.keterangan || "-",
-    v.vcf_bagian3?.keterangan || v.segel_keluar?.keterangan || "-",
-    v.vcf_keluar?.keterangan || "-",
-  ]);
 
   return (
     <div className="page-container">
@@ -433,12 +481,16 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
 
             {/* Action Buttons — grid on mobile, inline on desktop */}
             <div className="grid grid-cols-3 sm:flex sm:flex-row gap-2 sm:gap-3">
-              <button onClick={() => setIsPrinting(true)} className="btn btn-secondary btn-sm flex items-center justify-center gap-2 text-xs whitespace-nowrap">
+              <button
+                onClick={handlePrintHTML}
+                disabled={fetchingPrintHtml}
+                className="btn btn-secondary btn-sm flex items-center justify-center gap-2 text-xs whitespace-nowrap"
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
                 </svg>
-                <span className="hidden sm:inline">Print HTML</span>
-                <span className="sm:hidden">HTML</span>
+                <span className="hidden sm:inline">{fetchingPrintHtml ? "Memuat..." : "Print HTML"}</span>
+                <span className="sm:hidden">{fetchingPrintHtml ? "..." : "HTML"}</span>
               </button>
               <button
                 onClick={handlePrintAll}
@@ -502,8 +554,8 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               <button
                 onClick={() => {
                   setSearch("");
-                  setTanggalDari(firstDay);
-                  setTanggalSampai(lastDay);
+                  setTanggalDari(getOneMonthAgoWIB());
+                  setTanggalSampai(getTodayWIB());
                 }}
                 className="btn btn-secondary btn-sm w-full"
               >
@@ -688,14 +740,14 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       )}
 
       {/* Print daftar VCF */}
-      {isPrinting && (
+      {printHtmlData && (
         <PrintMasterTable
           title={`Daftar VCF — ${stageLabel}`}
           subtitle={`Periode: ${tanggalDari} s/d ${tanggalSampai}${search ? ` · Pencarian: "${search}"` : ""}`}
           headers={exportHeaders}
-          data={exportData}
+          data={printHtmlData}
           orientation="landscape"
-          onClose={() => setIsPrinting(false)}
+          onClose={() => setPrintHtmlData(null)}
         />
       )}
     </div>

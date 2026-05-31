@@ -123,6 +123,52 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
   const [checklist, setChecklist] = useState<Record<number, boolean | null>>({});
   const [muatanDibawa, setMuatanDibawa] = useState<Record<number, { checked: boolean; nilai: string }>>({});
 
+  // Segel Masuk states for unloading edit
+  const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
+  const [jumlahSegel, setJumlahSegel] = useState("1");
+
+  const syncJumlahSegel = (val: string) => {
+    const n = Math.max(1, Math.min(20, parseInt(val) || 1));
+    setJumlahSegel(String(n));
+    setNomorSegel((prev) => {
+      const arr = [...prev];
+      while (arr.length < n) arr.push("");
+      return arr.slice(0, n);
+    });
+  };
+
+  const updateSegel = (idx: number, val: string) => {
+    setNomorSegel((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
+  };
+
+  const addSegelInput = () => {
+    setNomorSegel((prev) => {
+      const next = [...prev, ""];
+      setJumlahSegel(String(next.length));
+      return next;
+    });
+  };
+
+  const removeSegelInput = (idx: number) => {
+    setNomorSegel((prev) => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter((_, i) => i !== idx);
+      setJumlahSegel(String(next.length));
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (tipeKegiatan && !tipeKegiatan.startsWith("unloading")) {
+      setJumlahSegel("1");
+      setNomorSegel([""]);
+    }
+  }, [tipeKegiatan]);
+
   const [muatanDiisi, setMuatanDiisi] = useState<Record<number, { checked: boolean; nilai: string }>>({});
   const [muatanDibawaLainnya, setMuatanDibawaLainnya] = useState({ checked: null as boolean | null, nilai: "" });
   const [muatanDiisiLainnya, setMuatanDiisiLainnya] = useState({ checked: null as boolean | null, nilai: "" });
@@ -253,6 +299,20 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
         setMuatanDibawa(initDibawa);
         setMuatanDiisi(initDiisi);
 
+        if (v.segel_masuk) {
+          const nums = v.segel_masuk.nomor_segel?.map((s: any) => s.nomor_segel || s) || [];
+          if (nums.length > 0) {
+            setNomorSegel(nums);
+            setJumlahSegel(String(nums.length));
+          } else {
+            setJumlahSegel(String(v.segel_masuk.jumlah_segel || 1));
+            setNomorSegel(Array(v.segel_masuk.jumlah_segel || 1).fill(""));
+          }
+        } else {
+          setJumlahSegel("1");
+          setNomorSegel([""]);
+        }
+
         initialTipeKegiatan.current = v.tipe_kegiatan;
         initialMuatanDbw.current = initDibawa;
         initialMuatanDsi.current = initDiisi;
@@ -333,6 +393,13 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
     if (emptyChecklistItems.length > 0)
       addError("checklist", "Kelengkapan Supir", `${emptyChecklistItems.length} item belum dijawab`, "field-checklist");
 
+    if (isUnloading) {
+      const validSegel = nomorSegel.filter(s => s.trim()).length > 0;
+      if (!validSegel) {
+        addError("nomorSegel", "Segel Kendaraan", "Nomor Segel (Minimal 1)", "field-segel");
+      }
+    }
+
     setFieldErrors(errors);
     setValidationErrors(entries);
     return isValid;
@@ -385,6 +452,10 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
         kelengkapan_supir: kelengkapanSupir, muatan_dibawa: isUnloading ? buildMuatanPayload(muatanDibawa, { checked: !!muatanDibawaLainnya.checked, nilai: muatanDibawaLainnya.nilai }) : [],
         muatan_diisi: isLoading ? buildMuatanPayload(muatanDiisi, { checked: !!muatanDiisiLainnya.checked, nilai: muatanDiisiLainnya.nilai }) : [],
         keterangan: keteranganFinal, qr_signature: qrSignature,
+        // Segel data for Unloading flow
+        segel_terpasang: isUnloading ? true : null,
+        jumlah_segel: isUnloading ? (jumlahSegel ? parseInt(jumlahSegel, 10) : nomorSegel.length) : null,
+        nomor_segel: isUnloading ? nomorSegel.map((s) => s.trim()).filter(Boolean) : [],
       };
 
       await vcfApi.updateBagian1(vcfId, payload);
@@ -758,6 +829,65 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
               </div>
             </div>
             }
+
+            {/* SECTION 4.5: NOMOR SEGEL (UNLOADING ONLY) */}
+            {isUnloading && (
+              <div id="field-segel" className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-text-primary">Nomor Segel Kendaraan</h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Jumlah Segel</label>
+                    <input
+                      type="number"
+                      className="w-20 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm font-bold text-emerald-600 dark:text-emerald-400 text-center focus:outline-none focus:border-emerald-500"
+                      value={jumlahSegel}
+                      onChange={(e) => syncJumlahSegel(e.target.value)}
+                      min={1}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {nomorSegel.map((segel, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            className="w-full px-4 py-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-sm font-medium text-text-primary dark:text-white placeholder-emerald-500/40 focus:outline-none focus:border-emerald-500 transition-colors"
+                            placeholder={`Segel #${idx + 1}`}
+                            value={segel}
+                            onChange={(e) => updateSegel(idx, e.target.value)}
+                          />
+                          {nomorSegel.length > 1 && (
+                            <button
+                              type="button"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                              onClick={() => removeSegelInput(idx)}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="w-full py-3 border-2 border-dashed border-emerald-500/30 rounded-xl text-sm font-bold text-emerald-500 uppercase hover:bg-emerald-500/5 transition-colors flex items-center justify-center gap-2"
+                    onClick={addSegelInput}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+                    Tambah Segel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* SECTION 5: KETERANGAN */}
             <div className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">

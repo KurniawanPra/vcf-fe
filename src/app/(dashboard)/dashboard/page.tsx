@@ -31,12 +31,31 @@ interface ActivityLog {
   updated_at: string;
 }
 
+interface AnomalyStatPoint {
+  date: string;
+  day: string;
+  count: number;
+  baseline: number;
+  lower_bound: number;
+  upper_bound: number;
+  is_anomaly: boolean;
+}
+
 interface VcfStats {
-  total: number;
-  today: number;
-  active: number;
-  completed: number;
+  total_overall: number;
+  total_today: number;
+  total_month: number;
+  completed_overall: number;
+  completed_today: number;
+  completed_month: number;
+  reject_overall: number;
+  reject_today: number;
+  reject_month: number;
+  active_in_area: number;
+  pending: number;
+  blacklist_drivers: number;
   system_speed: number;
+  weekly_anomaly_stats?: AnomalyStatPoint[];
 }
 
 const MODULE_OPTIONS = [
@@ -72,19 +91,47 @@ function StatCardSkeleton() {
   return <div className="h-24 w-full rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse border border-slate-200 dark:border-slate-700" />;
 }
 
+function parseUserAgent(ua: string | null) {
+  if (!ua) return { os: "Sistem / Tidak diketahui", browser: "Sistem / Tidak diketahui" };
+  let os = "Lainnya";
+  if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Macintosh") || ua.includes("Mac OS")) os = "macOS";
+  else if (ua.includes("Linux")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+  let browser = "Lainnya";
+  if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Chrome") && !ua.includes("Chromium") && !ua.includes("Edg")) browser = "Chrome";
+  else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+  else if (ua.includes("Edg")) browser = "Edge";
+  else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+
+  return { os, browser };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const user = getUser();
-  
+
   // States
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<VcfStats>({
-    total: 0,
-    today: 0,
-    active: 0,
-    completed: 0,
+    total_overall: 0,
+    total_today: 0,
+    total_month: 0,
+    completed_overall: 0,
+    completed_today: 0,
+    completed_month: 0,
+    reject_overall: 0,
+    reject_today: 0,
+    reject_month: 0,
+    active_in_area: 0,
+    pending: 0,
+    blacklist_drivers: 0,
     system_speed: 0,
   });
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
@@ -106,20 +153,17 @@ export default function DashboardPage() {
   }, []);
 
   const now = new Date();
-  const greeting = now.getHours() < 12 ? "Selamat Pagi" : now.getHours() < 17 ? "Selamat Siang" : "Selamat Sore";
 
   // Fetch VCF Stats
   const fetchStats = useCallback(async () => {
     try {
-      setStatsLoading(true);
       const res = await vcfApi.getStats();
       if (res.data) {
         setStats(res.data);
+        setStatsLoading(false);
       }
     } catch {
       // silent fail
-    } finally {
-      setStatsLoading(false);
     }
   }, []);
 
@@ -156,7 +200,7 @@ export default function DashboardPage() {
     fetchStats();
     fetchLogs(currentPage);
 
-    const statsInterval = setInterval(fetchStats, 45000);
+    const statsInterval = setInterval(fetchStats, 2000);
     const logsInterval = setInterval(() => fetchLogs(currentPage), 30000);
 
     return () => {
@@ -245,25 +289,74 @@ export default function DashboardPage() {
 
   // Clean JSON Properties renderer
   const renderLogProperties = (props: any) => {
-    if (!props) return <span className="text-slate-400 dark:text-slate-600 text-xs italic">Tidak ada detail data.</span>;
+    if (!props) return <span className="text-slate-400 dark:text-slate-600 text-xs italic">Tidak ada rincian data aktivitas.</span>;
+
+    // Format 1.5: Multiple changes map
+    if (typeof props === "object" && props.changes && typeof props.changes === "object") {
+      const changesMap = props.changes;
+      return (
+        <div className="space-y-4 text-xs text-slate-700 dark:text-slate-350">
+          <span className="font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wider text-[10px]">Rincian Perubahan Data:</span>
+          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+                  <th className="p-3 pl-4">Kolom</th>
+                  <th className="p-3">Nilai Lama</th>
+                  <th className="p-3 pr-4">Nilai Baru</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                {Object.keys(changesMap).map((fieldName) => {
+                  const change = changesMap[fieldName];
+                  return (
+                    <tr key={fieldName} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
+                      <td className="p-3 pl-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase text-[10px] tracking-wide">
+                        {fieldName.replace(/_/g, " ")}
+                      </td>
+                      <td className="p-3 text-rose-600 dark:text-rose-400 font-mono whitespace-pre-wrap break-all text-[11px]">
+                        {change.old !== null && change.old !== undefined ? String(change.old) : <span className="italic text-slate-350 font-sans">kosong</span>}
+                      </td>
+                      <td className="p-3 pr-4 text-emerald-600 dark:text-emerald-400 font-mono whitespace-pre-wrap break-all text-[11px]">
+                        {change.new !== null && change.new !== undefined ? String(change.new) : <span className="italic text-slate-355 font-sans">kosong</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
 
     // Format 1: field, old, new
     if (typeof props === "object" && "old" in props && "new" in props) {
       return (
-        <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+        <div className="space-y-3 text-xs text-slate-700 dark:text-slate-350">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-500 dark:text-slate-400">Kolom/Key:</span>
-            <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-indigo-500 dark:text-indigo-400 font-bold">{props.key || props.field || "Value"}</code>
+            <code className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-indigo-500 dark:text-indigo-400 font-bold">{props.key || props.field || "Value"}</code>
           </div>
-          <div className="grid grid-cols-2 gap-4 pt-1 border-t border-slate-100 dark:border-slate-800">
-            <div>
-              <span className="block font-semibold text-rose-500">Nilai Lama:</span>
-              <pre className="mt-1 p-2 rounded bg-rose-500/5 border border-rose-500/10 text-rose-600 dark:text-rose-400 font-mono overflow-x-auto max-h-36 whitespace-pre-wrap">{String(props.old)}</pre>
-            </div>
-            <div>
-              <span className="block font-semibold text-emerald-500">Nilai Baru:</span>
-              <pre className="mt-1 p-2 rounded bg-emerald-500/5 border border-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono overflow-x-auto max-h-36 whitespace-pre-wrap">{String(props.new)}</pre>
-            </div>
+          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+                  <th className="p-3 pl-4">Nilai Lama</th>
+                  <th className="p-3 pr-4">Nilai Baru</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="p-3 pl-4 text-rose-600 dark:text-rose-400 font-mono whitespace-pre-wrap break-all text-[11px]">
+                    {props.old !== null && props.old !== undefined ? String(props.old) : <span className="italic text-slate-350 font-sans">kosong</span>}
+                  </td>
+                  <td className="p-3 pr-4 text-emerald-600 dark:text-emerald-400 font-mono whitespace-pre-wrap break-all text-[11px]">
+                    {props.new !== null && props.new !== undefined ? String(props.new) : <span className="italic text-slate-350 font-sans">kosong</span>}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       );
@@ -273,10 +366,10 @@ export default function DashboardPage() {
     if (typeof props === "object" && Array.isArray(props.changed_fields)) {
       return (
         <div className="text-xs text-slate-700 dark:text-slate-300">
-          <span className="font-semibold text-slate-500 dark:text-slate-400">Field yang Diperbarui:</span>
+          <span className="font-semibold text-slate-500 dark:text-slate-400 font-display uppercase tracking-wider text-[10px]">Kolom yang Diperbarui:</span>
           <div className="flex flex-wrap gap-1.5 mt-2">
             {props.changed_fields.map((f: string, i: number) => (
-              <span key={i} className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium font-mono text-[11px]">
+              <span key={i} className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium font-mono text-[10px]">
                 {f}
               </span>
             ))}
@@ -285,17 +378,17 @@ export default function DashboardPage() {
       );
     }
 
-    // Format 3: Catatan Reject
+    // Format 3: Catatan Penolakan (Reject)
     if (typeof props === "object" && "catatan_reject" in props) {
       return (
-        <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+        <div className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-500 dark:text-slate-400">Tahap Penolakan:</span>
             <span className="font-bold text-slate-800 dark:text-white">{props.stage || "N/A"}</span>
           </div>
           <div>
-            <span className="block font-semibold text-red-500">Alasan Reject:</span>
-            <div className="mt-1 p-2.5 rounded-lg bg-red-500/5 border border-red-500/10 text-red-600 dark:text-red-400 italic">
+            <span className="block font-semibold text-red-500">Alasan Penolakan:</span>
+            <div className="mt-1 p-3 rounded-lg bg-red-500/5 border border-red-500/10 text-red-650 dark:text-red-400 italic">
               &quot;{props.catatan_reject}&quot;
             </div>
           </div>
@@ -305,7 +398,7 @@ export default function DashboardPage() {
 
     return (
       <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-        <span className="font-semibold text-slate-500 dark:text-slate-400">Properties (Payload JSON):</span>
+        <span className="font-semibold text-slate-500 dark:text-slate-400">Data Tambahan (JSON Payload):</span>
         <pre className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 font-mono text-[11px] overflow-x-auto max-h-60 overflow-y-auto whitespace-pre-wrap">
           {JSON.stringify(props, null, 2)}
         </pre>
@@ -313,80 +406,32 @@ export default function DashboardPage() {
     );
   };
 
-  const STAT_CARDS = [
-    {
-      key: "total",
-      label: "Total VCF",
-      sub: "Semua record VCF",
-      color: "#3b82f6",
-      value: stats.total,
-      icon: (
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124l-.317-5.136a5.378 5.378 0 00-1.2-3.218l-2.28-2.28a.75.75 0 00-.53-.22H15m3.75 12h.007v.008H18.75V18.75zm-6-13.5V3.375c0-.621-.504-1.125-1.125-1.125h-2.25a1.125 1.125 0 00-1.125 1.125V5.25m4.5 0A2.25 2.25 0 009 3.75a2.25 2.25 0 00-2.25 1.5M9 5.25h3m-6 0h.008v.008H6V5.25zm0 9h.008v.008H6V14.25zm0 2.25h.008v.008H6v-.008zm1.5-4.5h.008v.008H7.5v-.008zm0 2.25h.008v.008H7.5v-.008zm1.5-4.5h.008v.008H9v-.008zm0 2.25h.008v.008H9v-.008zm3-3H6m12 0h-3" />
-        </svg>
-      ),
-    },
-    {
-      key: "today",
-      label: "VCF Hari Ini",
-      sub: "VCF tercatat hari ini",
-      color: "#10b981",
-      value: stats.today,
-      icon: (
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      key: "active",
-      label: "VCF di Area",
-      sub: "Kendaraan aktif di area",
-      color: "#f59e0b",
-      value: stats.active,
-      icon: (
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124l-.317-5.136a5.378 5.378 0 00-1.2-3.218l-2.28-2.28a.75.75 0 00-.53-.22H15m3.75 12h.007v.008H18.75V18.75zm-6-13.5V3.375c0-.621-.504-1.125-1.125-1.125h-2.25a1.125 1.125 0 00-1.125 1.125V5.25m4.5 0A2.25 2.25 0 009 3.75a2.25 2.25 0 00-2.25 1.5M9 5.25h3m-6 0h.008v.008H6V5.25zm0 9h.008v.008H6V14.25zm0 2.25h.008v.008H6v-.008zm1.5-4.5h.008v.008H7.5v-.008zm0 2.25h.008v.008H7.5v-.008zm1.5-4.5h.008v.008H9v-.008zm0 2.25h.008v.008H9v-.008zm3-3H6m12 0h-3" />
-        </svg>
-      ),
-    },
-    {
-      key: "completed",
-      label: "VCF Selesai",
-      sub: "Total VCF selesai",
-      color: "#22c55e",
-      value: stats.completed,
-      icon: (
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      key: "system_speed",
-      label: "Kecepatan Sistem",
-      sub: "Response time (ms)",
-      color: "#8b5cf6",
-      value: stats.system_speed,
-      icon: (
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-        </svg>
-      ),
-    },
-  ];
+  const getTooltipTranslate = (idx: number, len: number) => {
+    if (idx === 0) return "translateX(12px)";
+    if (idx === len - 1) return "translateX(-112%)";
+    return "translateX(-50%)";
+  };
+
+  const generateCountLinePath = (data: any[], maxVal: number) => {
+    if (data.length < 2) return "";
+    return data.map((d, i) => {
+      const x = 40 + i * (520 / (data.length - 1));
+      const y = 130 - (d.count / maxVal) * 110;
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    }).join(" ");
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-8 antialiased text-slate-800 dark:text-slate-100">
-      
+
       {/* ── HEADER SECTION ──────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
-            {greeting}, {user?.nama?.split(" ")[0] || "Pengguna"}
+            Dasbor Pemantauan VCF
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-            <span className="font-medium">{isAdmin() ? "Administrator · PT. Industri Nabati Lestari" : "Officer · Main Gate"}</span>
+            <span className="font-medium">{user?.nama || "Pengguna"} · {isAdmin() ? "Administrator" : "Petugas Main Gate"}</span>
             <span className="hidden sm:inline opacity-40">•</span>
             <span className="text-slate-400 dark:text-slate-500">
               {now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
@@ -431,97 +476,402 @@ export default function DashboardPage() {
         <ViewVcfButton label="Lihat Monitoring VCF Aktif" />
       </div>
 
-      {/* ── Stat Cards (Activity Log Stats) ─────────────────────────── */}
-      <div
-        data-stat-grid
-        className="order-2 lg:order-1 mb-8"
-        style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: "12px" }}
-      >
-        <style>{`
-          @media (min-width: 480px) {
-            [data-stat-grid] {
-              grid-template-columns: repeat(2, 1fr) !important;
-              gap: 12px !important;
-            }
-          }
-          @media (min-width: 1024px) {
-            [data-stat-grid] {
-              grid-template-columns: repeat(5, 1fr) !important;
-              gap: 16px !important;
-            }
-          }
-        `}</style>
-        {statsLoading ? [1,2,3,4,5].map(i => <StatCardSkeleton key={i}/>) : STAT_CARDS.map(card => {
-          if (card.key === "system_speed") {
-            const speed = typeof card.value === "number" ? card.value : parseFloat(String(card.value)) || 0;
-            let speedColor = "#10b981"; // Emerald
-            let speedLabel = "Sangat Cepat";
-            if (speed > 200) { speedColor = "#ef4444"; speedLabel = "Lambat"; }
-            else if (speed > 50) { speedColor = "#f59e0b"; speedLabel = "Normal"; }
-            
-            return (
-              <div key={card.key} className="relative overflow-hidden flex flex-col justify-between" style={{
-                borderRadius: 14, padding: "18px 16px",
-                background: "var(--bg-card)", border: `1.5px solid ${speedColor}40`,
-                boxShadow: `0 4px 20px -2px ${speedColor}25`,
-                minWidth: 0,
-              }}>
-                <div className="flex items-center justify-between w-full mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: speedColor }}></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: speedColor }}></span>
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{card.label}</span>
-                  </div>
-                  <div className="p-1.5 rounded-lg" style={{ color: speedColor, background: `${speedColor}15` }}>
-                    {card.icon}
-                  </div>
-                </div>
-                <div className="text-center mt-1 mb-1 relative z-10">
-                  <p className="font-extrabold text-slate-900 dark:text-white leading-none font-sans flex items-baseline justify-center gap-1">
-                    <span className="text-3xl tracking-tight" style={{ color: speedColor }}>{card.value}</span>
-                    <span className="text-xs font-bold opacity-80" style={{ color: speedColor }}>ms</span>
-                  </p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest mt-2" style={{ color: speedColor }}>
-                    Status: {speedLabel}
-                  </p>
-                </div>
-                {/* Enhanced glow effect */}
-                <div className="absolute right-0 bottom-0 w-28 h-28 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ backgroundColor: speedColor }} />
-                <div className="absolute left-0 top-0 w-16 h-16 rounded-full blur-2xl opacity-10 pointer-events-none" style={{ backgroundColor: speedColor }} />
-              </div>
-            );
-          }
+      {/* ── Real-Time Dynamic Dashboard Section ─────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* LEFT COLUMN: Weekly Anomaly Detection Chart (3/5 Width) */}
+        <div className="lg:col-span-3 flex flex-col justify-between p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden transition-all duration-300">
+          {/* Subtle grid background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-100" />
 
-          return (
-            <div key={card.key} style={{
-              borderRadius: 14, padding: "18px 16px", position: "relative", overflow: "hidden",
-              background: "var(--bg-card)", border: `2px solid ${card.color}25`,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-              display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
-              minWidth: 0,
-            }}>
-              <div className="flex items-center justify-between w-full mb-3">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{card.label}</span>
-                <div className="p-1.5 rounded-lg" style={{ color: card.color, background: `${card.color}15` }}>
-                  {card.icon}
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2 font-display">
+                Volume Transaksi VCF Mingguan
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                Volume transaksi harian 7 hari terakhir
+              </p>
+            </div>
+
+            <div className="flex gap-3 text-[10px] font-bold font-display">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1 rounded-lg border border-blue-100/40 dark:border-blue-900/20">
+                <span className="w-2.5 h-1.5 bg-blue-500 rounded-xs" />
+                Transaksi VCF
+              </div>
+            </div>
+          </div>
+
+          {/* SVG Weekly Anomaly Chart */}
+          <div className="relative z-10 w-full h-48 bg-slate-50/50 dark:bg-slate-950/30 border border-slate-100 dark:border-slate-800/80 rounded-xl px-1 pt-4 transition-colors">
+            {statsLoading || !stats.weekly_anomaly_stats ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 border-t-blue-500 animate-spin" />
+                <span className="text-xs text-slate-500 font-medium">Memuat data analitik...</span>
+              </div>
+            ) : (
+              <div className="relative w-full h-full">
+                {(() => {
+                  const anomalyData = stats.weekly_anomaly_stats;
+                  const maxVal = Math.max(...anomalyData.map(d => Math.max(d.count, 10)), 10);
+                  const countPath = generateCountLinePath(anomalyData, maxVal);
+
+                  return (
+                    <>
+                      <svg className="w-full h-full" viewBox="0 0 600 160" preserveAspectRatio="none">
+                        <defs>
+                          <filter id="glow-active" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#2563eb" floodOpacity="0.25" />
+                          </filter>
+                        </defs>
+
+                        {/* Horizontal Guide Lines */}
+                        {[0.25, 0.5, 0.75].map((ratio, idx) => (
+                          <line
+                            key={idx}
+                            x1="40"
+                            y1={130 - ratio * 110}
+                            x2="560"
+                            y2={130 - ratio * 110}
+                            className="stroke-slate-200 dark:stroke-slate-800/85"
+                            strokeWidth="1"
+                            strokeDasharray="4 4"
+                          />
+                        ))}
+
+                        {/* Weekly transaction count line */}
+                        {countPath && (
+                          <path
+                            d={countPath}
+                            fill="none"
+                            stroke="#2563eb"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            filter="url(#glow-active)"
+                            className="dark:stroke-blue-400 transition-all duration-500"
+                          />
+                        )}
+
+                        {/* Dots and highlights for each weekday */}
+                        {anomalyData.map((d, idx) => {
+                          const x = 40 + idx * (520 / (anomalyData.length - 1));
+                          const y = 130 - (d.count / maxVal) * 110;
+                          return (
+                            <g key={idx}>
+                              <circle cx={x} cy={y} r="3.5" fill="#2563eb" className="text-white dark:text-slate-900 dark:fill-blue-400" stroke="currentColor" strokeWidth="1" />
+                            </g>
+                          );
+                        })}
+
+                        {/* Vertical tracker and dot highlight on hover */}
+                        {hoveredIndex !== null && anomalyData[hoveredIndex] && (
+                          <>
+                            <line
+                              key="tracker"
+                              x1={40 + hoveredIndex * (520 / (anomalyData.length - 1))}
+                              y1={10}
+                              x2={40 + hoveredIndex * (520 / (anomalyData.length - 1))}
+                              y2={140}
+                              className="stroke-slate-300 dark:stroke-slate-700"
+                              strokeWidth="1.5"
+                              strokeDasharray="3 3"
+                            />
+                            {(() => {
+                              const d = anomalyData[hoveredIndex];
+                              const x = 40 + hoveredIndex * (520 / (anomalyData.length - 1));
+                              const y = 130 - (d.count / maxVal) * 110;
+                              return (
+                                <circle
+                                  cx={x}
+                                  cy={y}
+                                  r="6"
+                                  fill="#2563eb"
+                                  stroke="currentColor"
+                                  className="text-white dark:text-slate-900"
+                                  strokeWidth="2"
+                                />
+                              );
+                            })()}
+                          </>
+                        )}
+
+                        {/* Interactive hover zones */}
+                        {anomalyData.map((_, idx) => {
+                          const step = 520 / (anomalyData.length - 1);
+                          return (
+                            <rect
+                              key={idx}
+                              x={40 + idx * step - step / 2}
+                              y={0}
+                              width={step}
+                              height={140}
+                              fill="transparent"
+                              className="cursor-pointer"
+                              onMouseEnter={() => setHoveredIndex(idx)}
+                              onMouseLeave={() => setHoveredIndex(null)}
+                            />
+                          );
+                        })}
+
+                        {/* X-Axis labels */}
+                        {anomalyData.map((d, idx) => {
+                          const x = 40 + idx * (520 / (anomalyData.length - 1));
+                          return (
+                            <text
+                              key={idx}
+                              x={x}
+                              y="152"
+                              textAnchor="middle"
+                              className="fill-slate-400 dark:fill-slate-500 font-display font-bold text-[9px] uppercase tracking-wider"
+                            >
+                              {d.day}
+                            </text>
+                          );
+                        })}
+                      </svg>
+
+                      {/* Tooltip Popup */}
+                      {hoveredIndex !== null && anomalyData[hoveredIndex] && (
+                        <div
+                          className="absolute z-20 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 text-xs pointer-events-none transition-all duration-75 backdrop-blur-sm"
+                          style={{
+                            left: `${40 / 600 * 100 + (hoveredIndex / (anomalyData.length - 1)) * (520 / 600 * 100)}%`,
+                            transform: getTooltipTranslate(hoveredIndex, anomalyData.length),
+                            top: "12px",
+                          }}
+                        >
+                          <div className="font-bold text-slate-700 dark:text-slate-355 border-b border-slate-100 dark:border-slate-800 pb-1 mb-1 font-mono text-[9px] flex items-center justify-between gap-4">
+                            <span>TANGGAL:</span>
+                            <span>{anomalyData[hoveredIndex].date}</span>
+                          </div>
+                          <div className="space-y-1.5 min-w-[100px]">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium">Transaksi:</span>
+                              <span className="font-black text-slate-905 dark:text-white font-display text-[11px]">{anomalyData[hoveredIndex].count} unit</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* Time scale tags */}
+          <div className="flex justify-between px-2 text-[9px] text-slate-400 dark:text-slate-500 font-bold font-mono tracking-widest mt-2.5 relative z-10">
+            <span>PERIODE 7 HARI TERAKHIR</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              AKTIF
+            </span>
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800/85 mt-4 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-display mb-1.5">Ringkasan Hari Ini</span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Total kendaraan: <span className="font-bold text-slate-700 dark:text-slate-200">{stats.total_today}</span></span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Selesai: <span className="font-bold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span></span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Di area: <span className="font-bold text-slate-700 dark:text-slate-200">{stats.active_in_area}</span></span>
+                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Ditolak: <span className="font-bold text-rose-500 dark:text-rose-400">{stats.reject_today}</span></span>
+              </div>
+            </div>
+
+            {/* Live System Speed indicator */}
+            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-150 dark:border-slate-800 rounded-xl px-4 py-2 w-full sm:w-auto">
+              <div className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+              </div>
+              <div className="min-w-0">
+                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-display">Latensi Respon Sistem</span>
+                <p className="text-sm font-extrabold text-slate-850 dark:text-slate-200 truncate font-display">
+                  {stats.system_speed} <span className="text-[10px] text-violet-500 dark:text-violet-400">ms</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Grouped Breakdown, Blacklist & KPI (2/5 Width) */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* KPI Statistics & Stacked Comparison */}
+          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md space-y-6">
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight font-display">Distribusi Status VCF</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Perbandingan volume transaksi selesai, ditolak, dan total</p>
+            </div>
+
+            {/* Comparative Breakdown */}
+            <div className="space-y-5">
+
+              {/* Hari Ini */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-extrabold text-slate-700 dark:text-slate-300 font-display">Hari Ini</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg border border-emerald-100/40 dark:border-emerald-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Selesai:</span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-display">{stats.completed_today}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-rose-50/50 dark:bg-rose-950/20 px-2 py-0.5 rounded-lg border border-rose-100/40 dark:border-rose-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Reject:</span>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 font-display">{stats.reject_today}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-blue-50/50 dark:bg-blue-950/20 px-2 py-0.5 rounded-lg border border-blue-100/40 dark:border-blue-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Total:</span>
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-display">{stats.total_today}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex p-0.5 border border-slate-200/40 dark:border-slate-700/20">
+                  {stats.total_today > 0 ? (
+                    <>
+                      <div
+                        style={{ width: `${(stats.completed_today / stats.total_today) * 100}%` }}
+                        className="bg-emerald-500 rounded-full transition-all duration-500"
+                      />
+                      <div
+                        style={{ width: `${(stats.reject_today / stats.total_today) * 100}%` }}
+                        className="bg-rose-500 rounded-full transition-all duration-500 ml-0.5"
+                      />
+                      <div
+                        style={{ width: `${((stats.total_today - stats.completed_today - stats.reject_today) / stats.total_today) * 100}%` }}
+                        className="bg-blue-500 rounded-full transition-all duration-500 ml-0.5 opacity-80"
+                      />
+                    </>
+                  ) : (
+                    <div className="w-full text-[9px] text-slate-400 dark:text-slate-500 text-center flex items-center justify-center font-bold uppercase tracking-widest">Belum Ada Transaksi</div>
+                  )}
                 </div>
               </div>
-              <p className="text-3xl font-extrabold text-slate-900 dark:text-white leading-none font-sans tracking-tight">
-                {card.value}
-              </p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium">{card.sub}</p>
-              {/* Soft background glow */}
-              <div className="absolute right-0 bottom-0 w-16 h-16 rounded-full blur-2xl opacity-15 pointer-events-none" style={{ backgroundColor: card.color }} />
+
+              {/* Bulan Ini */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-extrabold text-slate-700 dark:text-slate-300 font-display">Bulan Ini</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg border border-emerald-100/40 dark:border-emerald-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Selesai:</span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-display">{stats.completed_month}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-rose-50/50 dark:bg-rose-950/20 px-2 py-0.5 rounded-lg border border-rose-100/40 dark:border-rose-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Reject:</span>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 font-display">{stats.reject_month}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-blue-50/50 dark:bg-blue-950/20 px-2 py-0.5 rounded-lg border border-blue-100/40 dark:border-blue-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Total:</span>
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-display">{stats.total_month}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex p-0.5 border border-slate-200/40 dark:border-slate-700/20">
+                  {stats.total_month > 0 ? (
+                    <>
+                      <div
+                        style={{ width: `${(stats.completed_month / stats.total_month) * 100}%` }}
+                        className="bg-emerald-500 rounded-full transition-all duration-500"
+                      />
+                      <div
+                        style={{ width: `${(stats.reject_month / stats.total_month) * 100}%` }}
+                        className="bg-rose-500 rounded-full transition-all duration-500 ml-0.5"
+                      />
+                      <div
+                        style={{ width: `${((stats.total_month - stats.completed_month - stats.reject_month) / stats.total_month) * 100}%` }}
+                        className="bg-blue-500 rounded-full transition-all duration-500 ml-0.5 opacity-80"
+                      />
+                    </>
+                  ) : (
+                    <div className="w-full text-[9px] text-slate-400 dark:text-slate-500 text-center flex items-center justify-center font-bold uppercase tracking-widest">Belum Ada Transaksi</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Keseluruhan */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-extrabold text-slate-700 dark:text-slate-300 font-display">Keseluruhan</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg border border-emerald-100/40 dark:border-emerald-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Selesai:</span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-display">{stats.completed_overall}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-rose-50/50 dark:bg-rose-950/20 px-2 py-0.5 rounded-lg border border-rose-100/40 dark:border-rose-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Reject:</span>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 font-display">{stats.reject_overall}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-blue-50/50 dark:bg-blue-950/20 px-2 py-0.5 rounded-lg border border-blue-100/40 dark:border-blue-900/20">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Total:</span>
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-display">{stats.total_overall}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex p-0.5 border border-slate-200/40 dark:border-slate-700/20">
+                  {stats.total_overall > 0 ? (
+                    <>
+                      <div
+                        style={{ width: `${(stats.completed_overall / stats.total_overall) * 100}%` }}
+                        className="bg-emerald-500 rounded-full transition-all duration-500"
+                      />
+                      <div
+                        style={{ width: `${(stats.reject_overall / stats.total_overall) * 100}%` }}
+                        className="bg-rose-500 rounded-full transition-all duration-500 ml-0.5"
+                      />
+                      <div
+                        style={{ width: `${((stats.total_overall - stats.completed_overall - stats.reject_overall) / stats.total_overall) * 100}%` }}
+                        className="bg-blue-500 rounded-full transition-all duration-500 ml-0.5 opacity-80"
+                      />
+                    </>
+                  ) : (
+                    <div className="w-full text-[9px] text-slate-400 dark:text-slate-500 text-center flex items-center justify-center font-bold uppercase tracking-widest">Belum Ada Transaksi</div>
+                  )}
+                </div>
+              </div>
+
             </div>
-          );
-        })}
+          </div>
+
+          {/* Blacklisted Drivers Panel */}
+          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
+            {/* Soft accent background glow */}
+            <div className="absolute right-0 top-0 w-32 h-32 bg-rose-500/[0.03] dark:bg-rose-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
+            <div className="flex items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 text-rose-600 dark:text-rose-400 flex items-center justify-center border transition-colors text-4xl font-black select-none font-display leading-none">
+                  ⊘
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
+                    Pengemudi Cekal
+                    <span className="flex h-2 w-2 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daftar personel dalam pemblokiran aktif</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <span className="text-4xl font-black text-rose-600 dark:text-rose-400 font-display tracking-tight leading-none">
+                  {stats.blacklist_drivers}
+                </span>
+                <span className="text-[9px] block font-bold text-rose-500 dark:text-rose-400 uppercase tracking-widest mt-1 font-display">Personel</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       {/* ── ACTIVITY LOGS PANEL ───────────────────── */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
-        
+
         {/* Controls Header */}
         <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -649,7 +999,7 @@ export default function DashboardPage() {
                           {log.action}
                         </span>
                       </div>
-                      
+
                       <div className="mb-4">
                         <span className={`inline-block px-1.5 py-0.5 rounded border text-[9px] font-extrabold uppercase tracking-wide mb-2 ${getModuleBadge(log.module)}`}>
                           {log.module}
@@ -667,6 +1017,11 @@ export default function DashboardPage() {
                           <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">
                             {log.user_role || "System Process"}
                           </span>
+                          {log.ip_address && (
+                            <span className="text-[8px] text-blue-500 dark:text-blue-400 font-mono mt-0.5" title="IP Address">
+                              IP: {log.ip_address}
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline">
                           Lihat Detail →
@@ -703,7 +1058,7 @@ export default function DashboardPage() {
             ) : logs.length === 0 ? (
               <div className="py-16 text-center text-slate-400 dark:text-slate-500 text-sm font-medium">Tidak ada catatan log aktivitas.</div>
             ) : (
-              <div className="w-full">  
+              <div className="w-full">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/60 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-100 dark:border-slate-800/80">
@@ -717,8 +1072,8 @@ export default function DashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
                     {logs.map((log) => (
-                      <tr 
-                        key={log.id} 
+                      <tr
+                        key={log.id}
                         className="even:bg-slate-50/[0.2] dark:even:bg-slate-950/[0.1] hover:bg-blue-50/20 dark:hover:bg-slate-800/20 transition-colors duration-150 group/row"
                       >
                         <td className="p-4 pl-6 font-medium">
@@ -726,7 +1081,7 @@ export default function DashboardPage() {
                             {formatDateTime(log.created_at)}
                           </span>
                         </td>
-                        
+
                         <td className="p-4">
                           <div className="flex flex-col gap-1 items-start">
                             <span className={`inline-block px-2 py-0.5 rounded border text-[9px] font-extrabold uppercase tracking-wide ${getModuleBadge(log.module)}`}>
@@ -737,7 +1092,7 @@ export default function DashboardPage() {
                             </span>
                           </div>
                         </td>
-                        
+
                         <td className="p-4">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-800 dark:text-slate-200">
@@ -746,13 +1101,18 @@ export default function DashboardPage() {
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mt-0.5">
                               {log.user_role || "Process"}
                             </span>
+                            {log.ip_address && (
+                              <span className="text-[9px] text-blue-500 dark:text-blue-400 font-mono mt-1 select-all" title="IP Address">
+                                IP: {log.ip_address}
+                              </span>
+                            )}
                           </div>
                         </td>
-                        
+
                         <td className="p-4 font-semibold text-slate-800 dark:text-slate-100 max-w-[400px]">
                           <p className="text-xs leading-relaxed">{log.description}</p>
                         </td>
-                        
+
                         <td className="p-4">
                           {log.subject_label ? (
                             <span className="inline-flex items-center text-[10px] font-extrabold px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono tracking-tight border border-slate-200/40 dark:border-slate-700/50 shadow-2xs">
@@ -762,7 +1122,7 @@ export default function DashboardPage() {
                             <span className="text-slate-300 dark:text-slate-700 font-mono text-xs">—</span>
                           )}
                         </td>
-                        
+
                         <td className="p-4 pr-6 text-right">
                           <button
                             onClick={() => setSelectedLog(log)}
@@ -778,7 +1138,7 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
-                
+
                 <div className="p-5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/[0.1] dark:bg-slate-950/[0.05]">
                   <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={15} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
@@ -808,24 +1168,96 @@ export default function DashboardPage() {
             </div>
 
             <div className="py-6 space-y-6">
-              {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 text-xs">
-                <div className="space-y-1">
-                  <span className="text-slate-400 dark:text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Aktor / User</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{selectedLog.user_name || "Sistem / Automasi"}</span>
-                  <span className="text-slate-400 block">{selectedLog.user_role || "Internal Process"}</span>
+              {/* ── SECTION 1: METADATA & AKTOR ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Aktor / User Card */}
+                <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/80 space-y-2">
+                  <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-800 pb-2 mb-2">
+                    <svg className="text-slate-400 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                    <span className="font-extrabold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-display">AKTOR / PENGGUNA</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-y-1 text-xs">
+                    <span className="text-slate-400 dark:text-slate-500">Nama:</span>
+                    <span className="col-span-2 font-bold text-slate-800 dark:text-slate-200">{selectedLog.user_name || "Sistem / Automasi"}</span>
+
+                    <span className="text-slate-400 dark:text-slate-500">Peran:</span>
+                    <span className="col-span-2 font-medium text-slate-700 dark:text-slate-300">{selectedLog.user_role || "Internal Process"}</span>
+
+                    <span className="text-slate-400 dark:text-slate-500">ID User:</span>
+                    <span className="col-span-2 font-mono text-slate-700 dark:text-slate-300">
+                      {selectedLog.user_id ? `#${selectedLog.user_id}` : "—"}
+                    </span>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-slate-400 dark:text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">IP Address</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-300 font-bold">{selectedLog.ip_address || "—"}</span>
-                </div>
-                <div className="space-y-1 col-span-2 pt-2 border-t border-slate-200/40 dark:border-slate-800/40">
-                  <span className="text-slate-400 dark:text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">User Agent</span>
-                  <span className="text-slate-600 dark:text-slate-400 font-mono text-[11px] block break-all">{selectedLog.user_agent || "—"}</span>
+
+                {/* Koneksi & Sesi Card */}
+                <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/80 space-y-2">
+                  <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-800 pb-2 mb-2">
+                    <svg className="text-slate-400 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" />
+                    </svg>
+                    <span className="font-extrabold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-display">KONEKSI & SESI</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-y-1 text-xs">
+                    <span className="text-slate-400 dark:text-slate-500">IP Address:</span>
+                    <span className="col-span-2 font-mono font-bold text-slate-700 dark:text-slate-300">{selectedLog.ip_address || "—"}</span>
+
+                    {(() => {
+                      const uaInfo = parseUserAgent(selectedLog.user_agent);
+                      return (
+                        <>
+                          <span className="text-slate-400 dark:text-slate-500">Browser:</span>
+                          <span className="col-span-2 text-slate-700 dark:text-slate-300 font-medium">{uaInfo.browser}</span>
+                          <span className="text-slate-400 dark:text-slate-500">OS Platform:</span>
+                          <span className="col-span-2 text-slate-700 dark:text-slate-300 font-medium">{uaInfo.os}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
-              {/* Event & Module details */}
+              {/* ── SECTION 2: SUBJECT & TARGET ── */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/80 space-y-2">
+                <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-800 pb-2 mb-2">
+                  <svg className="text-slate-400 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  <span className="font-extrabold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-display">TARGET AUDIT / SUBJEK</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-1 gap-x-4 text-xs">
+                  <div className="flex justify-between sm:col-span-1">
+                    <span className="text-slate-400 dark:text-slate-500">Tipe Model:</span>
+                  </div>
+                  <div className="sm:col-span-2 font-mono text-indigo-600 dark:text-indigo-400 break-all mb-1 sm:mb-0">
+                    {selectedLog.subject_type || "—"}
+                  </div>
+
+                  <div className="flex justify-between sm:col-span-1">
+                    <span className="text-slate-400 dark:text-slate-500">ID Subjek / Record:</span>
+                  </div>
+                  <div className="sm:col-span-2 font-mono text-slate-700 dark:text-slate-300 font-bold mb-1 sm:mb-0">
+                    {selectedLog.subject_id ? `#${selectedLog.subject_id}` : "—"}
+                  </div>
+
+                  <div className="flex justify-between sm:col-span-1">
+                    <span className="text-slate-400 dark:text-slate-500">Identitas / Label:</span>
+                  </div>
+                  <div className="sm:col-span-2 mb-1 sm:mb-0">
+                    {selectedLog.subject_label ? (
+                      <span className="inline-block px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-[10px] font-bold border border-slate-300/50 dark:border-slate-700/50">
+                        {selectedLog.subject_label}
+                      </span>
+                    ) : (
+                      <span className="text-slate-450 dark:text-slate-600">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── SECTION 3: AKTIVITAS & DESKRIPSI ── */}
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5">
@@ -840,17 +1272,61 @@ export default function DashboardPage() {
                       {selectedLog.action}
                     </span>
                   </div>
+                  {selectedLog.event && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">Event:</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 font-mono text-[10px] border border-slate-200 dark:border-slate-700/50">
+                        {selectedLog.event}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="p-3 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 dark:border-blue-500/20 rounded-xl">
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block mb-1">Aktivitas</span>
+                <div className="p-4 bg-blue-500/[0.03] dark:bg-blue-500/10 border border-blue-500/10 dark:border-blue-500/20 rounded-xl">
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block mb-1">Deskripsi Audit</span>
                   <p className="text-sm font-semibold text-slate-800 dark:text-white leading-relaxed">{selectedLog.description}</p>
                 </div>
               </div>
 
-              {/* Properties / Changes Log */}
+              {/* ── SECTION 4: PERUBAHAN DATA ── */}
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                 {renderLogProperties(selectedLog.properties)}
+              </div>
+
+              {/* ── SECTION 5: USER AGENT DETIL (COLLAPSED) ── */}
+              {selectedLog.user_agent && (
+                <div className="pt-2">
+                  <details className="group border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/20 dark:bg-slate-950/5">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer select-none font-bold text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                      <span>User Agent Lengkap</span>
+                      <span className="transition-transform duration-200 group-open:rotate-180">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="p-3 border-t border-slate-200 dark:border-slate-800 font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 break-all select-all leading-normal">
+                      {selectedLog.user_agent}
+                    </div>
+                  </details>
+                </div>
+              )}
+
+              {/* ── SECTION 6: RAW PAYLOAD (COLLAPSED) ── */}
+              <div className="pt-2">
+                <details className="group border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/20 dark:bg-slate-950/5">
+                  <summary className="flex items-center justify-between p-3 cursor-pointer select-none font-bold text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                    <span>Payload JSON Mentah (Developer Audit)</span>
+                    <span className="transition-transform duration-200 group-open:rotate-180">
+                      <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </span>
+                  </summary>
+                  <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-950 text-slate-300 font-mono text-[10px] leading-relaxed max-h-60 overflow-y-auto whitespace-pre-wrap select-all">
+                    {JSON.stringify(selectedLog, null, 2)}
+                  </div>
+                </details>
               </div>
             </div>
 

@@ -15,7 +15,25 @@ import RegisterButton from "@/components/RegisterButton";
 /** Get today's date string in WIB (Asia/Jakarta) as YYYY-MM-DD */
 function getTodayWIB(): string {
   const now = new Date();
-  return now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }); // sv-SE gives YYYY-MM-DD
+  return now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+}
+
+/** Get date string 1 month ago in WIB as YYYY-MM-DD.
+ *  If the previous month doesn't have the same day (e.g. May 31 → no April 31),
+ *  falls back to the 1st of the current month instead. */
+function getOneMonthAgoWIB(): string {
+  const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+  const d = new Date(todayStr);
+  const targetMonth = d.getMonth() - 1;
+  d.setMonth(targetMonth);
+  // Overflow: JS jumped past the intended month (e.g. May 31 → May 1 instead of April 31)
+  if (d.getMonth() !== ((targetMonth + 12) % 12)) {
+    // Use 1st of the current month (tanggal_sampai's month)
+    const firstOfMonth = new Date(todayStr);
+    firstOfMonth.setDate(1);
+    return firstOfMonth.toLocaleDateString("sv-SE");
+  }
+  return d.toLocaleDateString("sv-SE");
 }
 
 /** Check if a VCF's tanggal is before today (i.e. from a previous day) */
@@ -41,9 +59,11 @@ export default function VcfQuickAccessPage() {
   const { toasts, removeToast, toast } = useToast();
   const [vcfs, setVcfs] = useState<VcfSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("aktif");
+  const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [tanggalDari, setTanggalDari] = useState(getOneMonthAgoWIB);
+  const [tanggalSampai, setTanggalSampai] = useState(getTodayWIB);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [showGuide, setShowGuide] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,29 +99,25 @@ export default function VcfQuickAccessPage() {
   const fetchActive = useCallback(async () => {
     setLoading(true);
     try {
-      const [activeRes, selesaiRes] = await Promise.all([
-        vcfApi.getList({
-          status: filter,
-          search: debouncedSearch,
-          per_page: 9999
-        }),
-        vcfApi.getList({
-          status: "selesai",
-          search: "",
-          per_page: 1,
-        }),
-      ]);
-      const items = activeRes.data.data || activeRes.data;
-      setVcfs(items.filter((v: VcfSummary) => v.status !== "selesai" && v.status !== "reject"));
+      const params: Record<string, any> = {
+        search: debouncedSearch,
+        per_page: 9999,
+        tanggal_dari: tanggalDari,
+        tanggal_sampai: tanggalSampai,
+      };
+      if (filter) params.status = filter;
+      const activeRes = await vcfApi.getList(params);
+      const items: VcfSummary[] = activeRes.data.data || activeRes.data;
+      setVcfs(items);
 
-      // Total completed VCFs (use total from paginated response)
-      setCompletedToday(selesaiRes.data.total ?? (Array.isArray(selesaiRes.data.data) ? selesaiRes.data.data.length : (Array.isArray(selesaiRes.data) ? selesaiRes.data.length : 0)));
+      // Count selesai from the full list
+      setCompletedToday(items.filter((v) => v.status === "selesai").length);
     } catch (err: any) {
       console.error("Error fetching VCF data:", err);
     } finally {
       setLoading(false);
     }
-  }, [filter, debouncedSearch]);
+  }, [filter, debouncedSearch, tanggalDari, tanggalSampai]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -151,10 +167,13 @@ export default function VcfQuickAccessPage() {
       {/* Stage Filters / Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
         {[
-          { label: "Semua Aktif", stage: "aktif", cls: "filter-tab-green" },
-          { label: "WB Masuk",    stage: "bagian1_selesai",          cls: "filter-tab-amber" },
-          { label: "WB Keluar",   stage: "bagian2_selesai",           cls: "filter-tab-violet" },
-          { label: "MG Keluar",   stage: "bagian3_selesai",           cls: "filter-tab-emerald" },
+          { label: "Semua",      stage: "",                    cls: "filter-tab-green" },
+          { label: "Aktif",      stage: "aktif",               cls: "filter-tab-blue" },
+          { label: "WB Masuk",   stage: "bagian1_selesai",     cls: "filter-tab-amber" },
+          { label: "WB Keluar",  stage: "bagian2_selesai",     cls: "filter-tab-violet" },
+          { label: "MG Keluar",  stage: "bagian3_selesai",     cls: "filter-tab-emerald" },
+          { label: "Selesai",    stage: "selesai",             cls: "filter-tab-slate" },
+          { label: "Reject",     stage: "reject",              cls: "filter-tab-red" },
         ].map((tab) => (
           <button
             key={tab.stage}
@@ -166,35 +185,82 @@ export default function VcfQuickAccessPage() {
         ))}
       </div>
 
-      {/* Search & Stats Section */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
-        
-        {/* Search Input */}
-        <div className="flex-1 min-w-0 relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
+      {/* Search & Date Filter Section */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          {/* Search Input */}
+          <div className="flex-1 min-w-0 relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Cari No. Polisi atau Supir..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
+              style={{
+                background: "var(--bg-card)",
+                border: "1.5px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Cari No. Polisi atau Supir..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-            style={{
-              background: "var(--bg-card)",
-              border: "1.5px solid var(--border)",
-              color: "var(--text-primary)",
-            }}
-          />
+
+          {/* Date Range */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="relative">
+              <input
+                type="date"
+                value={tanggalDari}
+                max={tanggalSampai}
+                onChange={(e) => { setTanggalDari(e.target.value); setCurrentPage(1); }}
+                className="h-12 px-3 rounded-xl text-sm transition-all focus:outline-none"
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1.5px solid var(--border)",
+                  color: "var(--text-primary)",
+                  minWidth: "140px",
+                }}
+              />
+            </div>
+            <span className="text-text-muted text-xs font-semibold">s/d</span>
+            <div className="relative">
+              <input
+                type="date"
+                value={tanggalSampai}
+                min={tanggalDari}
+                onChange={(e) => { setTanggalSampai(e.target.value); setCurrentPage(1); }}
+                className="h-12 px-3 rounded-xl text-sm transition-all focus:outline-none"
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1.5px solid var(--border)",
+                  color: "var(--text-primary)",
+                  minWidth: "140px",
+                }}
+              />
+            </div>
+            <button
+              onClick={() => { setTanggalDari(getOneMonthAgoWIB()); setTanggalSampai(getTodayWIB()); setCurrentPage(1); }}
+              className="h-12 px-3 rounded-xl text-xs font-semibold transition-all flex-shrink-0"
+              style={{
+                background: "var(--bg-card)",
+                border: "1.5px solid var(--border)",
+                color: "var(--text-muted)",
+              }}
+              title="Reset ke 1 bulan terakhir"
+            >
+            Reset
+            </button>
+          </div>
         </div>
 
-        {/* Right Side Controls */}
-        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 flex-shrink-0">
-          
+        {/* Stat Badges + Action Buttons Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Stat Badges */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2">
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]">
               <p className="text-[9px] font-bold text-secondary uppercase leading-none mb-0.5">Total</p>
               <p className="text-xl font-bold text-blue-500 leading-none">{vcfs.length}</p>
@@ -212,13 +278,13 @@ export default function VcfQuickAccessPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-stretch gap-2 w-full sm:w-auto">
+          <div className="flex items-stretch gap-2">
             {/* View Mode Toggle */}
-            <div className="glass-card h-12 px-2 flex items-center justify-center flex-1 sm:flex-none">
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/10 rounded-lg p-1 w-full sm:w-auto justify-center h-full sm:h-auto py-1 sm:py-1">
+            <div className="glass-card h-12 px-2 flex items-center justify-center">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/10 rounded-lg p-1 justify-center">
                 <button
                   onClick={() => setViewMode("table")}
-                  className={`p-1.5 flex-1 sm:flex-none flex justify-center rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
+                  className={`p-1.5 flex justify-center rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -226,7 +292,7 @@ export default function VcfQuickAccessPage() {
                 </button>
                 <button
                   onClick={() => setViewMode("card")}
-                  className={`p-1.5 flex-1 sm:flex-none flex justify-center rounded-md transition-all ${viewMode === "card" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
+                  className={`p-1.5 flex justify-center rounded-md transition-all ${viewMode === "card" ? "bg-white dark:bg-slate-700 shadow-sm" : "hover:bg-white/50 dark:hover:bg-white/10"}`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
@@ -237,11 +303,10 @@ export default function VcfQuickAccessPage() {
             </div>
 
             {/* Register Button */}
-            <div className="flex-[2] sm:flex-none [&>button]:w-full [&>button]:h-12 [&>button]:justify-center">
+            <div className="[&>button]:h-12 [&>button]:justify-center">
               <RegisterButton />
             </div>
           </div>
-
         </div>
       </div>
 
