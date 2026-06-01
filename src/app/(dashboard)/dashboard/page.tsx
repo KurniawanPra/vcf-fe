@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,6 +39,380 @@ interface AnomalyStatPoint {
   lower_bound: number;
   upper_bound: number;
   is_anomaly: boolean;
+}
+
+interface VcfDailyStat {
+  date: string;
+  fullDate: string;
+  day: string;
+  total: number;
+  completed: number;
+  activeInArea: number;
+  rejected: number;
+  isUp: boolean;
+}
+
+interface MonthlyChartPoint {
+  date: string;
+  total: number;
+  completed: number;
+  rejected: number;
+  pending: number;
+}
+
+interface MonthlyLineChartProps {
+  data: MonthlyChartPoint[];
+  loading: boolean;
+  year: number;
+  month: number;
+  isFullscreen: boolean;
+}
+
+const INDONESIAN_MONTHS = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+function MonthlyLineChart({ data, loading, year, month, isFullscreen }: MonthlyLineChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+
+  const daysInMonth = useMemo(() => {
+    return new Date(year, month, 0).getDate();
+  }, [year, month]);
+
+  const chartPoints = useMemo(() => {
+    const points = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const found = data.find((item) => item.date === dateStr);
+      points.push({
+        day: d,
+        dateStr,
+        total: found ? Number(found.total) : 0,
+        completed: found ? Number(found.completed) : 0,
+        rejected: found ? Number(found.rejected) : 0,
+        pending: found ? Number(found.pending) : 0,
+      });
+    }
+    return points;
+  }, [data, year, month, daysInMonth]);
+
+  const width = 800;
+  const height = 300;
+  const yAxisWidth = 45;
+  const xAxisHeight = 25;
+  const paddingRight = 15;
+  const paddingTop = 20;
+  const plotWidth = width - yAxisWidth - paddingRight;
+  const plotHeight = height - xAxisHeight - paddingTop;
+
+  // Calculate Y scale
+  const maxDataVal = Math.max(...chartPoints.map(p => Math.max(p.total, p.completed, p.rejected, p.pending)), 0);
+  const range = maxDataVal;
+  const padding = range > 0 ? Math.ceil(range * 0.1) : 1;
+  const yMax = Math.max(5, maxDataVal + padding);
+
+  const mapX = (day: number) => {
+    if (daysInMonth <= 1) return yAxisWidth + plotWidth / 2;
+    return yAxisWidth + ((day - 1) / (daysInMonth - 1)) * plotWidth;
+  };
+  const mapY = (val: number) => {
+    return paddingTop + plotHeight - (val / yMax) * plotHeight;
+  };
+
+  // Generate grid values
+  const yDivisions = 5;
+  const yGridLines = useMemo(() => {
+    const lines = [];
+    for (let i = 0; i <= yDivisions; i++) {
+      const val = (yMax / yDivisions) * i;
+      lines.push({
+        val: Math.round(val),
+        y: mapY(val),
+      });
+    }
+    return lines;
+  }, [yMax]);
+
+  const xLabelDays = useMemo(() => {
+    const labelDays = [1, 5, 10, 15, 20, 25, daysInMonth];
+    return Array.from(new Set(labelDays)).filter(d => d <= daysInMonth);
+  }, [daysInMonth]);
+
+  // Generate path coordinates
+  const totalPathD = useMemo(() => {
+    if (chartPoints.length === 0) return "";
+    return chartPoints.map((p, idx) => `${idx === 0 ? "M" : "L"} ${mapX(p.day)} ${mapY(p.total)}`).join(" ");
+  }, [chartPoints, daysInMonth, yMax]);
+
+  const totalFillD = useMemo(() => {
+    if (chartPoints.length === 0) return "";
+    const linePath = chartPoints.map((p, idx) => `${idx === 0 ? "M" : "L"} ${mapX(p.day)} ${mapY(p.total)}`).join(" ");
+    return `${linePath} L ${mapX(chartPoints[chartPoints.length - 1].day)} ${mapY(0)} L ${mapX(chartPoints[0].day)} ${mapY(0)} Z`;
+  }, [chartPoints, daysInMonth, yMax]);
+
+  const completedPathD = useMemo(() => {
+    if (chartPoints.length === 0) return "";
+    return chartPoints.map((p, idx) => `${idx === 0 ? "M" : "L"} ${mapX(p.day)} ${mapY(p.completed)}`).join(" ");
+  }, [chartPoints, daysInMonth, yMax]);
+
+  const completedFillD = useMemo(() => {
+    if (chartPoints.length === 0) return "";
+    const linePath = chartPoints.map((p, idx) => `${idx === 0 ? "M" : "L"} ${mapX(p.day)} ${mapY(p.completed)}`).join(" ");
+    return `${linePath} L ${mapX(chartPoints[chartPoints.length - 1].day)} ${mapY(0)} L ${mapX(chartPoints[0].day)} ${mapY(0)} Z`;
+  }, [chartPoints, daysInMonth, yMax]);
+
+  const rejectedPathD = useMemo(() => {
+    if (chartPoints.length === 0) return "";
+    return chartPoints.map((p, idx) => `${idx === 0 ? "M" : "L"} ${mapX(p.day)} ${mapY(p.rejected)}`).join(" ");
+  }, [chartPoints, daysInMonth, yMax]);
+
+  const pendingPathD = useMemo(() => {
+    if (chartPoints.length === 0) return "";
+    return chartPoints.map((p, idx) => `${idx === 0 ? "M" : "L"} ${mapX(p.day)} ${mapY(p.pending)}`).join(" ");
+  }, [chartPoints, daysInMonth, yMax]);
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (loading || chartPoints.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const svgX = (mouseX / rect.width) * width;
+    
+    if (svgX >= yAxisWidth && svgX <= width - paddingRight) {
+      const pctX = (svgX - yAxisWidth) / plotWidth;
+      const day = Math.max(1, Math.min(daysInMonth, Math.round(1 + pctX * (daysInMonth - 1))));
+      setHoveredDay(day);
+      setTooltipPos({ x: mouseX, y: mouseY });
+    } else {
+      setHoveredDay(null);
+      setTooltipPos(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredDay(null);
+    setTooltipPos(null);
+  };
+
+  const hoveredPoint = hoveredDay !== null ? chartPoints[hoveredDay - 1] : null;
+
+  return (
+    <div ref={containerRef} className="relative w-full h-full flex flex-col select-none">
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center text-xs font-medium text-slate-400 dark:text-slate-500">
+          Memuat data grafik...
+        </div>
+      ) : chartPoints.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center text-xs font-medium text-slate-400 dark:text-slate-500">
+          Tidak ada data log aktivitas VCF
+        </div>
+      ) : (
+        <>
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-full"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
+            <defs>
+              <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+              </linearGradient>
+              <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+
+            {/* Y Axis Grid Lines & Labels */}
+            {yGridLines.map((line, idx) => (
+              <g key={idx}>
+                <line
+                  x1={yAxisWidth}
+                  y1={line.y}
+                  x2={width - paddingRight}
+                  y2={line.y}
+                  className="stroke-slate-200 dark:stroke-slate-800/40"
+                  strokeWidth="1"
+                />
+                <text
+                  x={yAxisWidth - 8}
+                  y={line.y}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  className="fill-slate-400 dark:fill-slate-500 font-mono text-[9px]"
+                >
+                  {line.val}
+                </text>
+              </g>
+            ))}
+
+            {/* X Axis Grid Lines & Labels */}
+            {xLabelDays.map((d, idx) => {
+              const x = mapX(d);
+              return (
+                <g key={idx}>
+                  <line
+                    x1={x}
+                    y1={paddingTop}
+                    x2={x}
+                    y2={paddingTop + plotHeight}
+                    className="stroke-slate-200 dark:stroke-slate-800/40"
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={x}
+                    y={paddingTop + plotHeight + 6}
+                    textAnchor="middle"
+                    dominantBaseline="hanging"
+                    className="fill-slate-400 dark:fill-slate-500 font-sans text-[9px] font-semibold"
+                  >
+                    Tgl {d}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Axis borders */}
+            <line
+              x1={yAxisWidth}
+              y1={paddingTop}
+              x2={yAxisWidth}
+              y2={paddingTop + plotHeight}
+              className="stroke-slate-300 dark:stroke-slate-700"
+              strokeWidth="1.5"
+            />
+            <line
+              x1={yAxisWidth}
+              y1={paddingTop + plotHeight}
+              x2={width - paddingRight}
+              y2={paddingTop + plotHeight}
+              className="stroke-slate-300 dark:stroke-slate-700"
+              strokeWidth="1.5"
+            />
+
+            {/* Paths and Area Fills */}
+            <path d={totalFillD} fill="url(#gradTotal)" />
+            <path d={completedFillD} fill="url(#gradCompleted)" />
+
+            <path
+              d={totalPathD}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d={completedPathD}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d={pendingPathD}
+              fill="none"
+              stroke="#eab308"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d={rejectedPathD}
+              fill="none"
+              stroke="#f43f5e"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {/* Hover Crosshair and Highlights */}
+            {hoveredDay !== null && chartPoints[hoveredDay - 1] && (
+              <g>
+                <line
+                  x1={mapX(hoveredDay)}
+                  y1={paddingTop}
+                  x2={mapX(hoveredDay)}
+                  y2={paddingTop + plotHeight}
+                  className="stroke-slate-400 dark:stroke-slate-500/80"
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
+                />
+
+                <circle
+                  cx={mapX(hoveredDay)}
+                  cy={mapY(chartPoints[hoveredDay - 1].total)}
+                  r="4.5"
+                  className="fill-white dark:fill-slate-900 stroke-blue-500"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx={mapX(hoveredDay)}
+                  cy={mapY(chartPoints[hoveredDay - 1].completed)}
+                  r="4.5"
+                  className="fill-white dark:fill-slate-900 stroke-emerald-500"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx={mapX(hoveredDay)}
+                  cy={mapY(chartPoints[hoveredDay - 1].pending)}
+                  r="4.5"
+                  className="fill-white dark:fill-slate-900 stroke-yellow-500"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx={mapX(hoveredDay)}
+                  cy={mapY(chartPoints[hoveredDay - 1].rejected)}
+                  r="4.5"
+                  className="fill-white dark:fill-slate-900 stroke-rose-500"
+                  strokeWidth="2"
+                />
+              </g>
+            )}
+          </svg>
+
+          {/* HTML Tooltip overlay */}
+          {hoveredPoint && tooltipPos && (
+            <div
+              className="absolute z-35 p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs text-xs pointer-events-none flex flex-col gap-1 transition-all duration-75 select-none"
+              style={{
+                left: `${tooltipPos.x + 15 + 150 > containerRef.current?.clientWidth! ? tooltipPos.x - 165 : tooltipPos.x + 15}px`,
+                top: `${Math.max(10, Math.min(containerRef.current?.clientHeight! - 95, tooltipPos.y - 45))}px`,
+                width: "150px",
+              }}
+            >
+              <div className="font-extrabold text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1 mb-1 font-display">
+                {hoveredDay} {INDONESIAN_MONTHS[month - 1]} {year}
+              </div>
+              <div className="text-blue-600 dark:text-blue-400 font-bold flex justify-between font-mono">
+                <span>Total:</span>
+                <span>{hoveredPoint.total}</span>
+              </div>
+              <div className="text-emerald-600 dark:text-emerald-400 font-bold flex justify-between font-mono">
+                <span>Selesai:</span>
+                <span>{hoveredPoint.completed}</span>
+              </div>
+              <div className="text-yellow-600 dark:text-yellow-500 font-bold flex justify-between font-mono">
+                <span>Tertunda:</span>
+                <span>{hoveredPoint.pending}</span>
+              </div>
+              <div className="text-rose-600 dark:text-rose-450 font-bold flex justify-between font-mono">
+                <span>Reject:</span>
+                <span>{hoveredPoint.rejected}</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 interface VcfStats {
@@ -81,10 +455,10 @@ const ACTION_OPTIONS = [
 ];
 
 const QUICK_ACTIONS = [
-  { href: "/vcf/register", label: "Main Gate Masuk", sub: "Registrasi kendaraan baru", stage: "Bagian 1", colorClass: "border-indigo-500/20 hover:border-indigo-500 shadow-indigo-500/5 hover:shadow-indigo-500/10", barBg: "bg-indigo-500", iconBg: "bg-indigo-50 dark:bg-indigo-950/40", iconText: "text-indigo-600 dark:text-indigo-400" },
-  { href: "/vcf?stage=bagian1_selesai", label: "Weighbridge Masuk", sub: "Timbang & periksa masuk", stage: "Bagian 2", colorClass: "border-amber-500/20 hover:border-amber-500 shadow-amber-500/5 hover:shadow-amber-500/10", barBg: "bg-amber-500", iconBg: "bg-amber-50 dark:bg-amber-950/40", iconText: "text-amber-600 dark:text-amber-400" },
-  { href: "/vcf?stage=loading_unloading_selesai", label: "Weighbridge Keluar", sub: "Timbang & periksa keluar", stage: "Bagian 3", colorClass: "border-purple-500/20 hover:border-purple-500 shadow-purple-500/5 hover:shadow-purple-500/10", barBg: "bg-purple-500", iconBg: "bg-purple-50 dark:bg-purple-950/40", iconText: "text-purple-600 dark:text-purple-400" },
-  { href: "/vcf?stage=bagian3_selesai", label: "Main Gate Keluar", sub: "Penutupan & keluar", stage: "Bagian 4", colorClass: "border-emerald-500/20 hover:border-emerald-500 shadow-emerald-500/5 hover:shadow-emerald-500/10", barBg: "bg-emerald-500", iconBg: "bg-emerald-50 dark:bg-emerald-950/40", iconText: "text-emerald-600 dark:text-emerald-400" },
+  { href: "/vcf/register", label: "Main Gate Masuk", sub: "Registrasi kendaraan baru", stage: "Bagian 1", colorClass: "border-blue-500/20 hover:border-blue-500", barBg: "bg-blue-500", iconBg: "bg-blue-50 dark:bg-blue-900/20", iconText: "text-blue-600 dark:text-blue-400" },
+  { href: "/vcf?stage=bagian1_selesai", label: "Weighbridge Masuk", sub: "Timbang & periksa masuk", stage: "Bagian 2", colorClass: "border-amber-500/20 hover:border-amber-500", barBg: "bg-amber-500", iconBg: "bg-amber-50 dark:bg-amber-900/20", iconText: "text-amber-600 dark:text-amber-400" },
+  { href: "/vcf?stage=loading_unloading_selesai", label: "Weighbridge Keluar", sub: "Timbang & periksa keluar", stage: "Bagian 3", colorClass: "border-purple-500/20 hover:border-purple-500", barBg: "bg-purple-500", iconBg: "bg-purple-50 dark:bg-purple-900/20", iconText: "text-purple-600 dark:text-purple-400" },
+  { href: "/vcf?stage=bagian3_selesai", label: "Main Gate Keluar", sub: "Penutupan & keluar", stage: "Bagian 4", colorClass: "border-emerald-500/20 hover:border-emerald-500", barBg: "bg-emerald-500", iconBg: "bg-emerald-50 dark:bg-emerald-900/20", iconText: "text-emerald-600 dark:text-emerald-400" },
 ];
 
 function StatCardSkeleton() {
@@ -131,12 +505,18 @@ export default function DashboardPage() {
     blacklist_drivers: 0,
     system_speed: 0,
   });
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // States for Monthly Line Chart
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [monthlyChartData, setMonthlyChartData] = useState<MonthlyChartPoint[]>([]);
+  const [monthlyChartLoading, setMonthlyChartLoading] = useState<boolean>(true);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -195,6 +575,30 @@ export default function DashboardPage() {
     }
   }, [searchQuery, selectedModule, selectedAction, selectedDate]);
 
+  // Fetch Monthly Chart Data
+  const fetchMonthlyChartData = useCallback(async () => {
+    try {
+      setMonthlyChartLoading(true);
+      const res = await vcfApi.getMonthlyChart(selectedYear, selectedMonth);
+      if (res.data) {
+        setMonthlyChartData(res.data);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setMonthlyChartLoading(false);
+    }
+  }, [selectedYear, selectedMonth]);
+
+  // Fetch monthly chart on month or year change
+  useEffect(() => {
+    fetchMonthlyChartData();
+    const chartInterval = setInterval(fetchMonthlyChartData, 30000);
+    return () => {
+      clearInterval(chartInterval);
+    };
+  }, [fetchMonthlyChartData]);
+
   // Initial fetch and polling
   useEffect(() => {
     fetchStats();
@@ -208,6 +612,32 @@ export default function DashboardPage() {
       clearInterval(logsInterval);
     };
   }, [fetchStats, fetchLogs, currentPage]);
+
+  // Lock body scroll when chart fullscreen modal is open
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isFullscreen]);
+
+  // Exit fullscreen on Escape key press
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
 
   // Dispatch modal events for layout
   useEffect(() => {
@@ -407,34 +837,31 @@ export default function DashboardPage() {
   };
 
   const getTooltipTranslate = (idx: number, len: number) => {
-    if (idx === 0) return "translateX(12px)";
-    if (idx === len - 1) return "translateX(-112%)";
+    if (idx < 5) return "translateX(12px)";
+    if (idx > len - 5) return "translateX(-112%)";
     return "translateX(-50%)";
-  };
-
-  const generateCountLinePath = (data: any[], maxVal: number) => {
-    if (data.length < 2) return "";
-    return data.map((d, i) => {
-      const x = 40 + i * (520 / (data.length - 1));
-      const y = 130 - (d.count / maxVal) * 110;
-      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-    }).join(" ");
   };
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-8 antialiased text-slate-800 dark:text-slate-100">
 
       {/* ── HEADER SECTION ──────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+      <div className="morph-in flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
             Dasbor Pemantauan VCF
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-            <span className="font-medium">{user?.nama || "Pengguna"} · {isAdmin() ? "Administrator" : "Petugas Main Gate"}</span>
+            <span className="font-medium">
+              {mounted ? (
+                `${user?.nama || "Pengguna"} · ${isAdmin() ? "Administrator" : "Petugas Main Gate"}`
+              ) : (
+                "Pengguna"
+              )}
+            </span>
             <span className="hidden sm:inline opacity-40">•</span>
             <span className="text-slate-400 dark:text-slate-500">
-              {now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {mounted ? now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : ""}
             </span>
           </p>
         </div>
@@ -443,8 +870,8 @@ export default function DashboardPage() {
       </div>
 
       {/* ── QUICK ACTIONS (Officer Only) ────────── */}
-      {!isAdmin() && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {mounted && !isAdmin() && (
+        <div className="morph-in grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {QUICK_ACTIONS.map(a => (
             <Link
               key={a.href}
@@ -477,226 +904,137 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Real-Time Dynamic Dashboard Section ─────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="morph-in grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* LEFT COLUMN: Weekly Anomaly Detection Chart (3/5 Width) */}
-        <div className="lg:col-span-3 flex flex-col justify-between p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden transition-all duration-300">
-          {/* Subtle grid background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-100" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2 font-display">
-                Volume Transaksi VCF Mingguan
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
-                Volume transaksi harian 7 hari terakhir
-              </p>
-            </div>
-
-            <div className="flex gap-3 text-[10px] font-bold font-display">
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1 rounded-lg border border-blue-100/40 dark:border-blue-900/20">
-                <span className="w-2.5 h-1.5 bg-blue-500 rounded-xs" />
-                Transaksi VCF
-              </div>
-            </div>
+        {isFullscreen ? (
+          // Grid Placeholder when fullscreen is active
+          <div className="lg:col-span-3 flex flex-col justify-center items-center h-[450px] bg-slate-50/50 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center select-none text-slate-450 dark:text-slate-500 font-medium text-xs">
+            <svg className="w-8 h-8 text-slate-400 dark:text-slate-600 mb-2 animate-pulse" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 14v7m-3-3 3 3 3-3m-3-10V3M9 6l3-3 3 3" />
+            </svg>
+            Grafik volume transaksi diperbesar di layar penuh
           </div>
+        ) : (
+          // Normal Chart Card (Not Fullscreen)
+          <div className="lg:col-span-3 flex flex-col justify-between p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden">
+            {/* Subtle grid background */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-100 pointer-events-none" />
 
-          {/* SVG Weekly Anomaly Chart */}
-          <div className="relative z-10 w-full h-48 bg-slate-50/50 dark:bg-slate-950/30 border border-slate-100 dark:border-slate-800/80 rounded-xl px-1 pt-4 transition-colors">
-            {statsLoading || !stats.weekly_anomaly_stats ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 border-t-blue-500 animate-spin" />
-                <span className="text-xs text-slate-500 font-medium">Memuat data analitik...</span>
-              </div>
-            ) : (
-              <div className="relative w-full h-full">
-                {(() => {
-                  const anomalyData = stats.weekly_anomaly_stats;
-                  const maxVal = Math.max(...anomalyData.map(d => Math.max(d.count, 10)), 10);
-                  const countPath = generateCountLinePath(anomalyData, maxVal);
-
-                  return (
-                    <>
-                      <svg className="w-full h-full" viewBox="0 0 600 160" preserveAspectRatio="none">
-                        <defs>
-                          <filter id="glow-active" x="-20%" y="-20%" width="140%" height="140%">
-                            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#2563eb" floodOpacity="0.25" />
-                          </filter>
-                        </defs>
-
-                        {/* Horizontal Guide Lines */}
-                        {[0.25, 0.5, 0.75].map((ratio, idx) => (
-                          <line
-                            key={idx}
-                            x1="40"
-                            y1={130 - ratio * 110}
-                            x2="560"
-                            y2={130 - ratio * 110}
-                            className="stroke-slate-200 dark:stroke-slate-800/85"
-                            strokeWidth="1"
-                            strokeDasharray="4 4"
-                          />
-                        ))}
-
-                        {/* Weekly transaction count line */}
-                        {countPath && (
-                          <path
-                            d={countPath}
-                            fill="none"
-                            stroke="#2563eb"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            filter="url(#glow-active)"
-                            className="dark:stroke-blue-400 transition-all duration-500"
-                          />
-                        )}
-
-                        {/* Dots and highlights for each weekday */}
-                        {anomalyData.map((d, idx) => {
-                          const x = 40 + idx * (520 / (anomalyData.length - 1));
-                          const y = 130 - (d.count / maxVal) * 110;
-                          return (
-                            <g key={idx}>
-                              <circle cx={x} cy={y} r="3.5" fill="#2563eb" className="text-white dark:text-slate-900 dark:fill-blue-400" stroke="currentColor" strokeWidth="1" />
-                            </g>
-                          );
-                        })}
-
-                        {/* Vertical tracker and dot highlight on hover */}
-                        {hoveredIndex !== null && anomalyData[hoveredIndex] && (
-                          <>
-                            <line
-                              key="tracker"
-                              x1={40 + hoveredIndex * (520 / (anomalyData.length - 1))}
-                              y1={10}
-                              x2={40 + hoveredIndex * (520 / (anomalyData.length - 1))}
-                              y2={140}
-                              className="stroke-slate-300 dark:stroke-slate-700"
-                              strokeWidth="1.5"
-                              strokeDasharray="3 3"
-                            />
-                            {(() => {
-                              const d = anomalyData[hoveredIndex];
-                              const x = 40 + hoveredIndex * (520 / (anomalyData.length - 1));
-                              const y = 130 - (d.count / maxVal) * 110;
-                              return (
-                                <circle
-                                  cx={x}
-                                  cy={y}
-                                  r="6"
-                                  fill="#2563eb"
-                                  stroke="currentColor"
-                                  className="text-white dark:text-slate-900"
-                                  strokeWidth="2"
-                                />
-                              );
-                            })()}
-                          </>
-                        )}
-
-                        {/* Interactive hover zones */}
-                        {anomalyData.map((_, idx) => {
-                          const step = 520 / (anomalyData.length - 1);
-                          return (
-                            <rect
-                              key={idx}
-                              x={40 + idx * step - step / 2}
-                              y={0}
-                              width={step}
-                              height={140}
-                              fill="transparent"
-                              className="cursor-pointer"
-                              onMouseEnter={() => setHoveredIndex(idx)}
-                              onMouseLeave={() => setHoveredIndex(null)}
-                            />
-                          );
-                        })}
-
-                        {/* X-Axis labels */}
-                        {anomalyData.map((d, idx) => {
-                          const x = 40 + idx * (520 / (anomalyData.length - 1));
-                          return (
-                            <text
-                              key={idx}
-                              x={x}
-                              y="152"
-                              textAnchor="middle"
-                              className="fill-slate-400 dark:fill-slate-500 font-display font-bold text-[9px] uppercase tracking-wider"
-                            >
-                              {d.day}
-                            </text>
-                          );
-                        })}
-                      </svg>
-
-                      {/* Tooltip Popup */}
-                      {hoveredIndex !== null && anomalyData[hoveredIndex] && (
-                        <div
-                          className="absolute z-20 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 text-xs pointer-events-none transition-all duration-75 backdrop-blur-sm"
-                          style={{
-                            left: `${40 / 600 * 100 + (hoveredIndex / (anomalyData.length - 1)) * (520 / 600 * 100)}%`,
-                            transform: getTooltipTranslate(hoveredIndex, anomalyData.length),
-                            top: "12px",
-                          }}
-                        >
-                          <div className="font-bold text-slate-700 dark:text-slate-355 border-b border-slate-100 dark:border-slate-800 pb-1 mb-1 font-mono text-[9px] flex items-center justify-between gap-4">
-                            <span>TANGGAL:</span>
-                            <span>{anomalyData[hoveredIndex].date}</span>
-                          </div>
-                          <div className="space-y-1.5 min-w-[100px]">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium">Transaksi:</span>
-                              <span className="font-black text-slate-905 dark:text-white font-display text-[11px]">{anomalyData[hoveredIndex].count} unit</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-
-          {/* Time scale tags */}
-          <div className="flex justify-between px-2 text-[9px] text-slate-400 dark:text-slate-500 font-bold font-mono tracking-widest mt-2.5 relative z-10">
-            <span>PERIODE 7 HARI TERAKHIR</span>
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              AKTIF
-            </span>
-          </div>
-
-          <div className="border-t border-slate-100 dark:border-slate-800/85 mt-4 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-display mb-1.5">Ringkasan Hari Ini</span>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Total kendaraan: <span className="font-bold text-slate-700 dark:text-slate-200">{stats.total_today}</span></span>
-                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Selesai: <span className="font-bold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span></span>
-                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Di area: <span className="font-bold text-slate-700 dark:text-slate-200">{stats.active_in_area}</span></span>
-                <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Ditolak: <span className="font-bold text-rose-500 dark:text-rose-400">{stats.reject_today}</span></span>
-              </div>
-            </div>
-
-            {/* Live System Speed indicator */}
-            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-150 dark:border-slate-800 rounded-xl px-4 py-2 w-full sm:w-auto">
-              <div className="relative flex h-3 w-3 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
-              </div>
-              <div className="min-w-0">
-                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-display">Latensi Respon Sistem</span>
-                <p className="text-sm font-extrabold text-slate-850 dark:text-slate-200 truncate font-display">
-                  {stats.system_speed} <span className="text-[10px] text-violet-500 dark:text-violet-400">ms</span>
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2 font-display">
+                  Volume Transaksi VCF Harian
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                  Volume harian total, selesai, dan reject dalam sebulan
                 </p>
               </div>
+
+              <div className="flex gap-2 items-center flex-wrap">
+                {/* Legends */}
+                <div className="flex items-center gap-2 text-[9px] font-bold font-display mr-1 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20 px-2 py-0.5 rounded border border-blue-100/20 dark:border-blue-900/20">
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-xs" />
+                    Total
+                  </div>
+                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-100/20 dark:border-emerald-900/20">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-xs" />
+                    Selesai
+                  </div>
+                  <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20 px-2 py-0.5 rounded border border-yellow-100/20 dark:border-yellow-900/20">
+                    <span className="w-1.5 h-1.5 bg-yellow-500 rounded-xs" />
+                    Tertunda
+                  </div>
+                  <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/20 px-2 py-0.5 rounded border border-rose-100/20 dark:border-rose-900/20">
+                    <span className="w-1.5 h-1.5 bg-rose-500 rounded-xs" />
+                    Reject
+                  </div>
+                </div>
+
+                {/* Month Selector Bar */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                  <button
+                    onClick={() => {
+                      if (selectedMonth > 1) setSelectedMonth(prev => prev - 1);
+                    }}
+                    disabled={selectedMonth <= 1}
+                    className="p-1 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-slate-700 dark:text-slate-300"
+                    title="Bulan Sebelumnya"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="bg-transparent text-[11px] font-extrabold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer px-1 py-0.5"
+                  >
+                    {INDONESIAN_MONTHS.map((m, idx) => (
+                      <option key={idx} value={idx + 1} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-sans text-xs">
+                        {m} 2026
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      if (selectedMonth < 12) setSelectedMonth(prev => prev + 1);
+                    }}
+                    disabled={selectedMonth >= 12}
+                    className="p-1 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-slate-700 dark:text-slate-300"
+                    title="Bulan Selanjutnya"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => setIsFullscreen(true)}
+                  className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
+                  title="Fullscreen"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Monthly Line Chart */}
+            <div className="relative z-10 w-full rounded-xl border border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden p-2 flex flex-col h-[276px] min-h-[276px]">
+              <MonthlyLineChart data={monthlyChartData} loading={monthlyChartLoading} year={selectedYear} month={selectedMonth} isFullscreen={false} />
+            </div>
+
+            {/* Time scale tags */}
+            <div className="flex justify-between px-2 text-[9px] text-slate-400 dark:text-slate-500 font-bold font-mono tracking-widest mt-2.5 relative z-10">
+              <span>DIAGRAM GARIS VOLUME VCF BULANAN (ARAHKAN KURSOR UNTUK DETAIL HARIAN)</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                PEMANTAUAN AKTIF
+              </span>
+            </div>
+
+            <div className="border-t border-slate-100 dark:border-slate-850 mt-4 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-display mb-1.5">Ringkasan Hari Ini</span>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Total: <span className="font-bold text-slate-700 dark:text-slate-200">{stats.total_today}</span></span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Selesai: <span className="font-bold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span></span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Tertunda: <span className="font-bold text-yellow-600 dark:text-yellow-500">{stats.total_today - stats.completed_today - stats.reject_today}</span></span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Ditolak: <span className="font-bold text-rose-500 dark:text-rose-400">{stats.reject_today}</span></span>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Total Di Area (Semua Hari): <span className="font-bold text-slate-700 dark:text-slate-200">{stats.active_in_area}</span></span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* RIGHT COLUMN: Grouped Breakdown, Blacklist & KPI (2/5 Width) */}
         <div className="lg:col-span-2 space-y-6">
@@ -843,7 +1181,7 @@ export default function DashboardPage() {
             <div className="absolute right-0 top-0 w-32 h-32 bg-rose-500/[0.03] dark:bg-rose-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
             <div className="flex items-center justify-between gap-4 relative z-10">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 text-rose-600 dark:text-rose-400 flex items-center justify-center border transition-colors text-4xl font-black select-none font-display leading-none">
+                <div className="w-12 h-12 text-rose-600 dark:text-rose-400 flex items-center justify-center transition-colors text-4xl font-black select-none font-display leading-none">
                   ⊘
                 </div>
                 <div>
@@ -1337,6 +1675,131 @@ export default function DashboardPage() {
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── MODAL FULLSCREEN CHART ────────────────────── */}
+      {mounted && isFullscreen && createPortal(
+        <div className="fixed inset-0 z-[9999] w-screen h-screen bg-white dark:bg-slate-950 flex flex-col overflow-hidden select-none">
+          {/* Subtle grid background for the entire screen */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-100 pointer-events-none" />
+
+          {/* Top Bar Header */}
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 bg-indigo-600 dark:bg-indigo-500 rounded-full animate-pulse" />
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight font-display flex items-center gap-2">
+                  Volume Transaksi VCF Harian (Layar Penuh)
+                </h2>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
+                  Volume harian total, selesai, dan reject dalam sebulan
+                </p>
+              </div>
+            </div>
+
+            {/* Controls & Legends & Exit Button */}
+            <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold font-display">
+              <div className="flex items-center gap-3 border-r border-slate-200 dark:border-slate-800 pr-4">
+                <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20 px-2.5 py-0.5 rounded border border-blue-100/20 dark:border-blue-900/20">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-xs" />
+                  Total
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 px-2.5 py-0.5 rounded border border-emerald-100/20 dark:border-emerald-900/20">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-xs" />
+                  Selesai
+                </div>
+                <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20 px-2.5 py-0.5 rounded border border-yellow-100/20 dark:border-yellow-900/20">
+                  <span className="w-1.5 h-1.5 bg-yellow-500 rounded-xs" />
+                  Tertunda
+                </div>
+                <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/20 px-2.5 py-0.5 rounded border border-rose-100/20 dark:border-rose-900/20">
+                  <span className="w-1.5 h-1.5 bg-rose-500 rounded-xs" />
+                  Reject
+                </div>
+              </div>
+
+              {/* Month Selector Bar in Fullscreen */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                <button
+                  onClick={() => {
+                    if (selectedMonth > 1) setSelectedMonth(prev => prev - 1);
+                  }}
+                  disabled={selectedMonth <= 1}
+                  className="p-1 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-slate-700 dark:text-slate-300"
+                  title="Bulan Sebelumnya"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="bg-transparent text-[11px] font-extrabold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer px-1 py-0.5"
+                >
+                  {INDONESIAN_MONTHS.map((m, idx) => (
+                    <option key={idx} value={idx + 1} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-sans text-xs">
+                      {m} 2026
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => {
+                    if (selectedMonth < 12) setSelectedMonth(prev => prev + 1);
+                  }}
+                  disabled={selectedMonth >= 12}
+                  className="p-1 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-slate-700 dark:text-slate-300"
+                  title="Bulan Selanjutnya"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setIsFullscreen(false)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 rounded-lg transition-colors border border-rose-200/40 dark:border-rose-900/30 text-xs font-extrabold"
+                title="Keluar Layar Penuh"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <span>Keluar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Main Chart Area - Edge to Edge except thin border */}
+          <div className="relative z-10 flex-1 w-full bg-transparent overflow-hidden flex flex-col p-1">
+            <MonthlyLineChart data={monthlyChartData} loading={monthlyChartLoading} year={selectedYear} month={selectedMonth} isFullscreen={true} />
+          </div>
+
+          {/* Bottom Bar Footer */}
+          <div className="relative z-10 px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px]">
+            <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 font-sans">
+              <span className="flex items-center gap-1.5 font-bold font-mono tracking-widest text-[9px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                PEMANTAUAN AKTIF
+              </span>
+              <span className="hidden sm:inline opacity-30">|</span>
+              <span>Total Hari Ini: <span className="font-extrabold text-slate-800 dark:text-slate-200">{stats.total_today}</span></span>
+              <span>Selesai: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span></span>
+              <span>Tertunda: <span className="font-extrabold text-yellow-600 dark:text-yellow-500">{stats.total_today - stats.completed_today - stats.reject_today}</span></span>
+              <span>Ditolak: <span className="font-extrabold text-rose-500 dark:text-rose-450">{stats.reject_today}</span></span>
+              <span className="hidden sm:inline opacity-30">|</span>
+              <span>Total Di Area (Semua Hari): <span className="font-extrabold text-slate-800 dark:text-slate-200">{stats.active_in_area}</span></span>
+            </div>
+
+            <div className="text-slate-400 dark:text-slate-500 font-mono text-[9px] tracking-wider uppercase font-bold">
+              DIAGRAM GARIS VOLUME VCF BULANAN • TEKAN ESC ATAU KLIK KELUAR UNTUK KEMBALI
             </div>
           </div>
         </div>,

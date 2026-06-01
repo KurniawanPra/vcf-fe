@@ -162,49 +162,49 @@ function YearCalendar({
               key={i}
               onClick={() => !isFuture && onSelectMonth(i)}
               disabled={isFuture}
-              className={`glass-card p-4 text-left transition-all group relative overflow-hidden
+              className={`glass-card p-4 text-left transition-all group relative overflow-hidden flex flex-col
                 ${isFuture
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:border-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  ? "opacity-50 cursor-not-allowed bg-slate-50/50"
+                  : "cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                 }
-                ${isThisMonth ? "border-indigo-500/50 shadow-lg shadow-indigo-500/10" : ""}
+                ${isThisMonth ? "border-blue-500/30 bg-blue-50/30 dark:border-blue-500/20 dark:bg-blue-900/10" : ""}
               `}
+              style={{ borderColor: isThisMonth ? "rgba(37,99,235,0.3)" : "var(--border)" }}
             >
               {/* Subtle accent top bar */}
               {isThisMonth && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500" />
               )}
 
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-3 w-full">
                 <div>
-                  <p className="text-xs font-bold text-text-muted uppercase tracking-wider">{pad(i + 1)}</p>
-                  <p className={`text-base font-black mt-0.5 ${isThisMonth ? "text-indigo-400" : "text-text-primary group-hover:text-indigo-400 transition-colors"}`}>
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{pad(i + 1)}</p>
+                  <p className={`text-base font-bold mt-0.5 ${isThisMonth ? "text-blue-600 dark:text-blue-400" : ""}`} style={{ color: isThisMonth ? "" : "var(--text-primary)" }}>
                     {nama}
                   </p>
                 </div>
                 {isThisMonth && (
-                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 leading-none">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: "rgba(37,99,235,0.1)", color: "#2563eb" }}>
                     KINI
                   </span>
                 )}
               </div>
 
               {loadingStats ? (
-                <div className="h-4 w-16 rounded bg-white/5 animate-pulse" />
+                <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-auto" />
               ) : hasData ? (
-                <div className="space-y-1">
+                <div className="space-y-1 mt-auto">
                   <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
-                    <span className="text-lg font-black text-text-primary leading-none">{stat!.total}</span>
-                    <span className="text-[10px] text-text-muted">VCF</span>
+                    <span className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>{stat!.total}</span>
+                    <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>VCF</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-text-muted">
-                    <span className="text-emerald-500 font-bold">{stat!.selesai} selesai</span>
-                    {stat!.reject > 0 && <span className="text-rose-500 font-bold">· {stat!.reject} reject</span>}
+                  <div className="flex items-center gap-2 text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{stat!.selesai} selesai</span>
+                    {stat!.reject > 0 && <span className="text-red-600 dark:text-red-400 font-bold">· {stat!.reject} ditolak</span>}
                   </div>
                 </div>
               ) : (
-                <p className="text-[10px] text-text-muted italic">Tidak ada data</p>
+                <p className="text-xs font-medium mt-auto" style={{ color: "var(--text-muted)" }}>Belum ada data</p>
               )}
 
               {/* Arrow on hover */}

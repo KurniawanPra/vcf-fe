@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
+import PageTransition from "@/components/PageTransition";
 
 export default function DashboardLayout({
   children,
@@ -51,13 +52,13 @@ export default function DashboardLayout({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 23, 42, 0.35)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            background: "rgba(0, 0, 0, 0.35)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
             zIndex: 40,
             opacity: mobileOpen ? 1 : 0,
             pointerEvents: mobileOpen ? "auto" : "none",
-            transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            transition: "opacity 0.2s ease",
           }}
         />
       )}
@@ -69,50 +70,39 @@ export default function DashboardLayout({
         padding: isMobile ? "72px 16px 24px" : "24px",
         position: "relative",
       }}>
-        {/* Mobile toggle button (Hamburger/X) - hide when modal open */}
+        {/* Mobile toggle button — simple design */}
         {isMobile && !isModalOpen && (
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{
               position: "fixed",
-              top: 16,
-              right: 16,
+              top: 14,
+              right: 14,
               zIndex: 100,
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: mobileOpen ? "rgba(239, 68, 68, 0.1)" : "var(--bg-card)",
-              border: mobileOpen ? "1px solid rgba(239, 68, 68, 0.2)" : "1px solid var(--border)",
-              color: mobileOpen ? "#ef4444" : "var(--text-primary)",
+              width: 42,
+              height: 42,
+              borderRadius: 10,
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              color: mobileOpen ? "#dc2626" : "var(--text-primary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              transform: mobileOpen ? "rotate(90deg) scale(1.05)" : "rotate(0deg) scale(1)",
-              transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              transition: "all 0.15s ease",
             }}
           >
-            {mobileOpen ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}>
-                <path d="M18 6L6 18M6 6l12 12" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="4" y1={mobileOpen ? "4" : "7"} x2="20" y2={mobileOpen ? "20" : "7"} style={{ transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", transformOrigin: "center" }} />
+                <line x1="4" y1="12" x2="20" y2="12" style={{ transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", opacity: mobileOpen ? 0 : 1, transform: mobileOpen ? "scaleX(0)" : "scaleX(1)", transformOrigin: "center" }} />
+                <line x1="4" y1={mobileOpen ? "20" : "17"} x2="20" y2={mobileOpen ? "4" : "17"} style={{ transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", transformOrigin: "center" }} />
               </svg>
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}>
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
           </button>
         )}
-        <div>
+        <PageTransition>
           {children}
-        </div>
+        </PageTransition>
       </main>
     </div>
   );

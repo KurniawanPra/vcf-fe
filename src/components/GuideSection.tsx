@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 type Step = { text: string; tag?: string };
 type Section = {
@@ -160,166 +161,196 @@ export default function GuideSection() {
     },
   ];
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isModalOpen]);
+
   return (
-    <div>
-      {/* Header Banner */}
-      <div
-        className="rounded-2xl p-5 mb-4 flex items-start gap-4"
+    <>
+      {/* Trigger Button */}
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="w-full rounded-2xl p-4 flex items-center justify-between gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group"
         style={{
-          background: "linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(139,92,246,0.08) 100%)",
+          background: "linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.05) 100%)",
           border: "1px solid rgba(59,130,246,0.2)",
         }}
       >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        <div className="flex items-center gap-4">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform"
+            style={{ background: "rgba(59,130,246,0.15)", color: "#3b82f6" }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <div className="text-left">
+            <p className="font-bold text-sm mb-0.5" style={{ color: "var(--text-primary)" }}>
+              Panduan Operasional VCF
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Klik untuk melihat petunjuk lengkap tahapan VCF
+            </p>
+          </div>
+        </div>
+        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--bg-secondary)" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2">
+            <polyline points="9 18 15 12 9 6"/>
           </svg>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm mb-0.5" style={{ color: "var(--text-primary)" }}>
-            Panduan Operasional VCF — PT. INL
-          </p>
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            Ikuti alur 4 tahap berikut untuk memproses setiap kendaraan dari masuk hingga keluar area. Klik bagian yang ingin dipelajari.
-          </p>
-        </div>
-        {/* Flow pills */}
-        <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
-          {[
-            { label: "Registrasi", color: "#3b82f6" },
-            { label: "WB Masuk", color: "#f59e0b" },
-            { label: "MG Keluar", color: "#8b5cf6" },
-            { label: "Selesai", color: "#10b981" },
-          ].map((s, i) => (
-            <div key={s.label} className="flex items-center gap-1">
-              <span
-                className="text-[9px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}
-              >
-                {s.label}
-              </span>
-              {i < 3 && (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
-                  <path d="m9 18 6-6-6-6"/>
-                </svg>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      </button>
 
-      {/* Accordion Sections */}
-      <div className="space-y-2">
-        {sections.map((section) => {
-          const isOpen = open === section.id;
-          return (
-            <div
-              key={section.id}
-              className="glass-card overflow-hidden transition-all duration-200"
-              style={isOpen ? { borderColor: section.borderColor } : {}}
-            >
-              {/* Header */}
-              <button
-                className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors"
-                onClick={() => setOpen(isOpen ? null : section.id)}
-                style={{ background: isOpen ? section.bgColor : undefined }}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${section.color}20`, color: section.color }}
-                  >
-                    {section.icon}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{ background: `${section.color}18`, color: section.color }}
-                    >
-                      {section.badge}
-                    </span>
-                    <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
-                      {section.title}
-                    </span>
-                  </div>
-                </div>
-                <svg
-                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  style={{
-                    color: isOpen ? section.color : "var(--text-muted)",
-                    transform: isOpen ? "rotate(180deg)" : "none",
-                    transition: "transform 0.2s ease, color 0.2s ease",
-                    flexShrink: 0,
-                  }}
+      {/* Modal Portal */}
+      {isModalOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[999999] flex justify-center items-center p-4 sm:p-6" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(59,130,246,0.15)", color: "#3b82f6" }}
                 >
-                  <polyline points="6 9 12 15 18 9"/>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Panduan Operasional VCF</h2>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Alur 4 tahap proses kendaraan PT. INL</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
-
-              {/* Content */}
-              {isOpen && (
-                <div
-                  className="px-5 pb-5 pt-1 border-t"
-                  style={{ borderColor: section.borderColor }}
-                >
-                  <ol className="mt-3 space-y-2.5">
-                    {section.steps.map((step, idx) => (
-                      <li key={idx} className="flex gap-3 items-start">
-                        <span
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-0.5"
-                          style={{ background: section.color, color: "white" }}
-                        >
-                          {idx + 1}
-                        </span>
-                        <div className="flex-1 flex items-start gap-2 flex-wrap">
-                          <p className="text-xs leading-relaxed flex-1" style={{ color: "var(--text-secondary)" }}>
-                            {step.text}
-                          </p>
-                          {step.tag && (
-                            <span
-                              className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
-                              style={{
-                                background: `${section.color}14`,
-                                color: section.color,
-                                border: `1px solid ${section.color}30`,
-                              }}
-                            >
-                              {step.tag}
-                            </span>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-
-                  {section.note && (
-                    <div
-                      className="mt-4 flex gap-2.5 p-3 rounded-xl text-xs leading-relaxed"
-                      style={{
-                        background: `${section.color}0d`,
-                        border: `1px solid ${section.color}25`,
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      <svg
-                        width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                        className="flex-shrink-0 mt-0.5"
-                        style={{ color: section.color }}
-                      >
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
-                      <span>{section.note}</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          );
-        })}
-      </div>
-    </div>
+
+            {/* Modal Body (Scrollable Accordions) */}
+            <div className="overflow-y-auto p-5 space-y-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
+              {sections.map((section) => {
+                const isOpen = open === section.id;
+                return (
+                  <div
+                    key={section.id}
+                    className="glass-card overflow-hidden transition-all duration-200 bg-white dark:bg-slate-900 shadow-sm"
+                    style={isOpen ? { borderColor: section.borderColor } : {}}
+                  >
+                    <button
+                      className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors"
+                      onClick={() => setOpen(isOpen ? null : section.id)}
+                      style={{ background: isOpen ? section.bgColor : undefined }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ background: `${section.color}20`, color: section.color }}
+                        >
+                          {section.icon}
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                          <span
+                            className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex-shrink-0 w-max"
+                            style={{ background: `${section.color}18`, color: section.color }}
+                          >
+                            {section.badge}
+                          </span>
+                          <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+                            {section.title}
+                          </span>
+                        </div>
+                      </div>
+                      <svg
+                        width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                        style={{
+                          color: isOpen ? section.color : "var(--text-muted)",
+                          transform: isOpen ? "rotate(180deg)" : "none",
+                          transition: "transform 0.2s ease, color 0.2s ease",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-5 pb-5 pt-2 border-t" style={{ borderColor: section.borderColor }}>
+                        <ol className="mt-3 space-y-3">
+                          {section.steps.map((step, idx) => (
+                            <li key={idx} className="flex gap-3 items-start">
+                              <span
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-0.5"
+                                style={{ background: section.color, color: "white" }}
+                              >
+                                {idx + 1}
+                              </span>
+                              <div className="flex-1 flex flex-col gap-1.5">
+                                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                  {step.text}
+                                </p>
+                                {step.tag && (
+                                  <span
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded w-max"
+                                    style={{ background: `${section.color}14`, color: section.color, border: `1px solid ${section.color}30` }}
+                                  >
+                                    {step.tag}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+
+                        {section.note && (
+                          <div
+                            className="mt-4 flex gap-3 p-3.5 rounded-xl text-sm leading-relaxed"
+                            style={{ background: `${section.color}0d`, border: `1px solid ${section.color}25`, color: "var(--text-secondary)" }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 mt-0.5" style={{ color: section.color }}>
+                              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span>{section.note}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end bg-slate-50 dark:bg-slate-900/50">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-6 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              >
+                Tutup Panduan
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

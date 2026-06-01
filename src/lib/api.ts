@@ -129,6 +129,7 @@ export const vcfApi = {
   getNextNumber: (params?: object) => api.get("/vcf/next-number", { params }),
   getDetail: (id: number) => api.get(`/vcf/${id}`),
   getStats: () => api.get("/dashboard/stats"),
+  getMonthlyChart: (year: number, month: number) => api.get("/dashboard/monthly-chart", { params: { year, month } }),
   createBagian1: (data: object) => api.post("/vcf", data),
   updateBagian1: (id: number, data: object) => api.put(`/vcf/${id}`, data),
   rejectVcf: (id: number, data: { catatan_reject: string }) => api.post(`/vcf/${id}/reject`, data),

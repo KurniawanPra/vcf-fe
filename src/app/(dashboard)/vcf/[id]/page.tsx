@@ -7,6 +7,7 @@ import { isAdmin, getUser } from "@/lib/auth";
 import { getStatusLabel, getStatusColor, formatDateTime, getErrorMessage } from "@/lib/utils";
 import { exportToPDF, exportToDocx } from "@/lib/exportUtils";
 import GuideSection from "@/components/GuideSection";
+import { FormMorph } from "@/components/PageTransition";
 import React from "react";
 
 // Lazy load heavy components for better performance
@@ -737,7 +738,7 @@ export default function VcfDetailPage() {
       )}
 
       {activeTab === "info" && (
-        <div className="space-y-6">
+        <FormMorph key="info" className="space-y-6">
           {/* Petugas Tracking Card */}
           <div className="glass-card overflow-hidden">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
@@ -1246,10 +1247,11 @@ export default function VcfDetailPage() {
               )}
             </div>
           )}
-        </div>
+        </FormMorph>
       )}
 
       {activeTab === "bagian2" && (
+        <FormMorph key="bagian2">
         <Suspense fallback={<FormSkeleton />}>
           <Bagian2Form
             vcfId={vcfId}
@@ -1260,9 +1262,11 @@ export default function VcfDetailPage() {
             onReject={() => { fetchVcf(); setActiveTab("info"); }}
           />
         </Suspense>
+        </FormMorph>
       )}
 
       {activeTab === "bagian3" && (
+        <FormMorph key="bagian3">
         <Suspense fallback={<FormSkeleton />}>
           <Bagian3Form
             vcfId={vcfId}
@@ -1272,9 +1276,11 @@ export default function VcfDetailPage() {
             onSuccess={() => { fetchVcf(); setActiveTab("bagian4"); }}
           />
         </Suspense>
+        </FormMorph>
       )}
 
       {activeTab === "bagian4" && (
+        <FormMorph key="bagian4">
         <Suspense fallback={<FormSkeleton />}>
           <Bagian4Form
             vcfId={vcfId}
@@ -1284,6 +1290,7 @@ export default function VcfDetailPage() {
             onSuccess={() => { fetchVcf(); }}
           />
         </Suspense>
+        </FormMorph>
       )}
 
       {/* Print Modal */}

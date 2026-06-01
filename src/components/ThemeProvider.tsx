@@ -108,12 +108,27 @@ export function applyAppearance(isDark: boolean) {
   } catch { /* ignore */ }
 }
 
+import { usePathname } from "next/navigation";
+
 /* ── Component ────────────────────────────────────────────────── */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
+    if (pathname === "/login") {
+      // Force light mode and fixed color for login page
+      document.documentElement.classList.remove("dark");
+      setTheme("light");
+      setVar("--accent-primary", ACCENT_PRESETS[0].light);
+      setVar("--accent-secondary", darken(ACCENT_PRESETS[0].light));
+      setVar("--accent-primary-rgb", ACCENT_PRESETS[0].lightRgb);
+      stopRgbNeonAnimation();
+      setMounted(true);
+      return;
+    }
+
     const savedTheme = localStorage.getItem("theme") as Theme | null;
     // Default to light mode if no saved theme
     const isDark = savedTheme === "dark";
@@ -126,9 +141,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     applyAppearance(isDark);
     setMounted(true);
-  }, []);
+  }, [pathname]);
 
   const toggleTheme = () => {
+    if (pathname === "/login") return; // Disable toggle on login page
     const newTheme = theme === "light" ? "dark" : "light";
     const nowDark = newTheme === "dark";
     setTheme(newTheme);

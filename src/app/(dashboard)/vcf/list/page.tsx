@@ -11,6 +11,7 @@ import PrintVCF from "../[id]/PrintVCF";
 import PrintAllVCF from "@/components/print/PrintAllVCF";
 import PrintMasterTable from "@/components/print/PrintMasterTable";
 import Pagination from "@/components/Pagination";
+import DatePickerModal, { DateRangeTrigger } from "@/components/DatePickerModal";
 
 interface Vcf {
   id: number;
@@ -91,6 +92,9 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [lastPage, setLastPage] = useState(1);
+
+  // DatePicker modal state
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Reject State
   const [rejectingId, setRejectingId] = useState<number | null>(null);
@@ -447,19 +451,20 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       <div className="flex flex-col h-full overflow-hidden">
 
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="morph-in flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-black text-text-primary dark:text-white tracking-tight">{stageLabel}</h1>
-            <p className="text-sm text-secondary font-medium">Manajemen Formulir Kendaraan Terpadu</p>
+            <h1 className="text-xl md:text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{stageLabel}</h1>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Manajemen Formulir Kendaraan Terpadu</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {/* View toggle */}
             <div className="flex items-center justify-between sm:justify-start gap-2">
-              <div className="flex items-center rounded-lg overflow-hidden border border-border bg-bg-secondary p-1">
+              <div className="flex items-center rounded-lg overflow-hidden border p-1" style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}>
                 <button
                   onClick={() => setViewMode("table")}
-                  className={`p-1.5 rounded-md transition-all ${viewMode === "table" ? "bg-blue-500/10 text-blue-500" : "text-secondary"}`}
+                  className="p-1.5 rounded-md transition-all"
+                  style={{ background: viewMode === "table" ? "rgba(37,99,235,0.1)" : "transparent", color: viewMode === "table" ? "#2563eb" : "var(--text-muted)" }}
                   title="Tampilan Tabel"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -468,7 +473,8 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                 </button>
                 <button
                   onClick={() => setViewMode("card")}
-                  className={`p-1.5 rounded-md transition-all ${viewMode === "card" ? "bg-blue-500/10 text-blue-500" : "text-secondary"}`}
+                  className="p-1.5 rounded-md transition-all"
+                  style={{ background: viewMode === "card" ? "rgba(37,99,235,0.1)" : "transparent", color: viewMode === "card" ? "#2563eb" : "var(--text-muted)" }}
                   title="Tampilan Kartu"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -479,14 +485,14 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               </div>
             </div>
 
-            {/* Action Buttons — grid on mobile, inline on desktop */}
-            <div className="grid grid-cols-3 sm:flex sm:flex-row gap-2 sm:gap-3">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-3 sm:flex sm:flex-row gap-2 sm:gap-2">
               <button
                 onClick={handlePrintHTML}
                 disabled={fetchingPrintHtml}
                 className="btn btn-secondary btn-sm flex items-center justify-center gap-2 text-xs whitespace-nowrap"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
                 </svg>
                 <span className="hidden sm:inline">{fetchingPrintHtml ? "Memuat..." : "Print HTML"}</span>
@@ -495,21 +501,21 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               <button
                 onClick={handlePrintAll}
                 disabled={fetchingPrintAll}
-                className="btn btn-primary btn-sm flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 border-none text-white disabled:opacity-60 text-xs whitespace-nowrap"
+                className="btn btn-warning btn-sm flex items-center justify-center gap-2 text-xs whitespace-nowrap"
                 title="Cetak Semua VCF (Form Lengkap) dalam rentang tanggal terpilih — 1 VCF per halaman"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
                 </svg>
-                <span className="hidden sm:inline">{fetchingPrintAll ? "Memuat..." : "Print Semua VCF"}</span>
+                <span className="hidden sm:inline">{fetchingPrintAll ? "Memuat..." : "Print Semua"}</span>
                 <span className="sm:hidden">{fetchingPrintAll ? "..." : "Semua"}</span>
               </button>
               <button
                 onClick={handleExportExcel}
                 disabled={exportingExcel}
-                className="btn btn-primary btn-sm flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 border-none text-white disabled:opacity-60 text-xs whitespace-nowrap"
+                className="btn btn-success btn-sm flex items-center justify-center gap-2 text-xs whitespace-nowrap"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 {exportingExcel ? "..." : "Excel"}
@@ -518,52 +524,68 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
           </div>
         </div>
 
-        {/* Filter Section - Unified for Mobile/Desktop */}
-        <div className="glass-card p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        {/* Filter Section */}
+        <div className="morph-in glass-card p-4 md:p-5 mb-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-end">
             {/* Search Input */}
-            <div className="md:col-span-6 relative">
-              <label className="form-label mb-2 block font-bold text-xs uppercase tracking-wider opacity-60">Pencarian</label>
-              <div className="relative flex-1 max-w-md">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-          </div>
-          <input type="text" placeholder="Cari No. Urut, No. Polisi, Supir, No. SIM, Transporter, Produk, Tipe, Status..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-            style={{ background: "var(--bg-secondary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
-            onFocus={(e) => { e.currentTarget.style.border = "1.5px solid rgba(59,130,246,0.5)"; e.currentTarget.style.background = "var(--bg-card-hover)"; }}
-            onBlur={(e) => { e.currentTarget.style.border = "1.5px solid var(--border)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
-          />
-        </div>
-            </div>
-
-            {/* Date Filters */}
-            <div className="md:col-span-4 grid grid-cols-2 gap-3">
-              <div>
-                <label className="form-label mb-2 block font-bold text-xs uppercase tracking-wider opacity-60">Dari Tanggal</label>
-                <input type="date" className="form-input w-full py-3 text-sm" value={tanggalDari} onChange={(e) => setTanggalDari(e.target.value)} />
-              </div>
-              <div>
-                <label className="form-label mb-2 block font-bold text-xs uppercase tracking-wider opacity-60">Sampai</label>
-                <input type="date" className="form-input w-full py-3 text-sm" value={tanggalSampai} onChange={(e) => setTanggalSampai(e.target.value)} />
+            <div className="flex-1 min-w-0">
+              <label className="form-label mb-2 block">Pencarian</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Cari No. Urut, No. Polisi, Supir, Transporter..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1.5px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
+                />
               </div>
             </div>
 
-            {/* Reset Actions */}
-            <div className="md:col-span-2 flex items-end">
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setTanggalDari(getOneMonthAgoWIB());
-                  setTanggalSampai(getTodayWIB());
-                }}
-                className="btn btn-secondary btn-sm w-full"
-              >
-                Reset
-              </button>
+            {/* Date Range — Custom Calendar Trigger */}
+            <div className="md:w-auto" style={{ minWidth: 260 }}>
+              <label className="form-label mb-2 block">Rentang Tanggal</label>
+              <DateRangeTrigger
+                startDate={tanggalDari}
+                endDate={tanggalSampai}
+                onClick={() => setIsDatePickerOpen(true)}
+              />
             </div>
+
+            {/* Reset */}
+            <button
+              onClick={() => {
+                setSearch("");
+                setTanggalDari(getOneMonthAgoWIB());
+                setTanggalSampai(getTodayWIB());
+              }}
+              className="btn btn-secondary btn-sm md:self-end h-12 flex items-center justify-center"
+            >
+              Reset
+            </button>
           </div>
         </div>
+
+        {/* DatePicker Modal */}
+        <DatePickerModal
+          isOpen={isDatePickerOpen}
+          onClose={() => setIsDatePickerOpen(false)}
+          startDate={tanggalDari}
+          endDate={tanggalSampai}
+          onApply={(start, end) => {
+            setTanggalDari(start);
+            setTanggalSampai(end);
+          }}
+        />
 
         {/* Tabel View */}
         {viewMode === "table" && (
@@ -571,11 +593,16 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             {loading ? (
               <div className="flex items-center justify-center py-20"><div className="spinner" /></div>
             ) : vcfs.length === 0 ? (
-              <div className="py-20 text-center text-secondary font-medium">Data VCF tidak ditemukan.</div>
+              <div className="py-20 text-center font-medium" style={{ color: "var(--text-muted)" }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-3" style={{ color: "var(--border)" }}>
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" />
+                </svg>
+                Data VCF tidak ditemukan.
+              </div>
             ) : (
               <>
                 <table className="data-table">
-                  <thead className="sticky top-0 z-10 bg-bg-card">
+                  <thead className="sticky top-0 z-10" style={{ background: "var(--bg-card)" }}>
                     <tr>
                       <th className="w-24 text-center">No. Urut</th>
                       <th className="text-center">Tanggal</th>
@@ -592,19 +619,19 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
                   <tbody>
                     {vcfs.map((vcf) => (
                       <tr key={vcf.id}>
-                        <td className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</td>
+                        <td className="font-mono font-bold" style={{ color: "#2563eb" }}>{vcf.nomor_urut}</td>
                         <td className="text-xs">{vcf.tanggal}</td>
-                        <td className="w-32 min-w-32 text-center font-bold text-text-primary dark:text-white whitespace-nowrap">{vcf.no_polisi}</td>
-                        <td className="text-xs font-semibold text-text-primary dark:text-white">{vcf.driver?.nama_supir || "—"}</td>
-                        <td className="text-xs font-mono text-slate-400 dark:text-slate-500">{vcf.driver?.no_sim || "—"}</td>
+                        <td className="w-32 min-w-32 text-center font-bold whitespace-nowrap" style={{ color: "var(--text-primary)" }}>{vcf.no_polisi}</td>
+                        <td className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{vcf.driver?.nama_supir || "—"}</td>
+                        <td className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{vcf.driver?.no_sim || "—"}</td>
                         <td className="text-xs">{vcf.transporter?.nama_transporter || "—"}</td>
                         <td>
                           {vcf.produk ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{vcf.produk}</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: "rgba(37,99,235,0.08)", color: "#2563eb", border: "1px solid rgba(37,99,235,0.15)" }}>{vcf.produk}</span>
                           ) : "—"}
                         </td>
                         <td className="w-32 min-w-32 text-center">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${vcf.tipe_kegiatan?.includes("loading") ? "bg-indigo-500/10 text-indigo-500" : "bg-emerald-500/10 text-emerald-600"}`}>
                             {vcf.tipe_kegiatan?.replace(/_/g, " ")}
                           </span>
                         </td>
@@ -650,30 +677,38 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             {loading ? (
               <div className="flex items-center justify-center py-20"><div className="spinner" /></div>
             ) : vcfs.length === 0 ? (
-              <div className="py-20 text-center text-secondary font-medium">Data VCF tidak ditemukan.</div>
+              <div className="py-20 text-center font-medium" style={{ color: "var(--text-muted)" }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-3" style={{ color: "var(--border)" }}>
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" />
+                </svg>
+                Data VCF tidak ditemukan.
+              </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-3">
                   {vcfs.map((vcf) => (
-                    <div key={vcf.id} className="glass-card p-5 space-y-4 hover:border-blue-500/40 transition-all group relative overflow-hidden flex flex-col">
+                    <div key={vcf.id} className="glass-card p-4 space-y-3 transition-all group relative overflow-hidden flex flex-col" style={{ borderColor: "var(--border)" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.3)"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}
+                    >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-blue-400 text-sm tracking-tight">{vcf.nomor_urut}</span>
+                        <span className="font-mono font-bold text-sm" style={{ color: "#2563eb" }}>{vcf.nomor_urut}</span>
                         <span className={`status-badge text-[10px] ${getStatusColor(vcf.status)}`}>{getStatusLabel(vcf.status)}</span>
                       </div>
 
                       <div className="flex-1">
-                        <h3 className="font-black text-text-primary dark:text-white text-lg leading-tight group-hover:text-blue-400 transition-colors">{vcf.no_polisi}</h3>
-                        <p className="text-xs text-secondary mt-1 font-medium truncate">{vcf.transporter?.nama_transporter || "—"}</p>
+                        <h3 className="font-bold text-lg leading-tight" style={{ color: "var(--text-primary)" }}>{vcf.no_polisi}</h3>
+                        <p className="text-xs mt-1 font-medium truncate" style={{ color: "var(--text-muted)" }}>{vcf.transporter?.nama_transporter || "—"}</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-bg-primary dark:bg-white/5 rounded-xl p-2.5 border border-border/50">
-                          <p className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 opacity-60">Supir</p>
-                          <p className="text-xs font-bold text-text-primary dark:text-white truncate">{vcf.driver?.nama_supir || "—"}</p>
+                        <div className="rounded-lg p-2.5" style={{ background: "var(--bg-primary)", border: "1px solid var(--border-light)" }}>
+                          <p className="text-[9px] uppercase font-bold tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Supir</p>
+                          <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{vcf.driver?.nama_supir || "—"}</p>
                         </div>
-                        <div className="bg-bg-primary dark:bg-white/5 rounded-xl p-2.5 border border-border/50">
-                          <p className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 opacity-60">Produk</p>
-                          <p className="text-xs font-bold text-text-primary dark:text-white truncate">{vcf.produk || "—"}</p>
+                        <div className="rounded-lg p-2.5" style={{ background: "var(--bg-primary)", border: "1px solid var(--border-light)" }}>
+                          <p className="text-[9px] uppercase font-bold tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Produk</p>
+                          <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{vcf.produk || "—"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 pt-1">
@@ -714,10 +749,10 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
         <div className="modal-overlay" onClick={() => setRejectingId(null)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-red-400">Tolak VCF</h2>
-              <button onClick={() => setRejectingId(null)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+              <h2 className="text-lg font-semibold" style={{ color: "#dc2626" }}>Tolak VCF</h2>
+              <button onClick={() => setRejectingId(null)} style={{ color: "var(--text-muted)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
             </div>
-            <p className="text-sm text-secondary mb-4">Apakah Anda yakin ingin menolak VCF ini? Harap berikan alasan penolakan.</p>
+            <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Apakah Anda yakin ingin menolak VCF ini? Harap berikan alasan penolakan.</p>
             <textarea className="form-input w-full min-h-[100px] mb-6" placeholder="Alasan penolakan..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
             <div className="flex gap-3 justify-end">
               <button className="btn btn-secondary" onClick={() => setRejectingId(null)}>Batal</button>

@@ -11,6 +11,7 @@ import Pagination from "@/components/Pagination";
 import MobileCardSkeleton from "@/components/MobileCardSkeleton";
 import TableRowSkeleton from "@/components/TableRowSkeleton";
 import RegisterButton from "@/components/RegisterButton";
+import DatePickerModal, { DateRangeTrigger } from "@/components/DatePickerModal";
 
 /** Get today's date string in WIB (Asia/Jakarta) as YYYY-MM-DD */
 function getTodayWIB(): string {
@@ -66,8 +67,8 @@ export default function VcfQuickAccessPage() {
   const [tanggalSampai, setTanggalSampai] = useState(getTodayWIB);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [showGuide, setShowGuide] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [completedToday, setCompletedToday] = useState(0);
 
   // Derived stats: count of previous-day unfinished VCFs
   const pendingPrevDays = useMemo(() => vcfs.filter(v => isPreviousDay(v.tanggal)).length, [vcfs]);
@@ -108,10 +109,10 @@ export default function VcfQuickAccessPage() {
       if (filter) params.status = filter;
       const activeRes = await vcfApi.getList(params);
       const items: VcfSummary[] = activeRes.data.data || activeRes.data;
-      setVcfs(items);
-
-      // Count selesai from the full list
-      setCompletedToday(items.filter((v) => v.status === "selesai").length);
+      
+      const allowedStatuses = ["bagian1_selesai", "bagian2_selesai", "bagian3_selesai"];
+      const filteredItems = items.filter((v) => allowedStatuses.includes(v.status));
+      setVcfs(filteredItems);
     } catch (err: any) {
       console.error("Error fetching VCF data:", err);
     } finally {
@@ -137,7 +138,7 @@ export default function VcfQuickAccessPage() {
     <div className="max-w-6xl mx-auto">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       {/* Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="morph-in mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-primary" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Operasional VCF
@@ -165,15 +166,13 @@ export default function VcfQuickAccessPage() {
       )}
 
       {/* Stage Filters / Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+      <div className="morph-in flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
         {[
           { label: "Semua",      stage: "",                    cls: "filter-tab-green" },
           { label: "Aktif",      stage: "aktif",               cls: "filter-tab-blue" },
           { label: "WB Masuk",   stage: "bagian1_selesai",     cls: "filter-tab-amber" },
           { label: "WB Keluar",  stage: "bagian2_selesai",     cls: "filter-tab-violet" },
           { label: "MG Keluar",  stage: "bagian3_selesai",     cls: "filter-tab-emerald" },
-          { label: "Selesai",    stage: "selesai",             cls: "filter-tab-slate" },
-          { label: "Reject",     stage: "reject",              cls: "filter-tab-red" },
         ].map((tab) => (
           <button
             key={tab.stage}
@@ -186,7 +185,7 @@ export default function VcfQuickAccessPage() {
       </div>
 
       {/* Search & Date Filter Section */}
-      <div className="flex flex-col gap-3 mb-4">
+      <div className="morph-in flex flex-col gap-3 mb-4">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           {/* Search Input */}
           <div className="flex-1 min-w-0 relative">
@@ -209,52 +208,34 @@ export default function VcfQuickAccessPage() {
             />
           </div>
 
-          {/* Date Range */}
+          {/* Date Range — Custom Calendar */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="relative">
-              <input
-                type="date"
-                value={tanggalDari}
-                max={tanggalSampai}
-                onChange={(e) => { setTanggalDari(e.target.value); setCurrentPage(1); }}
-                className="h-12 px-3 rounded-xl text-sm transition-all focus:outline-none"
-                style={{
-                  background: "var(--bg-card)",
-                  border: "1.5px solid var(--border)",
-                  color: "var(--text-primary)",
-                  minWidth: "140px",
-                }}
-              />
-            </div>
-            <span className="text-text-muted text-xs font-semibold">s/d</span>
-            <div className="relative">
-              <input
-                type="date"
-                value={tanggalSampai}
-                min={tanggalDari}
-                onChange={(e) => { setTanggalSampai(e.target.value); setCurrentPage(1); }}
-                className="h-12 px-3 rounded-xl text-sm transition-all focus:outline-none"
-                style={{
-                  background: "var(--bg-card)",
-                  border: "1.5px solid var(--border)",
-                  color: "var(--text-primary)",
-                  minWidth: "140px",
-                }}
-              />
-            </div>
+            <DateRangeTrigger
+              startDate={tanggalDari}
+              endDate={tanggalSampai}
+              onClick={() => setIsDatePickerOpen(true)}
+            />
             <button
               onClick={() => { setTanggalDari(getOneMonthAgoWIB()); setTanggalSampai(getTodayWIB()); setCurrentPage(1); }}
-              className="h-12 px-3 rounded-xl text-xs font-semibold transition-all flex-shrink-0"
-              style={{
-                background: "var(--bg-card)",
-                border: "1.5px solid var(--border)",
-                color: "var(--text-muted)",
-              }}
+              className="btn btn-secondary btn-sm flex-shrink-0"
+              style={{ minHeight: 42 }}
               title="Reset ke 1 bulan terakhir"
             >
-            Reset
+              Reset
             </button>
           </div>
+
+          <DatePickerModal
+            isOpen={isDatePickerOpen}
+            onClose={() => setIsDatePickerOpen(false)}
+            startDate={tanggalDari}
+            endDate={tanggalSampai}
+            onApply={(start, end) => {
+              setTanggalDari(start);
+              setTanggalSampai(end);
+              setCurrentPage(1);
+            }}
+          />
         </div>
 
         {/* Stat Badges + Action Buttons Row */}
@@ -311,7 +292,7 @@ export default function VcfQuickAccessPage() {
       </div>
 
       {/* Monitoring Section */}
-      <div className="glass-card overflow-hidden">
+      <div className="morph-in glass-card overflow-hidden">
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
           <div>
             <h2 className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Pemantauan VCF di Area Operasional</h2>

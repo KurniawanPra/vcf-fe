@@ -45,8 +45,8 @@ export default function Pagination({
     >
       {/* Info */}
       <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-        Menampilkan <span style={{ fontWeight: 700, color: "var(--text-secondary)" }}>{from}–{to}</span> dari{" "}
-        <span style={{ fontWeight: 700, color: "var(--text-secondary)" }}>{totalItems}</span> data
+        Menampilkan <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>{from}–{to}</span> dari{" "}
+        <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>{totalItems}</span> data
       </p>
 
       {/* Controls */}
@@ -85,15 +85,15 @@ export default function Pagination({
               onClick={() => onPageChange(p as number)}
               style={{
                 width: 32, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 600,
-                border: p === currentPage ? "1px solid rgba(99,102,241,0.5)" : "1px solid var(--border)",
-                background: p === currentPage ? "rgba(99,102,241,0.15)" : "var(--bg-secondary)",
-                color: p === currentPage ? "#818cf8" : "var(--text-secondary)",
+                border: p === currentPage ? "1px solid rgba(var(--accent-primary-rgb), 0.4)" : "1px solid var(--border)",
+                background: p === currentPage ? "rgba(var(--accent-primary-rgb), 0.1)" : "var(--bg-secondary)",
+                color: p === currentPage ? "var(--accent-primary)" : "var(--text-secondary)",
                 cursor: "pointer", transition: "all 0.15s",
               }}
               onMouseEnter={(e) => {
                 if (p !== currentPage) {
                   (e.currentTarget as HTMLElement).style.background = "var(--bg-card-hover)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(99,102,241,0.3)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(var(--accent-primary-rgb), 0.2)";
                 }
               }}
               onMouseLeave={(e) => {

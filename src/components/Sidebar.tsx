@@ -127,29 +127,6 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
   const navItems = isAdmin() ? ADMIN_NAV : OFFICER_NAV;
   const initials = user?.nama?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "??";
 
-  const iconBtn = (onClick: () => void, title: string, children: React.ReactNode, danger = false): React.ReactNode => (
-    <button
-      onClick={onClick}
-      title={title}
-      style={{
-        width: 28, height: 28, borderRadius: 6,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "var(--text-muted)", background: "transparent",
-        border: "none", cursor: "pointer", transition: "all 0.15s",
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = danger ? "var(--bg-danger, rgba(239,68,68,0.08))" : "var(--bg-secondary)";
-        if (danger) e.currentTarget.style.color = "var(--text-danger, #ef4444)";
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = "var(--text-muted)";
-      }}
-    >
-      {children}
-    </button>
-  );
-
   return (
     <>
       <aside style={{
@@ -163,71 +140,58 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
         left: isMobile ? 0 : "auto",
         top: isMobile ? 0 : "auto",
         zIndex: isMobile ? 50 : "auto",
-        transition: isMobile 
-          ? "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)" 
-          : "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: isMobile
+          ? "transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s cubic-bezier(0.19, 1, 0.22, 1)"
+          : "width 0.35s cubic-bezier(0.19, 1, 0.22, 1)",
         transform: isMobile && !mobileOpen ? "translateX(-100%)" : "translateX(0)",
         opacity: isMobile && !mobileOpen ? 0 : 1,
-        background: theme === "dark"
-          ? "linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(9,18,38,0.98) 100%)"
-          : "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.95) 100%)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRight: theme === "dark" ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.08)",
+        background: "var(--bg-secondary)",
+        borderRight: "1px solid var(--border)",
         overflow: "hidden",
       }}>
-
-        {/* Shimmer top bar */}
-        <div style={{
-          height: 2, flexShrink: 0,
-          background: "linear-gradient(90deg, transparent, rgba(34,168,74,0.6), rgba(30,58,110,0.5), transparent)",
-        }} />
 
         {/* Header */}
         <div style={{
           display: "flex",
           alignItems: "center",
-          gap: 6,
-          padding: "10px 10px",
-          borderBottom: theme === "dark" ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.07)",
+          gap: 8,
+          padding: "12px 12px",
+          borderBottom: "1px solid var(--border)",
           flexShrink: 0,
-          minHeight: 52,
+          minHeight: 56,
         }}>
-          {/* Logo — only when expanded */}
-          {!collapsed && <Image src="/logo_primary.png" alt="VCF" width={60} height={60} style={{ objectFit: "contain" }} />}
+          {/* Logo */}
+          {!collapsed && <Image src="/logo_primary.png" alt="VCF" width={44} height={44} style={{ objectFit: "contain" }} />}
 
-          {/* Title — only when expanded */}
+          {/* Title */}
           {!collapsed && (
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 VCF System
               </div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>PT. Industri Nabati Lestari</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>PT. Industri Nabati Lestari</div>
             </div>
           )}
 
-
-          {/* Action buttons — expanded: theme + logout + collapse */}
-          {!collapsed && !isMobile && (
-            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-              {iconBtn(toggleTheme, theme === "light" ? "Mode Gelap" : "Mode Terang",
-                theme === "light"
-                  ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-                  : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /></svg>
-              )}
-              {iconBtn(() => setCollapsed(true), "Tutup sidebar",
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
-              )}
-            </div>
-          )}
-
-          {/* Collapsed: only expand button */}
-          {collapsed && !isMobile && (
-            <div style={{ position: "absolute", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
-              {iconBtn(() => setCollapsed(false), "Buka sidebar",
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-              )}
-            </div>
+          {/* Collapse/Expand button — desktop only */}
+          {!isMobile && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              title={collapsed ? "Buka sidebar" : "Tutup sidebar"}
+              style={{
+                width: 28, height: 28, borderRadius: 6,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--text-muted)", background: "transparent",
+                border: "none", cursor: "pointer", transition: "all 0.15s",
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-card-hover)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+              </svg>
+            </button>
           )}
         </div>
 
@@ -250,16 +214,16 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                       onClick={() => toggleGroup(group.group)}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "5px 8px", borderRadius: 6, cursor: "pointer",
+                        padding: "6px 8px", borderRadius: 6, cursor: "pointer",
                         marginBottom: 2, userSelect: "none", transition: "background 0.1s",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-card-hover)"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                     >
                       <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.7px", display: "flex", alignItems: "center", gap: 5 }}>
                         {group.group}
                         {hasActive && !open && (
-                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-primary, #22c55e)", display: "inline-block" }} />
+                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-primary)", display: "inline-block" }} />
                         )}
                       </span>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
@@ -279,7 +243,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                   overflow: "hidden",
                   maxHeight: (collapsed || open) ? "9999px" : "0px",
                   opacity: (collapsed || open) ? 1 : 0,
-                  transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s",
+                  transition: "max-height 0.25s ease, opacity 0.15s",
                 }}>
                   {group.items.map((item) => {
                     const isActive = item.href === "/vcf"
@@ -296,30 +260,19 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                         id={`nav-${item.href.replace(/\//g, "-").replace(/^-/, "")}`}
                         title={collapsed ? item.label : undefined}
                         onClick={() => { if (!isActive) setNavigatingTo(item.href); if (isMobile) setMobileOpen?.(false); }}
-                        className={`nav-item mb-0.5 ${isActive ? "active" : ""} ${isNav ? "opacity-70" : ""}`}
+                        className={`nav-item mb-1 ${isActive ? "active" : ""} ${isNav ? "opacity-70" : ""}`}
                         style={{
                           display: "flex", alignItems: "center", gap: 10,
-                          padding: collapsed ? "9px" : "10px 12px",
+                          padding: collapsed ? "9px" : "9px 12px",
                           borderRadius: 8,
                           textDecoration: "none",
-                          transition: "all 0.2s",
-                          color: isActive ? `rgba(var(--accent-primary-rgb, 34,197,94), 0.75)` : "var(--text-muted)",
-                          background: isActive ? `rgba(var(--accent-primary-rgb, 34,197,94), 0.12)` : "transparent",
-                          border: isActive ? `1px solid rgba(var(--accent-primary-rgb, 34,197,94), 0.2)` : "1px solid transparent",
-                          boxShadow: isActive ? `0 0 10px rgba(var(--accent-primary-rgb, 34,197,94), 0.1)` : "none",
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                        onMouseEnter={e => {
-                          if (!isActive) {
-                            e.currentTarget.style.background = theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
-                            e.currentTarget.style.borderColor = "rgba(var(--accent-primary-rgb, 34,197,94), 0.3)";
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (!isActive) {
-                            e.currentTarget.style.background = "transparent";
-                            e.currentTarget.style.borderColor = "transparent";
-                          }
+                          transition: "all 0.15s",
+                          color: isActive ? "#ffffff" : "var(--text-muted)",
+                          background: isActive ? "var(--accent-primary)" : "transparent",
+                          boxShadow: isActive ? "0 4px 12px rgba(37,99,235,0.25)" : "none",
+                          fontWeight: isActive ? 600 : 500,
+                          fontSize: 13,
+                          border: "none",
                         }}
                       >
                         {isNav ? (
@@ -328,7 +281,7 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
                         ) : item.icon}
-                        {!collapsed && <span style={{ fontSize: 13 }}>{item.label}</span>}
+                        {!collapsed && <span>{item.label}</span>}
                       </Link>
                     );
                   })}
@@ -338,48 +291,48 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
           })}
         </nav>
 
-        {/* Footer — user card + logout */}
+        {/* Footer — user card + actions */}
         <div style={{
           flexShrink: 0,
           padding: "12px",
-          borderTop: theme === "dark" ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.07)",
+          borderTop: "1px solid var(--border)",
         }}>
           {user && (
             <>
+              {/* User info */}
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: collapsed ? "8px" : "12px",
+                padding: collapsed ? "8px" : "10px 12px",
                 borderRadius: 10,
-                background: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-                border: theme === "dark" ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)",
+                background: "var(--bg-primary)",
                 justifyContent: collapsed ? "center" : "flex-start",
                 marginBottom: 8,
               }}>
+                {/* Avatar with initials */}
                 <div style={{
                   width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: theme === "dark" ? "white" : "black",
+                  background: "rgba(var(--accent-primary-rgb), 0.12)",
+                  color: "var(--accent-primary)",
+                  fontSize: 11, fontWeight: 700,
                 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
+                  {initials}
                 </div>
                 {!collapsed && (
                   <div style={{ overflow: "hidden", minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {user.nama}
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "capitalize", letterSpacing: "0.05em", marginTop: 1 }}>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "capitalize", letterSpacing: "0.03em", marginTop: 1 }}>
                       {user.role === "admin" ? "Administrator" : "Security Officer"}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Action buttons for mobile */}
+              {/* Mobile: theme + action row */}
               {isMobile && !collapsed && (
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <button
@@ -387,26 +340,52 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                     title={theme === "light" ? "Mode Gelap" : "Mode Terang"}
                     style={{
                       flex: 1,
-                      padding: "10px 12px",
+                      padding: "9px 12px",
                       borderRadius: 8,
-                      background: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-                      border: theme === "dark" ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.1)",
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border)",
                       color: "var(--text-primary)",
-                      fontSize: 12,
-                      fontWeight: 600,
+                      fontSize: 12, fontWeight: 600,
                       cursor: "pointer",
-                      transition: "all 0.2s",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
+                      transition: "all 0.15s",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     }}
                   >
                     {theme === "light"
-                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /></svg>
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /></svg>
                     }
                     {theme === "light" ? "Gelap" : "Terang"}
+                  </button>
+                </div>
+              )}
+
+              {/* Desktop: theme toggle inline */}
+              {!isMobile && !collapsed && (
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <button
+                    onClick={toggleTheme}
+                    title={theme === "light" ? "Mode Gelap" : "Mode Terang"}
+                    style={{
+                      flex: 1,
+                      padding: "8px",
+                      borderRadius: 8,
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-muted)",
+                      fontSize: 11, fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--accent-primary-rgb), 0.3)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                  >
+                    {theme === "light"
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /></svg>
+                    }
+                    {theme === "light" ? "Mode Gelap" : "Mode Terang"}
                   </button>
                 </div>
               )}
@@ -416,27 +395,25 @@ export default function Sidebar({ collapsed, setCollapsed, isMobile, mobileOpen,
                 onClick={() => setIsLogoutModalOpen(true)}
                 style={{
                   width: "100%",
-                  padding: collapsed ? "10px" : "10px 12px",
+                  padding: collapsed ? "9px" : "9px 12px",
                   borderRadius: 8,
-                  background: "rgba(239, 68, 68, 0.1)",
-                  border: "1px solid rgba(239, 68, 68, 0.2)",
-                  color: "#ef4444",
-                  fontSize: 12,
-                  fontWeight: 600,
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "#dc2626",
+                  fontSize: 12, fontWeight: 600,
                   cursor: "pointer",
-                  transition: "all 0.2s",
-                  display: "flex",
-                  alignItems: "center",
+                  transition: "all 0.15s",
+                  display: "flex", alignItems: "center",
                   justifyContent: collapsed ? "center" : "flex-start",
                   gap: 8,
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
-                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                  e.currentTarget.style.background = "rgba(220, 38, 38, 0.06)";
+                  e.currentTarget.style.borderColor = "rgba(220, 38, 38, 0.2)";
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
-                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.2)";
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.borderColor = "var(--border)";
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

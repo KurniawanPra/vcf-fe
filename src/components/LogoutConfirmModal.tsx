@@ -40,62 +40,34 @@ export default function LogoutConfirmModal({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? "opacity-100 backdrop-blur-sm" : "opacity-0 pointer-events-none"
-        }`}
-      style={{ background: "rgba(0,0,0,0.35)" }}
+      className={`modal-overlay ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       onClick={onClose}
     >
       <div
-        className={`w-full max-w-sm overflow-hidden rounded-2xl border border-border/50 bg-white dark:bg-slate-900 transition-all duration-300 transform ${isOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
-          }`}
+        className={`modal-content transition-all duration-300 transform ${isOpen ? "scale-100 translate-y-0 opacity-100" : "scale-95 translate-y-4 opacity-0"}`}
         onClick={(e) => e.stopPropagation()}
+        style={{ width: "440px", maxWidth: "90vw", padding: "24px" }}
       >
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-border/40">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 flex items-center justify-center flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-primary">Konfirmasi keluar</p>
-              <p className="text-xs text-text-secondary">VCF System · PT. INL</p>
-            </div>
-          </div>
-          <p className="text-sm text-text-secondary leading-relaxed">
-            Anda akan keluar dari sistem dan harus login kembali untuk mengakses aplikasi.
-          </p>
-        </div>
+        <h3 className="text-lg font-bold mb-2 text-center" style={{ color: "var(--text-primary)" }}>Keluar dari sistem?</h3>
+        <p className="text-sm text-center mb-6" style={{ color: "var(--text-secondary)" }}>
+          Sesi Anda akan diakhiri dan Anda harus masuk kembali.
+        </p>
 
-        {/* Actions */}
-        <div className="px-6 py-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="btn btn-danger w-full"
+            className="btn btn-danger w-full justify-center h-10"
           >
-            {loading ? (
-              <>
-                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Ya, keluar sekarang
-              </>
-            )}
+            {loading ? "Memproses..." : "Ya, keluar"}
           </button>
 
           <button
             onClick={onClose}
             disabled={loading}
-            className="btn btn-secondary w-full"
+            className="btn btn-secondary w-full justify-center h-10"
           >
-            Tetap di sini
+            Batal
           </button>
         </div>
       </div>
