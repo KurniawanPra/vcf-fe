@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ImportResultModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export default function ImportResultModal({
 
   const hasErrors = errors.length > 0;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
       <div
         className="w-full max-w-md rounded-xl border shadow-2xl"
@@ -171,6 +172,7 @@ export default function ImportResultModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

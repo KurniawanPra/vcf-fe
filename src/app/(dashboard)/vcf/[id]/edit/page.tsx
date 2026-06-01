@@ -9,6 +9,7 @@ import { getUser, isAdmin } from "@/lib/auth";
 import { generateQRSignature } from "@/lib/qrUtils";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import { useToast, ToastContainer } from "@/components/Toast";
+import ValidationSummary, { type ValidationEntry } from "@/components/ValidationSummary";
 
 interface SelectOption { id: number; nama?: string; nama_transporter?: string; nama_supir?: string; nama_item?: string; kode?: string; no_sim?: string; tgl_berlaku_sim?: string; jenis_sim?: string; is_active?: boolean | number | string; }
 interface ChecklistItem { id: number; nama_item: string; urutan: number; is_active?: boolean | number | string; }
@@ -16,58 +17,6 @@ interface MuatanItem { id: number; nama_item: string; jenis: "both" | "dibawa" |
 
 type TipeKegiatan = "loading_lokal" | "loading_export" | "unloading_lokal" | "unloading_import" | "";
 type TipeKendaraan = "bak_terbuka" | "tangki" | "umum" | "box" | "container" | "";
-
-interface ValidationEntry {
-  key: string;
-  section: string;
-  label: string;
-  fieldId: string;
-}
-
-function ValidationSummary({ errors, onDismiss }: { errors: ValidationEntry[]; onDismiss: () => void }) {
-  if (errors.length === 0) return null;
-  const sections = Array.from(new Set(errors.map(e => e.section)));
-  const scrollTo = (fieldId: string) => {
-    const el = document.getElementById(fieldId) || document.querySelector(`[data-field-id="${fieldId}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (el as HTMLElement)?.focus?.();
-  };
-  return (
-    <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-50/80 dark:bg-amber-900/10 backdrop-blur-sm overflow-hidden animate-slideDown">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-amber-400/20">
-        <div className="flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500 shrink-0">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{errors.length} field belum lengkap</span>
-        </div>
-        <button onClick={onDismiss} className="text-amber-500 hover:text-amber-700 transition-colors p-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div className="px-5 py-3 space-y-2">
-        {sections.map(section => (
-          <div key={section}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600/70 dark:text-amber-400/70 mb-1">{section}</p>
-            <div className="flex flex-wrap gap-2">
-              {errors.filter(e => e.section === section).map(e => (
-                <button
-                  key={e.key}
-                  type="button"
-                  onClick={() => scrollTo(e.fieldId)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-300/40"
-                >
-                  {e.label}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function SectionSkeleton({ title }: { title: string }) {
   return (

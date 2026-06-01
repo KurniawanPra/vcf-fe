@@ -12,6 +12,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface Logistik {
   id: number;
@@ -292,31 +293,33 @@ export default function LogistikPage() {
       </div>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="glass-card w-full max-w-md p-6 border-white/20">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">{editing ? "Edit Logistik" : "Tambah Logistik"}</h2>
-              <button onClick={() => setShowModal(false)} className="text-secondary hover:text-white transition-colors"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
+      <ModalPortal>
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="glass-card w-full max-w-md p-6 border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">{editing ? "Edit Logistik" : "Tambah Logistik"}</h2>
+                <button onClick={() => setShowModal(false)} className="text-secondary hover:text-white transition-colors"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
+              </div>
+              <form onSubmit={handleSave} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Nama Logistik</label>
+                  <input type="text" required className="form-input" value={form.nama_logistik} onChange={(e) => setForm({ ...form, nama_logistik: e.target.value })} placeholder="Contoh: CPO, Kernel, dll." />
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <input type="checkbox" id="is_active" className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
+                  <label htmlFor="is_active" className="text-sm font-medium text-secondary cursor-pointer">Logistik Aktif</label>
+                </div>
+                {error && <p className="text-sm text-red-400 bg-red-400/10 p-3 rounded-lg">{error}</p>}
+                <div className="flex justify-end gap-3 mt-6">
+                  <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={saving}>Batal</button>
+                  <button type="submit" className="btn btn-primary min-w-[100px]" disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Nama Logistik</label>
-                <input type="text" required className="form-input" value={form.nama_logistik} onChange={(e) => setForm({ ...form, nama_logistik: e.target.value })} placeholder="Contoh: CPO, Kernel, dll." />
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <input type="checkbox" id="is_active" className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
-                <label htmlFor="is_active" className="text-sm font-medium text-secondary cursor-pointer">Logistik Aktif</label>
-              </div>
-              {error && <p className="text-sm text-red-400 bg-red-400/10 p-3 rounded-lg">{error}</p>}
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={saving}>Batal</button>
-                <button type="submit" className="btn btn-primary min-w-[100px]" disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
       <DeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}

@@ -12,6 +12,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface InspectionItem {
   id: number;
@@ -430,175 +431,177 @@ export default function PemeriksaanKeluarPage() {
       </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
-                {editing ? "Edit Item" : "Tambah Item"}
-              </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary mb-1.5">Nama Item</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-input"
-                    value={form.nama_item}
-                    onChange={(e) => setForm({ ...form, nama_item: e.target.value })}
-                    placeholder="Contoh: Lampu, Rem, dll."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary mb-1.5">Kode Item</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-input"
-                    value={form.kode}
-                    onChange={(e) => setForm({ ...form, kode: e.target.value })}
-                    placeholder="Contoh: KELUAR_REM"
-                  />
-                </div>
+      <ModalPortal>
+        {showModal && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
+                  {editing ? "Edit Item" : "Tambah Item"}
+                </h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Opsi Jawaban</label>
-                {/* Preset pills */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {[
-                    { label: "Bagus / Tidak Bagus",           value: "Bagus,Tidak Bagus" },
-                    { label: "Ada / Tidak Ada",               value: "Ada,Tidak Ada" },
-                    { label: "Terpasang / Tidak Terpasang",   value: "Terpasang,Tidak Terpasang" },
-                    { label: "Sesuai / Tidak Sesuai",         value: "Sesuai,Tidak Sesuai" },
-                    { label: "Lengkap / Tidak Lengkap",       value: "Lengkap,Tidak Lengkap" },
-                    { label: "Kosong / Sisa",                 value: "Kosong,Sisa" },
-                    { label: "Isian Teks",                    value: "input" },
-                  ].map(p => {
-                    const isActive = form.tipe_jawaban === p.value;
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">Nama Item</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={form.nama_item}
+                      onChange={(e) => setForm({ ...form, nama_item: e.target.value })}
+                      placeholder="Contoh: Lampu, Rem, dll."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">Kode Item</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={form.kode}
+                      onChange={(e) => setForm({ ...form, kode: e.target.value })}
+                      placeholder="Contoh: KELUAR_REM"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Opsi Jawaban</label>
+                  {/* Preset pills */}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {[
+                      { label: "Bagus / Tidak Bagus",           value: "Bagus,Tidak Bagus" },
+                      { label: "Ada / Tidak Ada",               value: "Ada,Tidak Ada" },
+                      { label: "Terpasang / Tidak Terpasang",   value: "Terpasang,Tidak Terpasang" },
+                      { label: "Sesuai / Tidak Sesuai",         value: "Sesuai,Tidak Sesuai" },
+                      { label: "Lengkap / Tidak Lengkap",       value: "Lengkap,Tidak Lengkap" },
+                      { label: "Kosong / Sisa",                 value: "Kosong,Sisa" },
+                      { label: "Isian Teks",                    value: "input" },
+                    ].map(p => {
+                      const isActive = form.tipe_jawaban === p.value;
+                      return (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => setForm({ ...form, tipe_jawaban: p.value })}
+                          className={`px-3 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                            isActive
+                              ? "bg-blue-500 border-blue-500 text-white shadow-sm"
+                              : "bg-bg-secondary border-border text-secondary hover:border-blue-400"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Option builder */}
+                  {(() => {
+                    const presets = ["Bagus,Tidak Bagus","Ada,Tidak Ada","Terpasang,Tidak Terpasang","Sesuai,Tidak Sesuai","Lengkap,Tidak Lengkap","Kosong,Sisa","input"];
+                    const isCustom = !presets.includes(form.tipe_jawaban) || form.tipe_jawaban === "";
                     return (
-                      <button
-                        key={p.value}
-                        type="button"
-                        onClick={() => setForm({ ...form, tipe_jawaban: p.value })}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                          isActive
-                            ? "bg-blue-500 border-blue-500 text-white shadow-sm"
-                            : "bg-bg-secondary border-border text-secondary hover:border-blue-400"
-                        }`}
-                      >
-                        {p.label}
-                      </button>
+                      <div className="p-3 rounded-xl border border-border bg-bg-secondary space-y-2">
+                        <p className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                          {isCustom ? "Opsi Kustom" : "Edit Opsi"}
+                        </p>
+                        {form.tipe_jawaban === "input" ? (
+                          <p className="text-xs text-secondary italic">Petugas mengisi jawaban secara manual (teks bebas).</p>
+                        ) : (
+                          <>
+                            {optDraft.map((opt, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-secondary w-4 text-center">{idx + 1}</span>
+                                <input
+                                  type="text"
+                                  className="form-input flex-1 py-1.5 text-sm"
+                                  value={opt}
+                                  placeholder={`Opsi ${idx + 1}`}
+                                  onChange={e => {
+                                    const next = [...optDraft];
+                                    next[idx] = e.target.value;
+                                    setOptDraft(next);
+                                  }}
+                                />
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setForm({ ...form, tipe_jawaban: optDraft.filter(Boolean).join(",") })}
+                              className="w-full py-1.5 rounded-lg text-[11px] font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                            >
+                              Gunakan Opsi
+                            </button>
+                          </>
+                        )}
+                      </div>
                     );
-                  })}
+                  })()}
+                  <p className="text-[10px] text-secondary mt-2 italic">* Pilih preset atau edit opsi secara bebas. Nilai disimpan sebagai teks dipisah koma.</p>
                 </div>
-                {/* Option builder */}
-                {(() => {
-                  const presets = ["Bagus,Tidak Bagus","Ada,Tidak Ada","Terpasang,Tidak Terpasang","Sesuai,Tidak Sesuai","Lengkap,Tidak Lengkap","Kosong,Sisa","input"];
-                  const isCustom = !presets.includes(form.tipe_jawaban) || form.tipe_jawaban === "";
-                  return (
-                    <div className="p-3 rounded-xl border border-border bg-bg-secondary space-y-2">
-                      <p className="text-[10px] font-bold text-secondary uppercase tracking-wider">
-                        {isCustom ? "Opsi Kustom" : "Edit Opsi"}
-                      </p>
-                      {form.tipe_jawaban === "input" ? (
-                        <p className="text-xs text-secondary italic">Petugas mengisi jawaban secara manual (teks bebas).</p>
-                      ) : (
-                        <>
-                          {optDraft.map((opt, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <span className="text-[10px] font-black text-secondary w-4 text-center">{idx + 1}</span>
-                              <input
-                                type="text"
-                                className="form-input flex-1 py-1.5 text-sm"
-                                value={opt}
-                                placeholder={`Opsi ${idx + 1}`}
-                                onChange={e => {
-                                  const next = [...optDraft];
-                                  next[idx] = e.target.value;
-                                  setOptDraft(next);
-                                }}
-                              />
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => setForm({ ...form, tipe_jawaban: optDraft.filter(Boolean).join(",") })}
-                            className="w-full py-1.5 rounded-lg text-[11px] font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                          >
-                            Gunakan Opsi
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-                <p className="text-[10px] text-secondary mt-2 italic">* Pilih preset atau edit opsi secara bebas. Nilai disimpan sebagai teks dipisah koma.</p>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Keterangan</label>
-                <textarea
-                  className="form-input min-h-[60px]"
-                  value={form.keterangan}
-                  onChange={(e) => setForm({ ...form, keterangan: e.target.value })}
-                  placeholder="Keterangan tambahan..."
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Keterangan</label>
+                  <textarea
+                    className="form-input min-h-[60px]"
+                    value={form.keterangan}
+                    onChange={(e) => setForm({ ...form, keterangan: e.target.value })}
+                    placeholder="Keterangan tambahan..."
+                  />
+                </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
-                  checked={form.is_active}
-                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                />
-                <label htmlFor="is_active" className="text-sm font-medium text-secondary cursor-pointer">
-                  Item Aktif (Ditampilkan di form pemeriksaan)
-                </label>
-              </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
+                    checked={form.is_active}
+                    onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                  />
+                  <label htmlFor="is_active" className="text-sm font-medium text-secondary cursor-pointer">
+                    Item Aktif (Ditampilkan di form pemeriksaan)
+                  </label>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Urutan Tampilan</label>
-                <input
-                  type="number"
-                  required
-                  className="form-input"
-                  value={form.urutan}
-                  onChange={(e) => setForm({ ...form, urutan: parseInt(e.target.value) || 0 })}
-                  placeholder="Nomor urutan..."
-                />
-                <p className="text-[10px] text-slate-400 mt-1 italic">* Menentukan posisi item ini di form pemeriksaan.</p>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Urutan Tampilan</label>
+                  <input
+                    type="number"
+                    required
+                    className="form-input"
+                    value={form.urutan}
+                    onChange={(e) => setForm({ ...form, urutan: parseInt(e.target.value) || 0 })}
+                    placeholder="Nomor urutan..."
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 italic">* Menentukan posisi item ini di form pemeriksaan.</p>
+                </div>
 
-              {error && <p className="text-sm text-red-400 bg-red-400/10 p-3 rounded-lg">{error}</p>}
+                {error && <p className="text-sm text-red-400 bg-red-400/10 p-3 rounded-lg">{error}</p>}
 
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="btn btn-secondary"
-                  disabled={saving}
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn btn-primary min-w-[100px]" disabled={saving}>
-                  {saving ? "Menyimpan..." : "Simpan"}
-                </button>
-              </div>
-            </form>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="btn btn-secondary"
+                    disabled={saving}
+                  >
+                    Batal
+                  </button>
+                  <button type="submit" className="btn btn-primary min-w-[100px]" disabled={saving}>
+                    {saving ? "Menyimpan..." : "Simpan"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
       <DeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}

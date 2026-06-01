@@ -12,6 +12,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface Transporter {
   id: number;
@@ -265,27 +266,29 @@ export default function TransportersPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{editing ? "Edit Transporter" : "Tambah Transporter"}</h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{editing ? "Edit Transporter" : "Tambah Transporter"}</h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+              </div>
+              {error && (<div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>⚠️ {error}</div>)}
+              <form onSubmit={handleSave}>
+                <div className="mb-4"><label className="form-label">Nama Transporter *</label><input id="input-nama-transporter" type="text" className="form-input" required value={form.nama_transporter} onChange={(e) => setForm((p) => ({ ...p, nama_transporter: e.target.value }))} /></div>
+                <div className="mb-4"><label className="form-label">Kode *</label><input id="input-kode-transporter" type="text" className="form-input" required value={form.kode} onChange={(e) => setForm((p) => ({ ...p, kode: e.target.value.toUpperCase() }))} /></div>
+                <div className="mb-6 flex items-center gap-3">
+                  <input id="check-active-transporter" type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                  <label htmlFor="check-active-transporter" className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</label>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
+                  <button id="btn-save-transporter" type="submit" className="btn btn-primary" disabled={saving}>{saving ? <><span className="spinner" /> Menyimpan...</> : "Simpan"}</button>
+                </div>
+              </form>
             </div>
-            {error && (<div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>⚠️ {error}</div>)}
-            <form onSubmit={handleSave}>
-              <div className="mb-4"><label className="form-label">Nama Transporter *</label><input id="input-nama-transporter" type="text" className="form-input" required value={form.nama_transporter} onChange={(e) => setForm((p) => ({ ...p, nama_transporter: e.target.value }))} /></div>
-              <div className="mb-4"><label className="form-label">Kode *</label><input id="input-kode-transporter" type="text" className="form-input" required value={form.kode} onChange={(e) => setForm((p) => ({ ...p, kode: e.target.value.toUpperCase() }))} /></div>
-              <div className="mb-6 flex items-center gap-3">
-                <input id="check-active-transporter" type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                <label htmlFor="check-active-transporter" className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</label>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
-                <button id="btn-save-transporter" type="submit" className="btn btn-primary" disabled={saving}>{saving ? <><span className="spinner" /> Menyimpan...</> : "Simpan"}</button>
-              </div>
-            </form>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteConfirm} loading={deleting} message="Menghapus data transporter akan berpengaruh pada riwayat transaksi kendaraan yang terkait secara permanen. Lanjutkan?" />

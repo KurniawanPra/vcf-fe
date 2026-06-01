@@ -12,6 +12,7 @@ import PrintAllVCF from "@/components/print/PrintAllVCF";
 import PrintMasterTable from "@/components/print/PrintMasterTable";
 import Pagination from "@/components/Pagination";
 import DatePickerModal, { DateRangeTrigger } from "@/components/DatePickerModal";
+import ModalPortal from "@/components/ModalPortal";
 
 interface Vcf {
   id: number;
@@ -745,22 +746,24 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       </div>
 
       {/* Reject Modal */}
-      {rejectingId && (
-        <div className="modal-overlay" onClick={() => setRejectingId(null)}>
-          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold" style={{ color: "#dc2626" }}>Tolak VCF</h2>
-              <button onClick={() => setRejectingId(null)} style={{ color: "var(--text-muted)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
-            </div>
-            <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Apakah Anda yakin ingin menolak VCF ini? Harap berikan alasan penolakan.</p>
-            <textarea className="form-input w-full min-h-[100px] mb-6" placeholder="Alasan penolakan..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-            <div className="flex gap-3 justify-end">
-              <button className="btn btn-secondary" onClick={() => setRejectingId(null)}>Batal</button>
-              <button className="btn btn-danger" onClick={handleReject} disabled={rejectLoading || !rejectReason.trim()}>{rejectLoading ? "Memproses..." : "Tolak VCF"}</button>
+      <ModalPortal>
+        {rejectingId && (
+          <div className="modal-overlay" onClick={() => setRejectingId(null)}>
+            <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold" style={{ color: "#dc2626" }}>Tolak VCF</h2>
+                <button onClick={() => setRejectingId(null)} style={{ color: "var(--text-muted)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+              </div>
+              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Apakah Anda yakin ingin menolak VCF ini? Harap berikan alasan penolakan.</p>
+              <textarea className="form-input w-full min-h-[100px] mb-6" placeholder="Alasan penolakan..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+              <div className="flex gap-3 justify-end">
+                <button className="btn btn-secondary" onClick={() => setRejectingId(null)}>Batal</button>
+                <button className="btn btn-danger" onClick={handleReject} disabled={rejectLoading || !rejectReason.trim()}>{rejectLoading ? "Memproses..." : "Tolak VCF"}</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* Printing individual VCF */}
       {printingVcf && <PrintVCF vcf={printingVcf} onClose={() => setPrintingVcf(null)} />}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useToast } from "@/components/Toast";
 import { timbanganApi } from "@/lib/api";
 
@@ -107,7 +108,7 @@ export default function AdminTimbanganModal({
     setFormData((prev) => ({ ...prev, [e.target.name]: val }));
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden border border-slate-200 dark:border-white/10">
         {/* Header */}
@@ -232,6 +233,7 @@ export default function AdminTimbanganModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

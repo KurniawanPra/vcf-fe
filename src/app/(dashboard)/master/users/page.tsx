@@ -11,6 +11,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface User {
   id: number;
@@ -459,162 +460,164 @@ export default function UsersPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
-                {editing ? "Edit Pengguna" : "Tambah Pengguna"}
-              </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            {error && (
-              <div
-                className="mb-4 p-3 rounded-lg text-sm"
-                style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}
-              >
-                ⚠️ {error}
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
+                  {editing ? "Edit Pengguna" : "Tambah Pengguna"}
+                </h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-            )}
-            <form onSubmit={handleSave}>
-              <div className="mb-4">
-                <label className="form-label">Nama Lengkap *</label>
-                <input
-                  id="input-nama-user"
-                  type="text"
-                  className="form-input"
-                  required
-                  value={form.nama}
-                  onChange={(e) => setForm((p) => ({ ...p, nama: e.target.value }))}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="form-label">Username *</label>
+              {error && (
+                <div
+                  className="mb-4 p-3 rounded-lg text-sm"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}
+                >
+                  ⚠️ {error}
+                </div>
+              )}
+              <form onSubmit={handleSave}>
+                <div className="mb-4">
+                  <label className="form-label">Nama Lengkap *</label>
                   <input
-                    id="input-username-user"
+                    id="input-nama-user"
                     type="text"
                     className="form-input"
                     required
-                    value={form.username}
-                    onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                    value={form.nama}
+                    onChange={(e) => setForm((p) => ({ ...p, nama: e.target.value }))}
                   />
                 </div>
-                <div>
-                  <label className="form-label">Role</label>
-                  <select
-                    id="select-role-user"
-                    className="form-select"
-                    value={form.role}
-                    onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
-                  >
-                    <option value="petugas">Petugas</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="form-label">{editing ? "Password Baru" : "Password *"}</label>
-                  <div style={{ position: "relative" }}>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="form-label">Username *</label>
                     <input
-                      id="input-password-user"
-                      type={showPassword ? "text" : "password"}
+                      id="input-username-user"
+                      type="text"
                       className="form-input"
-                      style={{ paddingRight: "2.5rem" }}
-                      required={!editing}
-                      value={form.password}
-                      onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                      required
+                      value={form.username}
+                      onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, lineHeight: 0 }}
-                      tabIndex={-1}
-                      aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  </div>
+                  <div>
+                    <label className="form-label">Role</label>
+                    <select
+                      id="select-role-user"
+                      className="form-select"
+                      value={form.role}
+                      onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
                     >
-                      {showPassword ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                          <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                      ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      )}
-                    </button>
+                      <option value="petugas">Petugas</option>
+                      <option value="admin">Admin</option>
+                    </select>
                   </div>
                 </div>
-                <div>
-                  <label className="form-label">Konfirmasi Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      id="input-password-confirm-user"
-                      type={showPasswordConfirm ? "text" : "password"}
-                      className="form-input"
-                      style={{ paddingRight: "2.5rem" }}
-                      required={!editing && !!form.password}
-                      value={form.password_confirmation}
-                      onChange={(e) => setForm((p) => ({ ...p, password_confirmation: e.target.value }))}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordConfirm((v) => !v)}
-                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, lineHeight: 0 }}
-                      tabIndex={-1}
-                      aria-label={showPasswordConfirm ? "Sembunyikan konfirmasi password" : "Tampilkan konfirmasi password"}
-                    >
-                      {showPasswordConfirm ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                          <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                      ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      )}
-                    </button>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="form-label">{editing ? "Password Baru" : "Password *"}</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        id="input-password-user"
+                        type={showPassword ? "text" : "password"}
+                        className="form-input"
+                        style={{ paddingRight: "2.5rem" }}
+                        required={!editing}
+                        value={form.password}
+                        onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, lineHeight: 0 }}
+                        tabIndex={-1}
+                        aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      >
+                        {showPassword ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label">Konfirmasi Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        id="input-password-confirm-user"
+                        type={showPasswordConfirm ? "text" : "password"}
+                        className="form-input"
+                        style={{ paddingRight: "2.5rem" }}
+                        required={!editing && !!form.password}
+                        value={form.password_confirmation}
+                        onChange={(e) => setForm((p) => ({ ...p, password_confirmation: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordConfirm((v) => !v)}
+                        style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, lineHeight: 0 }}
+                        tabIndex={-1}
+                        aria-label={showPasswordConfirm ? "Sembunyikan konfirmasi password" : "Tampilkan konfirmasi password"}
+                      >
+                        {showPasswordConfirm ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mb-6 flex items-center gap-3">
-                <input
-                  id="check-active-user"
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
-                  style={{ width: 16, height: 16 }}
-                />
-                <label htmlFor="check-active-user" className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                  Aktif
-                </label>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Batal
-                </button>
-                <button id="btn-save-user" type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? (
-                    <>
-                      <span className="spinner" /> Menyimpan...
-                    </>
-                  ) : (
-                    "Simpan"
-                  )}
-                </button>
-              </div>
-            </form>
+                <div className="mb-6 flex items-center gap-3">
+                  <input
+                    id="check-active-user"
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <label htmlFor="check-active-user" className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    Aktif
+                  </label>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                    Batal
+                  </button>
+                  <button id="btn-save-user" type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? (
+                      <>
+                        <span className="spinner" /> Menyimpan...
+                      </>
+                    ) : (
+                      "Simpan"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
       <DeleteConfirmModal
         isOpen={showDeleteModal}

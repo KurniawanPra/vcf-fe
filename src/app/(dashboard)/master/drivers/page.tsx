@@ -14,6 +14,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface Driver {
   id: number;
@@ -409,49 +410,51 @@ export default function DriversPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{editing ? "Edit Supir" : "Tambah Supir"}</h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
-            </div>
-            {error && (<div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>⚠️ {error}</div>)}
-            <form onSubmit={handleSave}>
-              <div className="mb-4">
-                <label className="form-label">Nama Supir *</label>
-                <input id="input-nama-supir" type="text" className="form-input" required value={form.nama_supir} onChange={(e) => setForm((p) => ({ ...p, nama_supir: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="form-label">No. SIM *</label>
-                  <input id="input-no-sim" type="text" className="form-input" required value={form.no_sim} onChange={(e) => setForm((p) => ({ ...p, no_sim: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="form-label">Jenis SIM</label>
-                  <select id="input-jenis-sim" className="form-select" value={form.jenis_sim} onChange={(e) => setForm((p) => ({ ...p, jenis_sim: e.target.value }))}>
-                    {SIM_TYPES.map((j) => (<option key={j} value={j}>{j}</option>))}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Berlaku s/d</label>
-                  <input id="input-tgl-berlaku-sim" type="date" className="form-input" value={form.tgl_berlaku_sim} onChange={(e) => setForm((p) => ({ ...p, tgl_berlaku_sim: e.target.value }))} />
-                </div>
-              </div>
-              <div className="mb-6 flex items-center gap-3">
-                <input id="check-active-driver" type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                <label htmlFor="check-active-driver" className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</label>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
-                <button id="btn-save-driver" type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? <><span className="spinner" /> Menyimpan...</> : "Simpan"}
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{editing ? "Edit Supir" : "Tambah Supir"}</h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>
                 </button>
               </div>
-            </form>
+              {error && (<div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>⚠️ {error}</div>)}
+              <form onSubmit={handleSave}>
+                <div className="mb-4">
+                  <label className="form-label">Nama Supir *</label>
+                  <input id="input-nama-supir" type="text" className="form-input" required value={form.nama_supir} onChange={(e) => setForm((p) => ({ ...p, nama_supir: e.target.value }))} />
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="form-label">No. SIM *</label>
+                    <input id="input-no-sim" type="text" className="form-input" required value={form.no_sim} onChange={(e) => setForm((p) => ({ ...p, no_sim: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="form-label">Jenis SIM</label>
+                    <select id="input-jenis-sim" className="form-select" value={form.jenis_sim} onChange={(e) => setForm((p) => ({ ...p, jenis_sim: e.target.value }))}>
+                      {SIM_TYPES.map((j) => (<option key={j} value={j}>{j}</option>))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Berlaku s/d</label>
+                    <input id="input-tgl-berlaku-sim" type="date" className="form-input" value={form.tgl_berlaku_sim} onChange={(e) => setForm((p) => ({ ...p, tgl_berlaku_sim: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="mb-6 flex items-center gap-3">
+                  <input id="check-active-driver" type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                  <label htmlFor="check-active-driver" className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</label>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
+                  <button id="btn-save-driver" type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? <><span className="spinner" /> Menyimpan...</> : "Simpan"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {isPrinting && (

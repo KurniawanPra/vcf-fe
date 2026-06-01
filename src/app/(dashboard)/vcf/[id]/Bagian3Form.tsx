@@ -27,13 +27,21 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const [fieldErrors, setFieldErrors] = useState<Record<number, boolean>>({});
   const [pemeriksaanItems, setPemeriksaanItems] = useState<CheckItem[]>([]);
   const [pemeriksaan, setPemeriksaan] = useState<Record<number, string>>({});
-  
+
   // States for detail fields
   const [jenisBeban, setJenisBeban] = useState("");
   const [jumlahSegel, setJumlahSegel] = useState("");
   const [nomorSegel, setNomorSegel] = useState<string[]>([""]);
   const [keteranganUmum, setKeteranganUmum] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
   const activityType = vcfData?.tipe_kegiatan || "";
   const isLoading = activityType.startsWith("loading");
   const isUnloading = activityType.startsWith("unloading");
@@ -96,7 +104,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
     if (vcfData?.driver_id) {
       violationApi.check({ driver_id: vcfData.driver_id })
         .then(res => setViolationData(res.data?.data ?? {}))
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [vcfData?.driver_id]);
 
@@ -106,13 +114,13 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
         setDataLoading(true);
         const tipeBase = activityType.startsWith('loading') ? 'loading'
           : activityType.startsWith('unloading') ? 'unloading'
-          : undefined;
+            : undefined;
         const res = await masterApi.getItemPemeriksaanKeluar(tipeBase ? { tipe_kegiatan: tipeBase } : undefined);
         const items = (res.data.data || res.data).filter(
           (i: CheckItem & { is_active?: boolean }) => i.is_active !== false
         );
         setPemeriksaanItems(items);
-        
+
         // Initial state
         const initial: Record<number, string> = {};
         items.forEach((i: CheckItem) => { initial[i.id] = ""; });
@@ -136,7 +144,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
     if (data.pemeriksaan_keluar) {
       const initial: Record<number, string> = {};
       items.forEach(i => { initial[i.id] = ""; });
-      
+
       data.pemeriksaan_keluar.forEach((pk: any) => {
         const val = pk.nilai?.toString().trim() || "";
         const itemId = Number(pk.item_id);
@@ -164,7 +172,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
           setNomorSegel(data.segel_keluar.nomor_segel.map((s: any) => s.nomor_segel || s));
         }
       }
-      
+
       // Set SGK (Segel Keluar) pemeriksaan item based on jumlah_segel
       if (segelItem) {
         const isTerpasang = Number(data.segel_keluar.jumlah_segel) > 0;
@@ -215,7 +223,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     // Validasi client-side sebelum submit
     const validation = validateForm();
     if (!validation.valid) {
@@ -303,7 +311,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
         if (vcfData?.driver_id) {
           violationApi.check({ driver_id: vcfData.driver_id })
             .then(res => setViolationData(res.data?.data ?? {}))
-            .catch(() => {});
+            .catch(() => { });
         }
         setTimeout(() => {
           setLoading(false);
@@ -315,7 +323,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
       setShowRejectModal(false);
       toast.success("VCF Ditolak",
         rejectType === "blacklist" ? "Driver diblokir dan VCF ditolak."
-        : "VCF berhasil ditolak."
+          : "VCF berhasil ditolak."
       );
       setTimeout(() => {
         router.push(`/vcf/${vcfId}`);
@@ -332,102 +340,102 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
   // Show read-only view if data exists and not currently editing
   const hasExistingData = vcfData.pemeriksaan_keluar && vcfData.pemeriksaan_keluar.length > 0;
   const readOnlyView = hasExistingData ? (
-      <div className="space-y-6">
-        {vcfData.status === "reject" && (
-          <div className="p-5 rounded-2xl border-2 animate-pulse" style={{ background: "rgba(239,68,68,0.05)", borderColor: "rgba(239,68,68,0.2)" }}>
-            <div className="flex items-center gap-3 mb-2 text-red-400 font-bold">
-              VCF Ditolak di Tahap Ini
-            </div>
-            <p className="text-sm pl-11" style={{ color: "#fca5a5" }}>
-              Alasan: {vcfData.catatan || "Tidak ada alasan penolakan yang dicatat."}
-            </p>
+    <div className="space-y-6">
+      {vcfData.status === "reject" && (
+        <div className="p-5 rounded-2xl border-2 animate-pulse" style={{ background: "rgba(239,68,68,0.05)", borderColor: "rgba(239,68,68,0.2)" }}>
+          <div className="flex items-center gap-3 mb-2 text-red-400 font-bold">
+            VCF Ditolak di Tahap Ini
           </div>
-        )}
+          <p className="text-sm pl-11" style={{ color: "#fca5a5" }}>
+            Alasan: {vcfData.catatan || "Tidak ada alasan penolakan yang dicatat."}
+          </p>
+        </div>
+      )}
 
-        <div className="p-6 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm bg-white dark:bg-bg-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 flex justify-between items-center">
-            <h3 className="font-bold text-text-primary dark:text-white uppercase tracking-wider text-sm">Hasil Pemeriksaan Weighbridge Keluar</h3>
-            {/* Only admin can edit existing data */}
-            {canEdit && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn btn-secondary btn-sm flex items-center gap-2"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                EDIT
-              </button>
-            )}
-          </div>
-          
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {vcfData.pemeriksaan_keluar?.map((pk: any) => (
-                <div key={pk.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">{pk.item?.nama_item}</p>
-                    <p className="font-bold text-text-primary dark:text-slate-200">{pk.nilai}</p>
-                  </div>
-                  {(pk.nilai === 'Rusak' || pk.nilai === 'Tidak' || pk.nilai === 'Tidak Ada' || pk.nilai === 'Sisa' || pk.nilai === 'Tidak Terpasang') ? (
-                    <div className="text-[10px] font-black text-red-500 bg-red-500/10 px-2 py-1 rounded uppercase">{pk.nilai}</div>
-                  ) : (
-                    <div className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded uppercase">{pk.nilai}</div>
-                  )}
+      <div className="p-6 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm bg-white dark:bg-bg-card overflow-hidden">
+        <div className="px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 flex justify-between items-center">
+          <h3 className="font-bold text-text-primary dark:text-white uppercase tracking-wider text-sm">Hasil Pemeriksaan Weighbridge Keluar</h3>
+          {/* Only admin can edit existing data */}
+          {canEdit && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="btn btn-secondary btn-sm flex items-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+              EDIT
+            </button>
+          )}
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {vcfData.pemeriksaan_keluar?.map((pk: any) => (
+              <div key={pk.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">{pk.item?.nama_item}</p>
+                  <p className="font-bold text-text-primary dark:text-slate-200">{pk.nilai}</p>
                 </div>
-              ))}
-            </div>
-
-            {(vcfData.beban_tambahan_keluar || vcfData.segel_keluar || vcfData.segel_masuk) && (
-              <div className="mt-6 pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-6">
-                {vcfData.beban_tambahan_keluar && (
-                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                    <p className="form-label text-blue-400">Beban Tambahan</p>
-                    <p className="text-sm font-bold text-blue-500">{vcfData.beban_tambahan_keluar.jenis_beban}</p>
-                  </div>
+                {(pk.nilai === 'Rusak' || pk.nilai === 'Tidak' || pk.nilai === 'Tidak Ada' || pk.nilai === 'Sisa' || pk.nilai === 'Tidak Terpasang') ? (
+                  <div className="text-[10px] font-black text-red-500 bg-red-500/10 px-2 py-1 rounded uppercase">{pk.nilai}</div>
+                ) : (
+                  <div className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded uppercase">{pk.nilai}</div>
                 )}
-                {vcfData.segel_keluar && (
-                  <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                    <p className="form-label text-emerald-700">Segel Keluar ({vcfData.segel_keluar.jumlah_segel} Unit)</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {vcfData.segel_keluar.nomor_segel?.map((s: any, i: number) => (
+              </div>
+            ))}
+          </div>
+
+          {(vcfData.beban_tambahan_keluar || vcfData.segel_keluar || vcfData.segel_masuk) && (
+            <div className="mt-6 pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-6">
+              {vcfData.beban_tambahan_keluar && (
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                  <p className="form-label text-blue-400">Beban Tambahan</p>
+                  <p className="text-sm font-bold text-blue-500">{vcfData.beban_tambahan_keluar.jenis_beban}</p>
+                </div>
+              )}
+              {vcfData.segel_keluar && (
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                  <p className="form-label text-emerald-700">Segel Keluar ({vcfData.segel_keluar.jumlah_segel} Unit)</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {vcfData.segel_keluar.nomor_segel?.map((s: any, i: number) => (
                       <span key={i} className="px-2 py-1 bg-emerald-500/10 rounded text-[13px] font-mono text-emerald-700">
-                          {typeof s === 'string' ? s : s.nomor_segel}
-                        </span>
-                      ))}
-                    </div>
+                        {typeof s === 'string' ? s : s.nomor_segel}
+                      </span>
+                    ))}
                   </div>
-                )}
-
-                {/* Show segel_masuk for Unloading flow (input at registration) */}
-                {isUnloading && vcfData.segel_masuk && (
-                  <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                    <p className="form-label text-emerald-400">Segel Masuk ({vcfData.segel_masuk.jumlah_segel} Unit) - dari Registrasi</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {vcfData.segel_masuk.nomor_segel?.map((s: any, i: number) => (
-                        <span key={i} className="px-2 py-1 bg-emerald-500/10 rounded text-[13px] font-mono text-emerald-500">
-                          {typeof s === 'string' ? s : s.nomor_segel}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {(vcfData.segel_keluar?.keterangan || vcfData.vcf_bagian3?.keterangan) && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                  <p className="form-label text-text-muted">Keterangan</p>
-                  <p className="text-sm text-text-primary dark:text-slate-200">{vcfData.segel_keluar?.keterangan || vcfData.vcf_bagian3?.keterangan || "Tidak ada keterangan"}</p>
                 </div>
+              )}
+
+              {/* Show segel_masuk for Unloading flow (input at registration) */}
+              {isUnloading && vcfData.segel_masuk && (
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                  <p className="form-label text-emerald-400">Segel Masuk ({vcfData.segel_masuk.jumlah_segel} Unit) - dari Registrasi</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {vcfData.segel_masuk.nomor_segel?.map((s: any, i: number) => (
+                      <span key={i} className="px-2 py-1 bg-emerald-500/10 rounded text-[13px] font-mono text-emerald-500">
+                        {typeof s === 'string' ? s : s.nomor_segel}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(vcfData.segel_keluar?.keterangan || vcfData.vcf_bagian3?.keterangan) && (
+            <div className="mt-6 pt-6 border-t border-border">
+              <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                <p className="form-label text-text-muted">Keterangan</p>
+                <p className="text-sm text-text-primary dark:text-slate-200">{vcfData.segel_keluar?.keterangan || vcfData.vcf_bagian3?.keterangan || "Tidak ada keterangan"}</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-    ) : null;
+    </div>
+  ) : null;
 
   const formView = (
-    <div className="max-w-4xl mx-auto space-y-6 pb-28 md:pb-0">
+    <div className="max-w-4xl mx-auto space-y-6 pb-28 lg:pb-0">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* Quick VCF Info Banner for petugas */}
@@ -446,18 +454,18 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
       {error && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-3">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="vcf-bagian3-form" onSubmit={handleSubmit} className="space-y-6">
 
         {/* CHECKLIST — Android section style */}
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 px-1 mb-3">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-purple-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-purple-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
             <span className="text-[11px] font-black uppercase tracking-widest text-purple-500">Pemeriksaan Weighbridge Keluar</span>
             <span className="ml-auto text-[10px] text-text-muted">{Object.values(pemeriksaan).filter(v => v && v !== '').length}/{pemeriksaanItems.length} terisi</span>
           </div>
@@ -473,14 +481,14 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   ${hasError
                     ? 'border-l-rose-500 border-rose-200 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-500/5'
                     : value
-                      ? (value === options?.[options.length-1]
+                      ? (value === options?.[options.length - 1]
                         ? 'border-l-rose-400 border-slate-100 dark:border-white/5'
                         : 'border-l-emerald-400 border-slate-100 dark:border-white/5')
                       : 'border-l-slate-200 dark:border-l-white/10 border-slate-100 dark:border-white/5'
                   }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${value ? (value === options?.[options.length-1] ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-300 dark:bg-slate-600'}`} />
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${value ? (value === options?.[options.length - 1] ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-300 dark:bg-slate-600'}`} />
                       <span className="font-semibold text-base text-text-primary dark:text-slate-200">{item.nama_item}</span>
                     </div>
 
@@ -525,7 +533,7 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   {item.kode === "SGK" && (
                     <div className="mt-3 pt-3 border-t border-amber-500/10 animate-slideDown space-y-2">
                       <div className="flex items-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                         <span className="text-[10px] uppercase font-black text-amber-500 tracking-widest">
                           {isLoading ? 'Segel akan diinput di MG Keluar' : 'Segel dari Registrasi — Referensi'}
                         </span>
@@ -562,55 +570,62 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
             value={keteranganUmum}
             onChange={(e) => setKeteranganUmum(e.target.value)}
           />
-        </div>
+          {/* Action Bar */}
+          {(() => {
+            const actionButtons = (
+              <div className="fixed bottom-0 left-0 right-0 lg:static z-40 bg-bg-card/95 backdrop-blur-lg lg:bg-transparent border-t border-border lg:border-0 px-4 py-3 lg:p-0 lg:pt-4">
+                <div className="flex flex-row items-center justify-end gap-2 max-w-4xl mx-auto w-full">
+                  {!isEditing && (
+                    <button
+                      type="button"
+                      className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-3 lg:py-3.5 rounded-xl lg:rounded-full text-xs lg:text-sm font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 active:bg-rose-500/20 transition-all"
+                      onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
+                      disabled={loading}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="hidden sm:block">
+                        <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
+                        <line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      <span className="sm:hidden">TOLAK</span>
+                      <span className="hidden sm:inline">REJECT VCF</span>
+                    </button>
+                  )}
+                  {!isEditing && (
+                    <>
+                      <button
+                        type="button"
+                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-3 lg:py-3.5 rounded-xl lg:rounded-full text-xs lg:text-sm font-bold bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border border-slate-200 dark:border-white/10 active:bg-slate-200 dark:active:bg-white/10 transition-all"
+                        onClick={() => {
+                          const resetObj: Record<number, string> = {};
+                          pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
+                          setPemeriksaan(resetObj);
+                          setJenisBeban("");
+                          setJumlahSegel("");
+                          setNomorSegel([""]);
+                          setKeteranganUmum("");
+                          setError("");
+                        }}
+                        disabled={loading}
+                      >
+                        RESET
+                      </button>
+                      <button
+                        type="submit"
+                        form="vcf-bagian3-form"
+                        className="flex-[2] lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-8 py-3 lg:py-3.5 rounded-xl lg:rounded-full text-xs lg:text-sm font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all"
+                        disabled={loading}
+                      >
+                        {loading ? <><span className="spinner border-white" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
 
-        {/* Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 md:static z-40 bg-bg-card/95 backdrop-blur-lg md:bg-transparent border-t border-border md:border-0 px-4 py-3 md:p-0 md:pt-4">
-          <div className="flex flex-row items-center justify-end gap-2 max-w-4xl mx-auto w-full">
-            {!isEditing && (
-              <button
-                type="button"
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-3.5 rounded-xl md:rounded-full text-xs md:text-sm font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 active:bg-rose-500/20 transition-all"
-                onClick={() => { setRejectReason(""); setRejectType("warning"); setShowRejectModal(true); }}
-                disabled={loading}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="hidden sm:block">
-                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <span className="sm:hidden">TOLAK</span>
-                <span className="hidden sm:inline">REJECT VCF</span>
-              </button>
-            )}
-            {!isEditing && (
-              <>
-                <button
-                  type="button"
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-3.5 rounded-xl md:rounded-full text-xs md:text-sm font-bold bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border border-slate-200 dark:border-white/10 active:bg-slate-200 dark:active:bg-white/10 transition-all"
-                  onClick={() => {
-                    const resetObj: Record<number, string> = {};
-                    pemeriksaanItems.forEach(i => { resetObj[i.id] = ""; });
-                    setPemeriksaan(resetObj);
-                    setJenisBeban("");
-                    setJumlahSegel("");
-                    setNomorSegel([""]);
-                    setKeteranganUmum("");
-                    setError("");
-                  }}
-                  disabled={loading}
-                >
-                  RESET
-                </button>
-                <button
-                  type="submit"
-                  className="flex-[2] md:flex-none flex items-center justify-center gap-2 px-4 md:px-8 py-3 md:py-3.5 rounded-xl md:rounded-full text-xs md:text-sm font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all"
-                  disabled={loading}
-                >
-                  {loading ? <><span className="spinner border-white" /> MEMPROSES...</> : <><span className="sm:hidden">SIMPAN</span><span className="hidden sm:inline">SIMPAN & LANJUTKAN</span></>}
-                </button>
-              </>
-            )}
-          </div>
+            if (!isMobile) return actionButtons;
+            return createPortal(actionButtons, document.body);
+          })()}
         </div>
       </form>
 
@@ -665,11 +680,10 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   <button
                     type="button"
                     onClick={() => setRejectType("reject_only")}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
-                      rejectType === "reject_only"
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${rejectType === "reject_only"
                         ? "bg-slate-500/10 border-slate-500 text-slate-700 dark:text-slate-300"
                         : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-slate-400"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-black uppercase">Tolak VCF</span>
@@ -679,11 +693,10 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   <button
                     type="button"
                     onClick={() => setRejectType("warning")}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
-                      rejectType === "warning"
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${rejectType === "warning"
                         ? "bg-amber-500/10 border-amber-500 text-amber-700 dark:text-amber-400"
                         : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-amber-400"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-black uppercase">Warning</span>
@@ -693,11 +706,10 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   <button
                     type="button"
                     onClick={() => setRejectType("blacklist")}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
-                      rejectType === "blacklist"
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${rejectType === "blacklist"
                         ? "bg-red-500/10 border-red-500 text-red-600 dark:text-red-400"
                         : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-red-400"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-black uppercase">Blacklist</span>
@@ -739,18 +751,17 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                   disabled={loading}
                 >Batal</button>
                 <button
-                  className={`flex-[2] btn font-black ${
-                    rejectType === "blacklist" ? "btn-danger"
-                    : rejectType === "warning" ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500"
-                    : "bg-slate-600 hover:bg-slate-700 text-white border-slate-600"
-                  }`}
+                  className={`flex-[2] btn font-black ${rejectType === "blacklist" ? "btn-danger"
+                      : rejectType === "warning" ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500"
+                        : "bg-slate-600 hover:bg-slate-700 text-white border-slate-600"
+                    }`}
                   onClick={handleReject}
                   disabled={loading || !rejectReason.trim()}
                 >
                   {loading ? <><span className="spinner" /> Memproses...</>
                     : rejectType === "blacklist" ? "Blacklist & Tolak VCF"
-                    : rejectType === "warning" ? "Catat Warning"
-                    : "Tolak VCF"}
+                      : rejectType === "warning" ? "Catat Warning"
+                        : "Tolak VCF"}
                 </button>
               </div>
             </div>
@@ -779,53 +790,54 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
       {readOnlyView}
     </div>
   );
-  
+
   if (hasExistingData && isEditing) {
     return (
       <>
         {readOnlyView}
-         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsEditing(false); setError(""); }}>
-          <div className="bg-white dark:bg-bg-card w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
-            <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-bg-card">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100 dark:border-white/10">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-violet-500"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        {createPortal(
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsEditing(false); setError(""); }}>
+            <div className="bg-white dark:bg-bg-card w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
+              <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-bg-card">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100 dark:border-white/10">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-violet-500"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Edit Security Weighbridge (Keluar)</h2>
+                    <p className="text-slate-400 text-xs font-medium">Perbarui data pemeriksaan fisik kendaraan</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Edit Security Weighbridge (Keluar)</h2>
-                  <p className="text-slate-400 text-xs font-medium">Perbarui data pemeriksaan fisik kendaraan</p>
+                <button onClick={() => { setIsEditing(false); setError(""); }} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 transition-all">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="p-8 overflow-y-auto flex-1 bg-white dark:bg-bg-card relative">
+                {showSuccess && (
+                  <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-white/95 dark:bg-slate-900/98 backdrop-blur-sm animate-fadeIn">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center border-2 border-emerald-100 mb-4">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-1">Berhasil Disimpan</h3>
+                    <p className="text-slate-400 text-sm font-medium">Data telah diperbarui secara aman.</p>
+
+                    <style>{`
+                       .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+                       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                     `}</style>
+                  </div>
+                )}
+                <div className="max-w-4xl mx-auto">
+                  {formView}
                 </div>
               </div>
-              <button onClick={() => { setIsEditing(false); setError(""); }} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 transition-all">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-            
-            <div className="p-8 overflow-y-auto flex-1 bg-white dark:bg-bg-card relative">
-               {showSuccess && (
-                 <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-white/95 dark:bg-slate-900/98 backdrop-blur-sm animate-fadeIn">
-                   <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center border-2 border-emerald-100 mb-4">
-                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                       <polyline points="20 6 9 17 4 12" />
-                     </svg>
-                   </div>
-                   <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-1">Berhasil Disimpan</h3>
-                   <p className="text-slate-400 text-sm font-medium">Data telah diperbarui secara aman.</p>
-                   
-                   <style>{`
-                     .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
-                     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                   `}</style>
-                 </div>
-               )}
-               <div className="max-w-4xl mx-auto">
-                 {formView}
-               </div>
-            </div>
-             <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-bg-card flex justify-end gap-3 shrink-0">
-                <button 
+              <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-bg-card flex justify-end gap-3 shrink-0">
+                <button
                   type="button"
-                  onClick={() => { setIsEditing(false); setError(""); }} 
+                  onClick={() => { setIsEditing(false); setError(""); }}
                   className="btn btn-secondary btn-sm"
                 >
                   Batal
@@ -838,9 +850,11 @@ export default function Bagian3Form({ vcfId, canEdit, canFill, vcfData, onSucces
                 >
                   {loading ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
-             </div>
-          </div>
-        </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </>
     );
   }

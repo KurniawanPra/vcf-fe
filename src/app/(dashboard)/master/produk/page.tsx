@@ -13,6 +13,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface Produk {
   id: number;
@@ -312,45 +313,47 @@ export default function ProdukPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
-                {editing ? "Edit Produk" : "Tambah Produk"}
-              </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
-            </div>
-            {error && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>⚠️ {error}</div>}
-            <form onSubmit={handleSave}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="form-label">Kode Produk *</label>
-                  <input type="text" className="form-input uppercase" required value={form.kode} onChange={(e) => setForm(p => ({ ...p, kode: e.target.value.toUpperCase() }))} placeholder="Contoh: CPO" />
-                </div>
-                <div>
-                  <label className="form-label">Nama Produk *</label>
-                  <input type="text" className="form-input" required value={form.nama} onChange={(e) => setForm(p => ({ ...p, nama: e.target.value }))} placeholder="Contoh: Crude Palm Oil" />
-                </div>
-              </div>
-              <div className="mb-6">
-                <label className="form-label">Keterangan</label>
-                <input type="text" className="form-input" value={form.keterangan} onChange={(e) => setForm(p => ({ ...p, keterangan: e.target.value }))} placeholder="Keterangan opsional" />
-              </div>
-              <div className="mb-6 flex items-center gap-3">
-                <input type="checkbox" id="check-active-produk" checked={form.is_active} onChange={(e) => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                <label htmlFor="check-active-produk" className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</label>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? <><span className="spinner" /> Menyimpan...</> : "Simpan"}
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
+                  {editing ? "Edit Produk" : "Tambah Produk"}
+                </h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>
                 </button>
               </div>
-            </form>
+              {error && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>⚠️ {error}</div>}
+              <form onSubmit={handleSave}>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="form-label">Kode Produk *</label>
+                    <input type="text" className="form-input uppercase" required value={form.kode} onChange={(e) => setForm(p => ({ ...p, kode: e.target.value.toUpperCase() }))} placeholder="Contoh: CPO" />
+                  </div>
+                  <div>
+                    <label className="form-label">Nama Produk *</label>
+                    <input type="text" className="form-input" required value={form.nama} onChange={(e) => setForm(p => ({ ...p, nama: e.target.value }))} placeholder="Contoh: Crude Palm Oil" />
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <label className="form-label">Keterangan</label>
+                  <input type="text" className="form-input" value={form.keterangan} onChange={(e) => setForm(p => ({ ...p, keterangan: e.target.value }))} placeholder="Keterangan opsional" />
+                </div>
+                <div className="mb-6 flex items-center gap-3">
+                  <input type="checkbox" id="check-active-produk" checked={form.is_active} onChange={(e) => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                  <label htmlFor="check-active-produk" className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</label>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? <><span className="spinner" /> Menyimpan...</> : "Simpan"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       <DeleteConfirmModal

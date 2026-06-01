@@ -12,6 +12,7 @@ import GuideSection from "@/components/GuideSection";
 import ViolationWarningCard, { type ViolationCheckResult } from "@/components/ViolationWarningCard";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import { useToast, ToastContainer } from "@/components/Toast";
+import ValidationSummary, { type ValidationEntry } from "@/components/ValidationSummary";
 
 interface SelectOption { id: number; nama?: string; nama_transporter?: string; nama_supir?: string; nama_item?: string; kode?: string; no_sim?: string; tgl_berlaku_sim?: string; jenis_sim?: string; is_active?: boolean | number | string; }
 interface ChecklistItem { id: number; nama_item: string; urutan: number; is_active?: boolean | number | string; }
@@ -19,100 +20,6 @@ interface MuatanItem { id: number; nama_item: string; jenis: "both" | "dibawa" |
 
 type TipeKegiatan = "loading_lokal" | "loading_export" | "unloading_lokal" | "unloading_import" | "";
 type TipeKendaraan = "bak_terbuka" | "tangki" | "umum" | "box" | "container" | "";
-
-interface ValidationEntry {
-  key: string;
-  section: string;
-  label: string;
-  fieldId: string;
-}
-
-function ValidationSummary({ errors, onDismiss }: { errors: ValidationEntry[]; onDismiss: () => void }) {
-  const [leaving, setLeaving] = useState(false);
-
-  useEffect(() => {
-    if (errors.length === 0) { setLeaving(false); return; }
-    const leaveTimer = setTimeout(() => setLeaving(true), 6500);
-    const clearTimer = setTimeout(() => onDismiss(), 7000);
-    return () => { clearTimeout(leaveTimer); clearTimeout(clearTimer); };
-  }, [errors, onDismiss]);
-
-  const handleDismiss = () => {
-    setLeaving(true);
-    setTimeout(() => onDismiss(), 500);
-  };
-
-  if (errors.length === 0) return null;
-
-  const sections = Array.from(new Set(errors.map(e => e.section)));
-  const scrollTo = (fieldId: string) => {
-    const el = document.getElementById(fieldId) || document.querySelector(`[data-field-id="${fieldId}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (el as HTMLElement)?.focus?.();
-  };
-
-  return (
-    <div
-      className="fixed top-4 right-4 z-50 w-80 rounded-2xl shadow-xl overflow-hidden"
-      style={{
-        background: "rgba(251,191,36,0.95)",
-        border: "1px solid rgba(251,191,36,0.3)",
-        backdropFilter: "blur(8px)",
-        animation: leaving
-          ? "slideOutRight 0.5s ease-in forwards"
-          : "slideInRight 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-amber-300/40">
-        <div className="flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="shrink-0">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          <span className="text-sm font-bold text-white">{errors.length} field belum lengkap</span>
-        </div>
-        <button onClick={handleDismiss} className="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="px-4 py-3 space-y-2 max-h-60 overflow-y-auto">
-        {sections.map(section => (
-          <div key={section}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/60 mb-1">{section}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {errors.filter(e => e.section === section).map(e => (
-                <button
-                  key={e.key}
-                  type="button"
-                  onClick={() => scrollTo(e.fieldId)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/20 hover:bg-white/30 text-white transition-colors border border-white/20"
-                >
-                  {e.label}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress bar auto-dismiss */}
-      <div className="h-0.5 bg-white/20">
-        <div
-          className="h-full bg-white/60"
-          style={{ animation: "shrinkWidth 7s linear forwards" }}
-        />
-      </div>
-    </div>
-  );
-}
 
 // Loading Section Component
 function SectionSkeleton({ title }: { title: string }) {
@@ -139,7 +46,24 @@ export default function VcfRegisterPage() {
   const [loading, setLoading] = useState(false);
   const { toasts, removeToast, toast } = useToast();
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const [localToast, setLocalToast] = useState<{
+    title: string;
+    message: string;
+    type: "error" | "warning" | "success";
+  } | null>(null);
 
+  const showLocalToast = (title: string, message: string, type: "error" | "warning" | "success" = "error") => {
+    setLocalToast({ title, message, type });
+  };
+
+  useEffect(() => {
+    if (localToast) {
+      const timer = setTimeout(() => {
+        setLocalToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [localToast]);
 
   const [validationErrors, setValidationErrors] = useState<ValidationEntry[]>([]);
   const [masterLoading, setMasterLoading] = useState(true);
@@ -340,80 +264,137 @@ export default function VcfRegisterPage() {
     fetchNext();
   }, [tanggal]);
 
-  const validateForm = (): boolean => {
+  const validateForm = (currentJamMasuk?: string): boolean => {
     const errors: Record<string, boolean> = {};
     const entries: ValidationEntry[] = [];
     let isValid = true;
 
-    const addError = (key: string, section: string, label: string, fieldId: string) => {
+    const addError = (key: string, section: string, label: string, fieldId: string, toastMessage?: string) => {
       errors[key] = true;
       entries.push({ key, section, label, fieldId });
       isValid = false;
+      // Show local bottom toast for the first error
+      if (entries.length === 1 && toastMessage) {
+        showLocalToast("Peringatan Validasi", toastMessage, "error");
+      }
     };
+    const jamMasukToCheck = currentJamMasuk ?? jamMasuk;
 
-    if (!jamMasuk || !isValidTime24h(jamMasuk))
-      addError("jamMasuk", "Informasi Dasar", "Jam Masuk", "field-jam-masuk");
-    if (!tipeKegiatan)
-      addError("tipeKegiatan", "Informasi Dasar", "Tipe Kegiatan", "field-tipe-kegiatan");
-    if (!produkKode)
-      addError("produk", "Informasi Dasar", "Produk", "field-produk");
-    if (produkKode === "OTHERS" && !produkLainnya.trim())
-      addError("produkLainnya", "Informasi Dasar", "Detail Produk Lainnya", "field-produk-lainnya");
-    if (!transporterId)
-      addError("transporter", "Informasi Kendaraan", "Transporter", "field-transporter");
-    if (!driverId)
-      addError("driver", "Informasi Kendaraan", "Supir", "field-driver");
-    if (!noPolisi.trim())
-      addError("noPolisi", "Informasi Kendaraan", "No. Polisi", "field-no-polisi");
-    if (!jenisKendaraanId)
-      addError("jenisKendaraan", "Informasi Kendaraan", "Jenis Kendaraan", "field-jenis-kendaraan");
-
-    if (!tipeKendaraan)
-      addError("tipeKendaraan", "Informasi Kendaraan", "Tipe Kendaraan", "field-tipe-kendaraan");
-
-    if (!tujuan.trim())
-      addError("tujuan", "Informasi Kendaraan", "Asal / Tujuan", "field-tujuan");
-
+    // 1. Tipe Kegiatan
+    if (!tipeKegiatan) {
+      addError("tipeKegiatan", "Informasi Dasar", "Tipe Kegiatan", "field-tipe-kegiatan", "Tipe kegiatan wajib dipilih.");
+    }
+    // 2. Tanggal
+    if (!tanggal) {
+      addError("tanggal", "Informasi Dasar", "Tanggal", "field-tanggal", "Tanggal wajib diisi.");
+    }
+    // 3. Jam Masuk
+    if (!jamMasukToCheck || !isValidTime24h(jamMasukToCheck)) {
+      addError("jamMasuk", "Informasi Dasar", "Jam Masuk", "field-jam-masuk", "Jam masuk wajib diisi dengan format HH:MM.");
+    }
+    // 4. Produk
+    if (!produkKode) {
+      addError("produk", "Informasi Dasar", "Produk", "field-produk", "Produk wajib dipilih.");
+    }
+    // 5. Produk Lainnya (if OTHERS)
+    if (produkKode === "OTHERS" && !produkLainnya.trim()) {
+      addError("produkLainnya", "Informasi Dasar", "Detail Produk Lainnya", "field-produk-lainnya", "Detail produk lainnya wajib diisi.");
+    }
+    // 6. Transporter
+    if (!transporterId) {
+      addError("transporter", "Informasi Kendaraan", "Transporter", "field-transporter", "Transporter wajib dipilih.");
+    }
+    // 7. No. Polisi
+    if (!noPolisi.trim()) {
+      addError("noPolisi", "Informasi Kendaraan", "No. Polisi", "field-no-polisi", "Nomor polisi kendaraan wajib diisi.");
+    }
+    // 8. Jenis/Tipe Kendaraan
+    if (!tipeKendaraan) {
+      addError("tipeKendaraan", "Informasi Kendaraan", "Jenis Kendaraan", "field-jenis-kendaraan", "Jenis kendaraan wajib dipilih.");
+    }
+    // 9. Supir
+    if (!driverId) {
+      addError("driver", "Informasi Kendaraan", "Supir", "field-driver", "Nama supir wajib dipilih.");
+    }
+    // 10. Tahun Kendaraan
     if (!tahunKendaraan) {
-      addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan");
+      addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan", "Tahun kendaraan wajib diisi.");
     } else {
       const year = parseInt(tahunKendaraan, 10);
       const currentYear = new Date().getFullYear();
-      if (isNaN(year) || year > currentYear || year < 1950) {
-        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - " + currentYear + ")", "field-tahun-kendaraan");
+      if (isNaN(year) || year < 1950 || year > currentYear) {
+        addError("tahunKendaraan", "Informasi Kendaraan", `Tahun Kendaraan (1950 - ${currentYear})`, "field-tahun-kendaraan", `Tahun kendaraan harus antara 1950 sampai ${currentYear}.`);
+      }
+    }
+    // 11. Asal / Tujuan
+    if (!tujuan.trim()) {
+      const label = isLoading ? "Tujuan" : "Asal";
+      addError("tujuan", "Informasi Kendaraan", label, "field-tujuan", `${label} wajib diisi.`);
+    }
+
+    // 12. Checklist kelengkapan supir
+    const emptyChecklistItems = checklistItems.filter(item => checklist[item.id] === null);
+    if (emptyChecklistItems.length > 0) {
+      addError("checklist", "Kelengkapan Supir", `${emptyChecklistItems.length} item belum dijawab`, "field-checklist", "Semua item Pemeriksaan Kelengkapan Supir wajib dijawab.");
+    }
+
+    // 13. Muatan (Dibawa / Diisi)
+    if (isUnloading) {
+      const adaMuatanDibawa = Object.values(muatanDibawa).some(v => v.checked && v.nilai === "1")
+        || muatanDibawaLainnya.checked === true;
+      if (!adaMuatanDibawa) {
+        addError("muatanDibawa", "Jenis & Detail Muatan", "Muatan yang Dibawa (1)", "field-muatan", "Muatan yang Dibawa harus dipilih.");
+      } else if (muatanDibawaLainnya.checked === true && !muatanDibawaLainnya.nilai.trim()) {
+        addError("muatanDibawaLainnya", "Jenis & Detail Muatan", "Detail Muatan Lainnya", "field-muatan-lainnya", "Detail muatan lainnya wajib diisi.");
       }
     }
 
-    const emptyChecklistItems = checklistItems.filter(item => checklist[item.id] === null);
-    if (emptyChecklistItems.length > 0)
-      addError("checklist", "Kelengkapan Supir", `${emptyChecklistItems.length} item belum dijawab`, "field-checklist");
+    if (isLoading) {
+      const adaMuatanDiisi = Object.values(muatanDiisi).some(v => v.checked && v.nilai === "1")
+        || muatanDiisiLainnya.checked === true;
+      if (!adaMuatanDiisi) {
+        addError("muatanDiisi", "Jenis & Detail Muatan", "Muatan yang Akan Diisi (minimal 1)", "field-muatan", "Muatan yang Akan Diisi harus dipilih.");
+      } else if (muatanDiisiLainnya.checked === true && !muatanDiisiLainnya.nilai.trim()) {
+        addError("muatanDiisiLainnya", "Jenis & Detail Muatan", "Detail Muatan Lainnya", "field-muatan-lainnya", "Detail muatan lainnya wajib diisi.");
+      }
+    }
 
+    // 14. Nomor Segel
     if (isUnloading) {
       const validSegel = nomorSegel.filter(s => s.trim()).length > 0;
       if (!validSegel) {
-        addError("nomorSegel", "Segel Kendaraan", "Nomor Segel (Minimal 1)", "field-segel");
+        addError("nomorSegel", "Segel Kendaraan", "Nomor Segel (Minimal 1)", "field-segel", "Minimal 1 Nomor Segel Kendaraan harus diisi.");
       }
     }
 
     setFieldErrors(errors);
     setValidationErrors(entries);
+
+    // Scroll to first invalid field if any
+    if (entries.length > 0) {
+      const firstErrorFieldId = entries[0].fieldId;
+      if (firstErrorFieldId) {
+        const el = document.getElementById(firstErrorFieldId) || document.querySelector(`[data-field-id="${firstErrorFieldId}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el as HTMLElement)?.focus?.();
+      }
+    }
+
     return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
+    setValidationErrors([]);
 
     // Auto-set jam masuk to current time on submit
-    const currentJamMasuk = formatTime();
+    const currentJamMasuk = isJamMasukManual ? jamMasuk : formatTime();
     setJamMasuk(currentJamMasuk);
 
-    // Client-side validation
-    if (!validateForm()) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!validateForm(currentJamMasuk)) {
       return;
     }
-    setValidationErrors([]);
 
     const kelengkapanSupir = checklistItems
       .filter((item) => checklist[item.id] !== null)
@@ -479,9 +460,9 @@ export default function VcfRegisterPage() {
 
       const res = await vcfApi.createBagian1(payload);
       const vcfId = res.data.data?.id || res.data.id;
-      
+
       toast.success("Registrasi Berhasil", "Data VCF telah didaftarkan ke sistem.");
-      
+
       const user = getUser();
       setTimeout(() => {
         router.push("/vcf");
@@ -515,11 +496,11 @@ export default function VcfRegisterPage() {
     setSegelTerpasang("");
     setJumlahSegel("");
     setNomorSegel([""]);
-    
+
     const initialChecklist: Record<number, boolean | null> = {};
     checklistItems.forEach((item) => { initialChecklist[item.id] = null; });
     setChecklist(initialChecklist);
-    
+
     const initDibawa: Record<number, { checked: boolean; nilai: string }> = {};
     const initDiisi: Record<number, { checked: boolean; nilai: string }> = {};
     muatanItems.forEach((m) => {
@@ -536,7 +517,7 @@ export default function VcfRegisterPage() {
     setViolationData({});
     setViolationModalAcknowledged(false);
     setShowResetModal(false);
-    
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -638,8 +619,7 @@ export default function VcfRegisterPage() {
         </div>
       )}
 
-      <ValidationSummary errors={validationErrors} onDismiss={() => setValidationErrors([])} />
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {/* ValidationSummary and local ToastContainer removed in favor of bottom-centered custom toast */}
 
       {/* Violation loading spinner */}
       {violationLoading && (
@@ -653,7 +633,7 @@ export default function VcfRegisterPage() {
       {!violationLoading && violationModalAcknowledged && violationData?.driver?.status === "warning" && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 mb-4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500 shrink-0">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
             ⚠ {violationData.driver?.nama_supir} memiliki riwayat pelanggaran — registrasi dilanjutkan dengan catatan.
@@ -662,33 +642,31 @@ export default function VcfRegisterPage() {
       )}
 
       {/* Violation modal portal */}
-      {showViolationModal && violationData?.driver && (() => {
+      {mounted && showViolationModal && violationData?.driver && createPortal((() => {
         const d = violationData.driver!;
         const isBlocked = d.status === "blacklist";
         return (
           <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-            <div className={`bg-white dark:bg-bg-card w-full max-w-md rounded-3xl shadow-2xl border-2 overflow-hidden ${
-              isBlocked ? "border-red-500/40" : "border-amber-500/40"
-            }`}>
+            <div className={`bg-white dark:bg-bg-card w-full max-w-md rounded-3xl shadow-2xl border-2 overflow-hidden ${isBlocked ? "border-red-500/40" : "border-amber-500/40"
+              }`}>
               {/* Top bar */}
-              <div className={`h-1.5 w-full ${ isBlocked ? "bg-gradient-to-r from-red-500 to-rose-500" : "bg-gradient-to-r from-amber-400 to-orange-400" }`} />
+              <div className={`h-1.5 w-full ${isBlocked ? "bg-gradient-to-r from-red-500 to-rose-500" : "bg-gradient-to-r from-amber-400 to-orange-400"}`} />
               <div className="p-6">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                    isBlocked ? "bg-red-500/15" : "bg-amber-500/15"
-                  }`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isBlocked ? "bg-red-500/15" : "bg-amber-500/15"
+                    }`}>
                     {isBlocked ? (
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500">
-                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                        <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                       </svg>
                     ) : (
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500">
-                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
                       </svg>
                     )}
                   </div>
                   <div>
-                    <h3 className={`font-black text-lg ${ isBlocked ? "text-red-600 dark:text-red-400" : "text-amber-700 dark:text-amber-400" }`}>
+                    <h3 className={`font-black text-lg ${isBlocked ? "text-red-600 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
                       {isBlocked ? "⛔ Driver Diblokir" : "⚠ Peringatan Driver"}
                     </h3>
                     <p className="text-sm text-text-muted mt-0.5">
@@ -701,7 +679,7 @@ export default function VcfRegisterPage() {
                 </div>
 
                 {/* Driver info */}
-                <div className={`rounded-xl p-3 mb-4 ${ isBlocked ? "bg-red-500/5 border border-red-500/15" : "bg-amber-500/5 border border-amber-500/15" }`}>
+                <div className={`rounded-xl p-3 mb-4 ${isBlocked ? "bg-red-500/5 border border-red-500/15" : "bg-amber-500/5 border border-amber-500/15"}`}>
                   <p className="font-bold text-text-primary">{d.nama_supir}</p>
                   <p className="text-xs text-text-muted font-mono">{d.no_sim}</p>
                 </div>
@@ -710,9 +688,8 @@ export default function VcfRegisterPage() {
                 {d.violations?.length > 0 && (
                   <ul className="space-y-1.5 mb-4 max-h-40 overflow-y-auto">
                     {d.violations.map((v: any) => (
-                      <li key={v.id} className={`text-xs px-3 py-2 rounded-lg ${
-                        isBlocked ? "bg-red-500/10 text-red-700 dark:text-red-400" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                      }`}>
+                      <li key={v.id} className={`text-xs px-3 py-2 rounded-lg ${isBlocked ? "bg-red-500/10 text-red-700 dark:text-red-400" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        }`}>
                         <span className="font-semibold">{v.jenis_pelanggaran}</span>
                         {v.keterangan && <span className="text-text-muted"> — {v.keterangan}</span>}
                         <div className="text-[10px] text-text-muted mt-0.5">{v.tanggal_pelanggaran?.split("T")[0]}</div>
@@ -753,9 +730,9 @@ export default function VcfRegisterPage() {
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {/* SECTION 1: DOKUMEN & LOGISTIK */}
         <div className="glass-card p-4 md:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-8">
@@ -773,9 +750,20 @@ export default function VcfRegisterPage() {
               </div>
               <p className="text-xs text-slate-400">Otomatis generate harian</p>
             </div>
-            <div>
-              <label className="form-label">Tanggal</label>
-              <input type="date" className="form-input text-lg" value={tanggal} onChange={(e) => setTanggal(e.target.value)} required />
+            <div id="field-tanggal">
+              <label className="form-label">Tanggal *</label>
+              <input
+                type="date"
+                className={`form-input text-lg ${fieldErrors.tanggal ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                value={tanggal}
+                onChange={(e) => {
+                  setTanggal(e.target.value);
+                  if (fieldErrors.tanggal) {
+                    setFieldErrors(prev => ({ ...prev, tanggal: false }));
+                  }
+                }}
+                required
+              />
             </div>
             <div id="field-jam-masuk" data-field-error={fieldErrors.jamMasuk ? "true" : undefined}>
               <label className="form-label">Jam Masuk (WIB) *</label>
@@ -825,11 +813,16 @@ export default function VcfRegisterPage() {
           <div className="space-y-6">
             <div id="field-tipe-kegiatan">
               <label className="form-label mb-3">Tipe Kegiatan & Logistik *</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl transition-all ${fieldErrors.tipeKegiatan ? 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-bg-card' : ''}`}>
                 {/* Loading */}
                 <div
                   className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${isLoading ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'border-slate-100 dark:border-white/5 hover:border-slate-200'}`}
-                  onClick={() => setTipeKegiatan(tipeKegiatan.startsWith("loading") ? "" : "loading_lokal")}
+                  onClick={() => {
+                    setTipeKegiatan(tipeKegiatan.startsWith("loading") ? "" : "loading_lokal");
+                    if (fieldErrors.tipeKegiatan) {
+                      setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`p-2 rounded-lg ${isLoading ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
@@ -840,7 +833,12 @@ export default function VcfRegisterPage() {
                   {isLoading && (
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                       {["lokal", "export"].map(t => (
-                        <button key={t} type="button" onClick={() => setTipeKegiatan(`loading_${t}` as any)} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase ${tipeKegiatan === `loading_${t}` ? 'bg-blue-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
+                        <button key={t} type="button" onClick={() => {
+                          setTipeKegiatan(`loading_${t}` as any);
+                          if (fieldErrors.tipeKegiatan) {
+                            setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
+                          }
+                        }} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase ${tipeKegiatan === `loading_${t}` ? 'bg-blue-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
                           {t}
                         </button>
                       ))}
@@ -850,7 +848,12 @@ export default function VcfRegisterPage() {
                 {/* Unloading */}
                 <div
                   className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${isUnloading ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5' : 'border-slate-100 dark:border-white/5 hover:border-slate-200'}`}
-                  onClick={() => setTipeKegiatan(isUnloading ? "" : "unloading_lokal")}
+                  onClick={() => {
+                    setTipeKegiatan(isUnloading ? "" : "unloading_lokal");
+                    if (fieldErrors.tipeKegiatan) {
+                      setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`p-2 rounded-lg ${isUnloading ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
@@ -861,7 +864,12 @@ export default function VcfRegisterPage() {
                   {isUnloading && (
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                       {["lokal", "import"].map(t => (
-                        <button key={t} type="button" onClick={() => setTipeKegiatan(`unloading_${t}` as any)} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase ${tipeKegiatan === `unloading_${t}` ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
+                        <button key={t} type="button" onClick={() => {
+                          setTipeKegiatan(`unloading_${t}` as any);
+                          if (fieldErrors.tipeKegiatan) {
+                            setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
+                          }
+                        }} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase ${tipeKegiatan === `unloading_${t}` ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
                           {t}
                         </button>
                       ))}
@@ -873,11 +881,16 @@ export default function VcfRegisterPage() {
 
             <div id="field-produk">
               <label className="form-label mb-3">Produk *</label>
-              <div className="flex flex-wrap gap-2">
+              <div className={`flex flex-wrap gap-2 p-1.5 rounded-2xl transition-all ${fieldErrors.produk ? 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-bg-card' : ''}`}>
                 {produkOptions.map((p: { kode: string; label: string }) => (
                   <button
                     key={p.kode} type="button"
-                    onClick={() => setProdukKode(p.kode)}
+                    onClick={() => {
+                      setProdukKode(p.kode);
+                      if (fieldErrors.produk) {
+                        setFieldErrors(prev => ({ ...prev, produk: false }));
+                      }
+                    }}
                     className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${produkKode === p.kode ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-200' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'}`}
                   >
                     {p.label}
@@ -885,14 +898,32 @@ export default function VcfRegisterPage() {
                 ))}
                 <button
                   type="button"
-                  onClick={() => setProdukKode("OTHERS")}
+                  onClick={() => {
+                    setProdukKode("OTHERS");
+                    if (fieldErrors.produk) {
+                      setFieldErrors(prev => ({ ...prev, produk: false }));
+                    }
+                  }}
                   className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${produkKode === "OTHERS" ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-200' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'}`}
                 >
                   Lainnya
                 </button>
               </div>
               {produkKode === "OTHERS" && (
-                <input type="text" className="form-input mt-3" placeholder="Sebutkan produk lainnya..." value={produkLainnya} onChange={e => setProdukLainnya(e.target.value)} required />
+                <input
+                  id="field-produk-lainnya"
+                  type="text"
+                  className={`form-input mt-3 ${fieldErrors.produkLainnya ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                  placeholder="Sebutkan produk lainnya..."
+                  value={produkLainnya}
+                  onChange={e => {
+                    setProdukLainnya(e.target.value);
+                    if (fieldErrors.produkLainnya) {
+                      setFieldErrors(prev => ({ ...prev, produkLainnya: false }));
+                    }
+                  }}
+                  required
+                />
               )}
             </div>
           </div>
@@ -931,10 +962,17 @@ export default function VcfRegisterPage() {
                     <div className="flex-1 relative">
                       <input
                         type="text"
-                        className="w-full px-4 py-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-sm font-medium text-text-primary dark:text-white placeholder-emerald-500/40 focus:outline-none focus:border-emerald-500 transition-colors"
+                        className={`w-full px-4 py-3 bg-emerald-500/5 border rounded-lg text-sm font-medium text-text-primary dark:text-white placeholder-emerald-500/40 focus:outline-none focus:border-emerald-500 transition-colors ${
+                          fieldErrors.nomorSegel ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-emerald-500/10'
+                        }`}
                         placeholder={`Segel #${idx + 1}`}
                         value={segel}
-                        onChange={(e) => updateSegel(idx, e.target.value)}
+                        onChange={(e) => {
+                          updateSegel(idx, e.target.value);
+                          if (fieldErrors.nomorSegel) {
+                            setFieldErrors(prev => ({ ...prev, nomorSegel: false }));
+                          }
+                        }}
                       />
                       {nomorSegel.length > 1 && (
                         <button
@@ -980,20 +1018,31 @@ export default function VcfRegisterPage() {
                     label="Nama Transporter"
                     options={transporters}
                     value={transporterId}
-                    onChange={setTransporterId}
+                    onChange={(val) => {
+                      setTransporterId(val);
+                      if (fieldErrors.transporter) {
+                        setFieldErrors(prev => ({ ...prev, transporter: false }));
+                      }
+                    }}
                     placeholder="Pilih Transporter"
                     required
                     displayField="nama_transporter"
+                    hasError={fieldErrors.transporter}
                   />
                 </div>
                 <div id="field-no-polisi">
                   <label className="form-label">No. Polisi *</label>
                   <input
                     type="text"
-                    className="form-input uppercase"
+                    className={`form-input uppercase ${fieldErrors.noPolisi ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
                     placeholder="BK 1234 ABC"
                     value={noPolisi}
-                    onChange={e => setNoPolisi(e.target.value)}
+                    onChange={e => {
+                      setNoPolisi(e.target.value);
+                      if (fieldErrors.noPolisi) {
+                        setFieldErrors(prev => ({ ...prev, noPolisi: false }));
+                      }
+                    }}
                     onBlur={e => runViolationCheck(undefined, e.target.value)}
                     required
                   />
@@ -1001,11 +1050,14 @@ export default function VcfRegisterPage() {
                 <div id="field-jenis-kendaraan">
                   <label className="form-label">Jenis Kendaraan *</label>
                   <select
-                    className="form-select uppercase"
+                    className={`form-select uppercase ${fieldErrors.tipeKendaraan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
                     value={tipeKendaraan}
                     onChange={e => {
                       const val = e.target.value;
                       setTipeKendaraan(val as any);
+                      if (fieldErrors.tipeKendaraan) {
+                        setFieldErrors(prev => ({ ...prev, tipeKendaraan: false }));
+                      }
                       // Find matching jenis_kendaraan_id from master data by name/kode
                       const match = jenisKendaraan.find(j =>
                         j.nama?.toLowerCase().includes(val.toLowerCase()) ||
@@ -1042,10 +1094,14 @@ export default function VcfRegisterPage() {
                     onChange={(val) => {
                       setDriverId(val);
                       runViolationCheck(val, undefined);
+                      if (fieldErrors.driver) {
+                        setFieldErrors(prev => ({ ...prev, driver: false }));
+                      }
                     }}
                     placeholder="Pilih Supir"
                     required
                     displayField="display_name"
+                    hasError={fieldErrors.driver}
                   />
                 </div>
                 <div>
@@ -1071,7 +1127,7 @@ export default function VcfRegisterPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div id="field-tahun-kendaraan" data-field-error={fieldErrors.tahunKendaraan ? "true" : undefined}>
-                <label className="form-label">Tahun Kendaraan</label>
+                <label className="form-label">Tahun Kendaraan *</label>
                 <input
                   type="number"
                   className={`form-input ${fieldErrors.tahunKendaraan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
@@ -1088,9 +1144,20 @@ export default function VcfRegisterPage() {
                   <p className="text-[11px] text-red-500 mt-1">Tahun tidak boleh lebih dari {new Date().getFullYear()}</p>
                 )}
               </div>
-              <div>
-                <label className="form-label">{isLoading ? "Tujuan" : "Asal"}</label>
-                <input type="text" className="form-input" placeholder={isLoading ? "Masukkan tujuan" : "Masukkan asal"} value={tujuan} onChange={e => setTujuan(e.target.value)} />
+              <div id="field-tujuan">
+                <label className="form-label">{isLoading ? "Tujuan *" : "Asal *"}</label>
+                <input
+                  type="text"
+                  className={`form-input ${fieldErrors.tujuan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                  placeholder={isLoading ? "Masukkan tujuan" : "Masukkan asal"}
+                  value={tujuan}
+                  onChange={e => {
+                    setTujuan(e.target.value);
+                    if (fieldErrors.tujuan) {
+                      setFieldErrors(prev => ({ ...prev, tujuan: false }));
+                    }
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -1100,7 +1167,7 @@ export default function VcfRegisterPage() {
         {masterLoading ? (
           <SectionSkeleton title="Pemeriksaan Kelengkapan Supir" />
         ) : (
-          <div id="field-checklist" className="glass-card p-4 md:p-8 shadow-sm">
+          <div id="field-checklist" className={`glass-card p-4 md:p-8 shadow-sm border transition-all ${fieldErrors.checklist ? 'border-red-500 bg-red-50/5' : ''}`}>
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
@@ -1138,14 +1205,32 @@ export default function VcfRegisterPage() {
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           type="button"
-                          onClick={() => setChecklist((p) => ({ ...p, [item.id]: true }))}
+                          onClick={() => {
+                            setChecklist((p) => {
+                              const next = { ...p, [item.id]: true };
+                              const emptyLeft = checklistItems.filter(x => next[x.id] === null);
+                              if (emptyLeft.length === 0 && fieldErrors.checklist) {
+                                setFieldErrors(prev => ({ ...prev, checklist: false }));
+                              }
+                              return next;
+                            });
+                          }}
                           className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all ${val === true ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white/0 border-border text-slate-500 hover:border-emerald-500/50"}`}
                         >
                           Ya
                         </button>
                         <button
                           type="button"
-                          onClick={() => setChecklist((p) => ({ ...p, [item.id]: false }))}
+                          onClick={() => {
+                            setChecklist((p) => {
+                              const next = { ...p, [item.id]: false };
+                              const emptyLeft = checklistItems.filter(x => next[x.id] === null);
+                              if (emptyLeft.length === 0 && fieldErrors.checklist) {
+                                setFieldErrors(prev => ({ ...prev, checklist: false }));
+                              }
+                              return next;
+                            });
+                          }}
                           className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all ${val === false ? "bg-rose-500 border-rose-500 text-white" : "bg-white/0 border-border text-slate-500 hover:border-rose-500/50"}`}
                         >
                           Tidak
@@ -1170,7 +1255,7 @@ export default function VcfRegisterPage() {
             </div>
           </div>
         ) : (
-          <div className="glass-card p-4 md:p-8 shadow-sm">
+          <div id="field-muatan" className={`glass-card p-4 md:p-8 shadow-sm border transition-all ${fieldErrors.muatanDibawa || fieldErrors.muatanDiisi ? 'border-red-500 bg-red-50/5' : ''}`}>
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
@@ -1182,31 +1267,41 @@ export default function VcfRegisterPage() {
               {/* Muatan Dibawa - Only shown for UNLOADING */}
               {isUnloading && (
                 <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Muatan yang Dibawa</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Muatan yang Dibawa *</h3>
                   <div className="space-y-3">
                     {muatanItems.filter(m => m.jenis === 'dibawa' || m.jenis === 'both').map(m => {
                       const isYes = muatanDibawa[m.id]?.nilai === "1";
                       const isNo = muatanDibawa[m.id]?.nilai === "NO";
                       return (
-                      <div key={m.id} className={`p-4 rounded-xl border transition-all ${isYes ? 'border-emerald-500/30 bg-emerald-500/5' : isNo ? 'border-rose-500/20 bg-rose-500/5' : 'border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/5'}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-bold text-text-primary dark:text-slate-300 text-sm flex-1 min-w-0">{m.nama_item}</span>
-                          <div className="flex gap-2 shrink-0">
-                            <button type="button" onClick={() => {
-                              const reset: Record<number, { checked: boolean; nilai: string }> = {};
-                              muatanItems.filter(x => x.jenis === 'dibawa' || x.jenis === 'both').forEach(x => {
-                                reset[x.id] = { checked: true, nilai: "NO" };
-                              });
-                              reset[m.id] = { checked: true, nilai: "1" };
-                              setMuatanDibawa(reset);
-                              setMuatanDibawaLainnya({ checked: false, nilai: "" });
-                            }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isYes ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
-                            <button type="button" onClick={() => {
-                              setMuatanDibawa(p => ({ ...p, [m.id]: { checked: true, nilai: "NO" } }));
-                            }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isNo ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                        <div key={m.id} className={`p-4 rounded-xl border transition-all ${isYes ? 'border-emerald-500/30 bg-emerald-500/5' : isNo ? 'border-rose-500/20 bg-rose-500/5' : 'border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/5'}`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-bold text-text-primary dark:text-slate-300 text-sm flex-1 min-w-0">{m.nama_item}</span>
+                            <div className="flex gap-2 shrink-0">
+                              <button type="button" onClick={() => {
+                                const reset: Record<number, { checked: boolean; nilai: string }> = {};
+                                muatanItems.filter(x => x.jenis === 'dibawa' || x.jenis === 'both').forEach(x => {
+                                  reset[x.id] = { checked: true, nilai: "NO" };
+                                });
+                                reset[m.id] = { checked: true, nilai: "1" };
+                                setMuatanDibawa(reset);
+                                setMuatanDibawaLainnya({ checked: false, nilai: "" });
+                                if (fieldErrors.muatanDibawa) {
+                                  setFieldErrors(prev => ({ ...prev, muatanDibawa: false }));
+                                }
+                              }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isYes ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
+                              <button type="button" onClick={() => {
+                                setMuatanDibawa(p => {
+                                  const next = { ...p, [m.id]: { checked: true, nilai: "NO" } };
+                                  const hasYes = Object.values(next).some(v => v.checked && v.nilai === "1") || muatanDibawaLainnya.checked === true;
+                                  if (hasYes && fieldErrors.muatanDibawa) {
+                                    setFieldErrors(prev => ({ ...prev, muatanDibawa: false }));
+                                  }
+                                  return next;
+                                });
+                              }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isNo ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                            </div>
                           </div>
                         </div>
-                      </div>
                       );
                     })}
                     {showProdukLainnya && (
@@ -1221,13 +1316,37 @@ export default function VcfRegisterPage() {
                               });
                               setMuatanDibawa(reset);
                               setMuatanDibawaLainnya({ checked: true, nilai: "" });
+                              if (fieldErrors.muatanDibawa) {
+                                setFieldErrors(prev => ({ ...prev, muatanDibawa: false }));
+                              }
                             }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${muatanDibawaLainnya.checked === true ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
-                            <button type="button" onClick={() => setMuatanDibawaLainnya({ checked: false, nilai: "" })} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${muatanDibawaLainnya.checked === false ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                            <button type="button" onClick={() => {
+                              setMuatanDibawaLainnya({ checked: false, nilai: "" });
+                              const hasYes = Object.values(muatanDibawa).some(v => v.checked && v.nilai === "1");
+                              if (hasYes && fieldErrors.muatanDibawa) {
+                                setFieldErrors(prev => ({ ...prev, muatanDibawa: false }));
+                              }
+                              if (fieldErrors.muatanDibawaLainnya) {
+                                setFieldErrors(prev => ({ ...prev, muatanDibawaLainnya: false }));
+                              }
+                            }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${muatanDibawaLainnya.checked === false ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
                           </div>
                         </div>
                         {muatanDibawaLainnya.checked === true && (
                           <div className="mt-3">
-                            <input type="text" className="form-input" placeholder="Sebutkan muatan lainnya..." value={muatanDibawaLainnya.nilai} onChange={(e) => setMuatanDibawaLainnya({ checked: true, nilai: e.target.value })} />
+                            <input
+                              id="field-muatan-lainnya"
+                              type="text"
+                              className={`form-input ${fieldErrors.muatanDibawaLainnya ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                              placeholder="Sebutkan muatan lainnya..."
+                              value={muatanDibawaLainnya.nilai}
+                              onChange={(e) => {
+                                setMuatanDibawaLainnya({ checked: true, nilai: e.target.value });
+                                if (fieldErrors.muatanDibawaLainnya) {
+                                  setFieldErrors(prev => ({ ...prev, muatanDibawaLainnya: false }));
+                                }
+                              }}
+                            />
                           </div>
                         )}
                       </div>
@@ -1235,34 +1354,44 @@ export default function VcfRegisterPage() {
                   </div>
                 </div>
               )}
-                {/* Muatan Diisi - Only shown for LOADING */}
+              {/* Muatan Diisi - Only shown for LOADING */}
               {isLoading && (
                 <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Muatan yang Akan Diisi</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Muatan yang Akan Diisi *</h3>
                   <div className="space-y-3">
                     {muatanItems.filter(m => m.jenis === 'diisi' || m.jenis === 'both').map(m => {
                       const isYes = muatanDiisi[m.id]?.nilai === "1";
                       const isNo = muatanDiisi[m.id]?.nilai === "NO";
                       return (
-                      <div key={m.id} className={`p-4 rounded-xl border transition-all ${isYes ? 'border-emerald-500/30 bg-emerald-500/5' : isNo ? 'border-rose-500/20 bg-rose-500/5' : 'border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/5'}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-bold text-text-primary dark:text-slate-300 text-sm flex-1 min-w-0">{m.nama_item}</span>
-                          <div className="flex gap-2 shrink-0">
-                            <button type="button" onClick={() => {
-                              const reset: Record<number, { checked: boolean; nilai: string }> = {};
-                              muatanItems.filter(x => x.jenis === 'diisi' || x.jenis === 'both').forEach(x => {
-                                reset[x.id] = { checked: true, nilai: "NO" };
-                              });
-                              reset[m.id] = { checked: true, nilai: "1" };
-                              setMuatanDiisi(reset);
-                              setMuatanDiisiLainnya({ checked: false, nilai: "" });
-                            }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isYes ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
-                            <button type="button" onClick={() => {
-                              setMuatanDiisi(p => ({ ...p, [m.id]: { checked: true, nilai: "NO" } }));
-                            }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isNo ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                        <div key={m.id} className={`p-4 rounded-xl border transition-all ${isYes ? 'border-emerald-500/30 bg-emerald-500/5' : isNo ? 'border-rose-500/20 bg-rose-500/5' : 'border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/5'}`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-bold text-text-primary dark:text-slate-300 text-sm flex-1 min-w-0">{m.nama_item}</span>
+                            <div className="flex gap-2 shrink-0">
+                              <button type="button" onClick={() => {
+                                const reset: Record<number, { checked: boolean; nilai: string }> = {};
+                                muatanItems.filter(x => x.jenis === 'diisi' || x.jenis === 'both').forEach(x => {
+                                  reset[x.id] = { checked: true, nilai: "NO" };
+                                });
+                                reset[m.id] = { checked: true, nilai: "1" };
+                                setMuatanDiisi(reset);
+                                setMuatanDiisiLainnya({ checked: false, nilai: "" });
+                                if (fieldErrors.muatanDiisi) {
+                                  setFieldErrors(prev => ({ ...prev, muatanDiisi: false }));
+                                }
+                              }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isYes ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
+                              <button type="button" onClick={() => {
+                                setMuatanDiisi(p => {
+                                  const next = { ...p, [m.id]: { checked: true, nilai: "NO" } };
+                                  const hasYes = Object.values(next).some(v => v.checked && v.nilai === "1") || muatanDiisiLainnya.checked === true;
+                                  if (hasYes && fieldErrors.muatanDiisi) {
+                                    setFieldErrors(prev => ({ ...prev, muatanDiisi: false }));
+                                  }
+                                  return next;
+                                });
+                              }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isNo ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                            </div>
                           </div>
                         </div>
-                      </div>
                       );
                     })}
                     {/* Lainnya hardcoded — no master data needed */}
@@ -1277,13 +1406,37 @@ export default function VcfRegisterPage() {
                             });
                             setMuatanDiisi(reset);
                             setMuatanDiisiLainnya({ checked: true, nilai: "" });
+                            if (fieldErrors.muatanDiisi) {
+                              setFieldErrors(prev => ({ ...prev, muatanDiisi: false }));
+                            }
                           }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${muatanDiisiLainnya.checked === true ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
-                          <button type="button" onClick={() => setMuatanDiisiLainnya({ checked: false, nilai: "" })} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${muatanDiisiLainnya.checked === false ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                          <button type="button" onClick={() => {
+                            setMuatanDiisiLainnya({ checked: false, nilai: "" });
+                            const hasYes = Object.values(muatanDiisi).some(v => v.checked && v.nilai === "1");
+                            if (hasYes && fieldErrors.muatanDiisi) {
+                              setFieldErrors(prev => ({ ...prev, muatanDiisi: false }));
+                            }
+                            if (fieldErrors.muatanDiisiLainnya) {
+                              setFieldErrors(prev => ({ ...prev, muatanDiisiLainnya: false }));
+                            }
+                          }} className={`min-w-[52px] min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all border ${muatanDiisiLainnya.checked === false ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
                         </div>
                       </div>
                       {muatanDiisiLainnya.checked === true && (
                         <div className="mt-3">
-                          <input type="text" className="form-input" placeholder="Sebutkan muatan lainnya..." value={muatanDiisiLainnya.nilai} onChange={(e) => setMuatanDiisiLainnya({ checked: true, nilai: e.target.value })} />
+                          <input
+                            id="field-muatan-lainnya"
+                            type="text"
+                            className={`form-input ${fieldErrors.muatanDiisiLainnya ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                            placeholder="Sebutkan muatan lainnya..."
+                            value={muatanDiisiLainnya.nilai}
+                            onChange={(e) => {
+                              setMuatanDiisiLainnya({ checked: true, nilai: e.target.value });
+                              if (fieldErrors.muatanDiisiLainnya) {
+                                setFieldErrors(prev => ({ ...prev, muatanDiisiLainnya: false }));
+                              }
+                            }}
+                          />
                         </div>
                       )}
                     </div>
@@ -1303,20 +1456,20 @@ export default function VcfRegisterPage() {
         {/* ACTIONS — sticky bottom bar on mobile */}
         <div className="fixed bottom-0 left-0 right-0 md:static z-40 bg-bg-card/95 backdrop-blur-lg md:bg-transparent border-t border-border md:border-0 px-4 py-3 md:p-0 md:pt-4">
           <div className="flex items-center justify-end gap-3 max-w-5xl mx-auto">
-          <button type="button" onClick={handleReset} className="btn btn-secondary px-6 md:px-8 py-3 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border-rose-500/30">Reset</button>
-          <button type="button" onClick={() => router.back()} className="btn btn-secondary px-6 md:px-8 py-3">Batal</button>
-          {isDriverBlacklisted ? (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/30">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500 shrink-0">
-                <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-              </svg>
-              <span className="text-xs md:text-sm font-bold text-red-600 dark:text-red-400">Driver blacklist</span>
-            </div>
-          ) : (
-            <button type="submit" disabled={loading} className="btn btn-primary flex-1 md:flex-none px-8 md:px-12 py-3 md:py-4 text-sm md:text-lg">
-              {loading ? <><span className="spinner" /> Menyimpan...</> : "Simpan & Daftarkan VCF"}
-            </button>
-          )}
+            <button type="button" onClick={handleReset} className="btn btn-secondary px-6 md:px-8 py-3 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border-rose-500/30">Reset</button>
+            <button type="button" onClick={() => router.back()} className="btn btn-secondary px-6 md:px-8 py-3">Batal</button>
+            {isDriverBlacklisted ? (
+              <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/30">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500 shrink-0">
+                  <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                </svg>
+                <span className="text-xs md:text-sm font-bold text-red-600 dark:text-red-400">Driver blacklist</span>
+              </div>
+            ) : (
+              <button type="submit" disabled={loading} className="btn btn-primary flex-1 md:flex-none px-8 md:px-12 py-3 md:py-4 text-sm md:text-lg">
+                {loading ? <><span className="spinner" /> Menyimpan...</> : "Simpan & Daftarkan VCF"}
+              </button>
+            )}
           </div>
         </div>
       </form>
@@ -1344,6 +1497,55 @@ export default function VcfRegisterPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Validation Toast Portal (Sticky Top-Right) */}
+      {mounted && localToast && (
+        createPortal(
+          <div className="fixed top-6 right-6 z-[99999] w-full max-w-sm px-4 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className={`bg-white dark:bg-bg-card rounded-2xl shadow-2xl border flex overflow-hidden ${
+              localToast.type === "error" ? "border-red-500/30" : localToast.type === "warning" ? "border-amber-500/30" : "border-emerald-500/30"
+            }`}>
+              <div className={`w-12 flex items-center justify-center shrink-0 ${
+                localToast.type === "error" ? "bg-red-500" : localToast.type === "warning" ? "bg-amber-500" : "bg-emerald-500"
+              }`}>
+                {localToast.type === "error" && (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {localToast.type === "warning" && (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {localToast.type === "success" && (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 p-4 pr-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-bold text-sm text-text-primary">{localToast.title}</h4>
+                    <p className="text-xs text-text-muted mt-1">{localToast.message}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLocalToast(null)}
+                    className="text-text-muted hover:text-text-primary p-1 ml-2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
       )}
     </div>
   );

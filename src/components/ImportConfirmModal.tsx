@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface ImportConfirmModalProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export default function ImportConfirmModal({
 
   const selectedData = data.filter((_, i) => selectedRows.has(i));
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
@@ -177,6 +178,7 @@ export default function ImportConfirmModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

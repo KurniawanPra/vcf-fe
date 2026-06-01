@@ -11,6 +11,7 @@ import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import { downloadImportTemplate, parseExcelPreview, importDataBatch } from "@/lib/importTemplate";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface ChecklistItem {
   id: number;
@@ -372,94 +373,96 @@ export default function ChecklistPage() {
       </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
-                {editing ? "Edit Item Checklist" : "Tambah Item Checklist"}
-              </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
+      <ModalPortal>
+        {showModal && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
+                  {editing ? "Edit Item Checklist" : "Tambah Item Checklist"}
+                </h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {error && (
+                <div
+                  className="mb-4 p-3 rounded-lg text-sm"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}
+                >
+                  ⚠️ {error}
+                </div>
+              )}
+              <form onSubmit={handleSave}>
+                <div className="mb-4">
+                  <label className="form-label">Nama Item *</label>
+                  <input
+                    id="input-nama-item"
+                    type="text"
+                    className="form-input"
+                    required
+                    value={form.nama_item}
+                    onChange={(e) => setForm((p) => ({ ...p, nama_item: e.target.value }))}
+                    placeholder="Contoh: SPB/DO, Seragam, Sepatu dan Helm, ID Card"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label">Keterangan</label>
+                  <input
+                    id="input-keterangan-checklist"
+                    type="text"
+                    className="form-input"
+                    value={form.keterangan}
+                    onChange={(e) => setForm((p) => ({ ...p, keterangan: e.target.value }))}
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label">Urutan Tampilan</label>
+                  <input
+                    id="input-urutan-checklist"
+                    type="number"
+                    className="form-input"
+                    required
+                    value={form.urutan}
+                    onChange={(e) => setForm((p) => ({ ...p, urutan: parseInt(e.target.value) || 0 }))}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 italic">* Menentukan posisi item ini di form registrasi</p>
+                </div>
+                <div className="mb-6 flex items-center gap-3">
+                  <input
+                    id="check-active-checklist"
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <label htmlFor="check-active-checklist" className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    Aktif
+                  </label>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                    Batal
+                  </button>
+                  <button id="btn-save-checklist" type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? (
+                      <>
+                        <span className="spinner" /> Menyimpan...
+                      </>
+                    ) : (
+                      "Simpan"
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
-            {error && (
-              <div
-                className="mb-4 p-3 rounded-lg text-sm"
-                style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}
-              >
-                ⚠️ {error}
-              </div>
-            )}
-            <form onSubmit={handleSave}>
-              <div className="mb-4">
-                <label className="form-label">Nama Item *</label>
-                <input
-                  id="input-nama-item"
-                  type="text"
-                  className="form-input"
-                  required
-                  value={form.nama_item}
-                  onChange={(e) => setForm((p) => ({ ...p, nama_item: e.target.value }))}
-                  placeholder="Contoh: SPB/DO, Seragam, Sepatu dan Helm, ID Card"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="form-label">Keterangan</label>
-                <input
-                  id="input-keterangan-checklist"
-                  type="text"
-                  className="form-input"
-                  value={form.keterangan}
-                  onChange={(e) => setForm((p) => ({ ...p, keterangan: e.target.value }))}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="form-label">Urutan Tampilan</label>
-                <input
-                  id="input-urutan-checklist"
-                  type="number"
-                  className="form-input"
-                  required
-                  value={form.urutan}
-                  onChange={(e) => setForm((p) => ({ ...p, urutan: parseInt(e.target.value) || 0 }))}
-                />
-                <p className="text-[10px] text-slate-400 mt-1 italic">* Menentukan posisi item ini di form registrasi</p>
-              </div>
-              <div className="mb-6 flex items-center gap-3">
-                <input
-                  id="check-active-checklist"
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
-                  style={{ width: 16, height: 16 }}
-                />
-                <label htmlFor="check-active-checklist" className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                  Aktif
-                </label>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Batal
-                </button>
-                <button id="btn-save-checklist" type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? (
-                    <>
-                      <span className="spinner" /> Menyimpan...
-                    </>
-                  ) : (
-                    "Simpan"
-                  )}
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       <DeleteConfirmModal
         isOpen={showDeleteModal}

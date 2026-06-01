@@ -10,6 +10,7 @@ import { generateQRSignature } from "@/lib/qrUtils";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { VCF_STATUS } from "@/constants/vcfStatus";
+import ValidationSummary, { type ValidationEntry } from "@/components/ValidationSummary";
 
 interface SelectOption { id: number; nama?: string; nama_transporter?: string; nama_supir?: string; nama_item?: string; kode?: string; no_sim?: string; tgl_berlaku_sim?: string; jenis_sim?: string; is_active?: boolean | number | string; }
 interface ChecklistItem { id: number; nama_item: string; urutan: number; is_active?: boolean | number | string; }
@@ -17,58 +18,6 @@ interface MuatanItem { id: number; nama_item: string; jenis: "both" | "dibawa" |
 
 type TipeKegiatan = "loading_lokal" | "loading_export" | "unloading_lokal" | "unloading_import" | "";
 type TipeKendaraan = "bak_terbuka" | "tangki" | "umum" | "box" | "container" | "";
-
-interface ValidationEntry {
-  key: string;
-  section: string;
-  label: string;
-  fieldId: string;
-}
-
-function ValidationSummary({ errors, onDismiss }: { errors: ValidationEntry[]; onDismiss: () => void }) {
-  if (errors.length === 0) return null;
-  const sections = Array.from(new Set(errors.map(e => e.section)));
-  const scrollTo = (fieldId: string) => {
-    const el = document.getElementById(fieldId) || document.querySelector(`[data-field-id="${fieldId}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (el as HTMLElement)?.focus?.();
-  };
-  return (
-    <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-50/80 dark:bg-amber-900/10 backdrop-blur-sm overflow-hidden animate-slideDown">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-amber-400/20">
-        <div className="flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500 shrink-0">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{errors.length} field belum lengkap</span>
-        </div>
-        <button onClick={onDismiss} className="text-amber-500 hover:text-amber-700 transition-colors p-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div className="px-5 py-3 space-y-2">
-        {sections.map(section => (
-          <div key={section}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600/70 dark:text-amber-400/70 mb-1">{section}</p>
-            <div className="flex flex-wrap gap-2">
-              {errors.filter(e => e.section === section).map(e => (
-                <button
-                  key={e.key}
-                  type="button"
-                  onClick={() => scrollTo(e.fieldId)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-300/40"
-                >
-                  {e.label}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function normalizeToHHmm(value: string): string {
   const cleaned = (value || "").replace(/[^\d:]/g, "");
@@ -487,7 +436,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
     );
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white dark:bg-bg-card w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
         {/* Minimalist Header */}
@@ -669,8 +618,6 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                 </div>
               </div>
 
-
-
             </div>
 
             {/* SECTION 3: PEMERIKSAAN KELENGKAPAN */}
@@ -745,7 +692,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                                  setMuatanDibawa(reset);
                                  setMuatanDibawaLainnya(prev => ({ ...prev, checked: false }));
                                }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.nilai === "1" ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-emerald-400'}`}>Ya</button>
-                               <button type="button" onClick={() => setMuatanDibawa(p => ({ ...p, [m.id]: { checked: true, nilai: "NO" } }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.nilai === "NO" ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-400'}`}>Tidak</button>
+                               <button type="button" onClick={() => setMuatanDibawa(p => ({ ...p, [m.id]: { checked: true, nilai: "NO" } }))} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${muatanDibawa[m.id]?.nilai === "NO" ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:border-rose-450'}`}>Tidak</button>
                              </div>
                           </div>
                         </div>
@@ -801,7 +748,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                         </div>
                       ))}
 
-                      {/* Lainnya */}
+                      {/* Flex item muatan diisi kustom */}
                       <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/10">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-text-muted text-sm italic">Lainnya</span>
@@ -867,7 +814,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                           {nomorSegel.length > 1 && (
                             <button
                               type="button"
-                              className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-red-500/10 text-red-500 hover:bg-red-505 hover:text-white transition-all flex items-center justify-center"
                               onClick={() => removeSegelInput(idx)}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -916,6 +863,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -9,6 +9,7 @@ import { exportToPDF, exportToDocx } from "@/lib/exportUtils";
 import GuideSection from "@/components/GuideSection";
 import { FormMorph } from "@/components/PageTransition";
 import React from "react";
+import ModalPortal from "@/components/ModalPortal";
 
 // Lazy load heavy components for better performance
 const Bagian2Form = lazy(() => import("./Bagian2Form"));
@@ -308,7 +309,7 @@ export default function VcfDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-2">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/vcf")}
           className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
           title="Kembali"
         >
@@ -373,34 +374,36 @@ export default function VcfDetailPage() {
       </div>
 
       {/* Guide Modal */}
-      {showGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowGuide(false)}>
-          <div className="glass-card w-full max-w-4xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-primary)", color: "white" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                  </svg>
+      <ModalPortal>
+        {showGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowGuide(false)}>
+            <div className="glass-card w-full max-w-4xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-primary)", color: "white" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                    </svg>
+                  </div>
+                  <h2 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Panduan Operasional</h2>
                 </div>
-                <h2 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Panduan Operasional</h2>
+                <button
+                  onClick={() => setShowGuide(false)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-white/10"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => setShowGuide(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-white/10"
-                style={{ color: "var(--text-muted)" }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6">
-              <GuideSection />
+              <div className="p-6">
+                <GuideSection />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* Bagian1 Edit Modal */}
       {showBagian1Edit && (
@@ -1295,9 +1298,11 @@ export default function VcfDetailPage() {
 
       {/* Print Modal */}
       {showPrint && vcf && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="spinner" /></div>}>
-          <PrintVCF vcf={vcf as any} onClose={() => setShowPrint(false)} />
-        </Suspense>
+        <ModalPortal>
+          <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><div className="spinner" /></div>}>
+            <PrintVCF vcf={vcf as any} onClose={() => setShowPrint(false)} />
+          </Suspense>
+        </ModalPortal>
       )}
 
 

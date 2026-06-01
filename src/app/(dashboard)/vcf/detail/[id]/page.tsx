@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense, lazy } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
 import { isAdmin, getUser } from "@/lib/auth";
@@ -111,6 +112,11 @@ export default function VcfDetailAliasPage() {
   const [showPrint, setShowPrint] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showBagian1Edit, setShowBagian1Edit] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchVcf = useCallback(async () => {
     try {
@@ -220,7 +226,7 @@ export default function VcfDetailAliasPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/vcf")}
           className="p-2.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors shrink-0"
           title="Kembali"
         >
@@ -265,7 +271,7 @@ export default function VcfDetailAliasPage() {
       </div>
 
       {/* Guide Modal */}
-      {showGuide && (
+      {mounted && showGuide && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowGuide(false)}>
           <div className="glass-card w-full max-w-4xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
@@ -278,7 +284,8 @@ export default function VcfDetailAliasPage() {
               <GuideSection />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Bagian1 Edit Modal */}
@@ -436,7 +443,7 @@ export default function VcfDetailAliasPage() {
         </Suspense>
       </div>
 
-      {showPrint && (
+      {mounted && showPrint && createPortal(
         <Suspense fallback={null}>
           <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-xl flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-300">
              <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-full sm:h-auto max-h-[95vh] overflow-y-auto rounded-[32px] relative shadow-2xl border border-white/10">
@@ -453,7 +460,8 @@ export default function VcfDetailAliasPage() {
                 </div>
              </div>
           </div>
-        </Suspense>
+        </Suspense>,
+        document.body
       )}
     </div>
   </div>

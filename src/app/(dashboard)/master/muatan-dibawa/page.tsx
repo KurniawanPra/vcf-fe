@@ -12,6 +12,7 @@ import ImportConfirmModal from "@/components/ImportConfirmModal";
 import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
+import ModalPortal from "@/components/ModalPortal";
 
 interface MuatanItem {
   id: number;
@@ -349,40 +350,42 @@ export default function MuatanDibawaPage() {
       </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
-                {editing ? "Edit Item Muatan Dibawa" : "Tambah Item Muatan Dibawa"}
-              </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
+      <ModalPortal>
+        {showModal && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
+                  {editing ? "Edit Item Muatan Dibawa" : "Tambah Item Muatan Dibawa"}
+                </h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <form onSubmit={handleSave} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Nama Item</label>
+                  <input type="text" required className="form-input" value={form.nama_item} onChange={(e) => setForm({ ...form, nama_item: e.target.value })} placeholder="Contoh: Segel, Suhu, dll." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Keterangan</label>
+                  <textarea className="form-input min-h-[80px]" value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} placeholder="Keterangan opsional..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">Urutan Tampilan</label>
+                  <input type="number" required className="form-input" value={form.urutan} onChange={(e) => setForm({ ...form, urutan: parseInt(e.target.value) || 0 })} placeholder="Nomor urutan..." />
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={saving}>Batal</button>
+                  <button type="submit" className="btn btn-primary min-w-[100px]" disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Nama Item</label>
-                <input type="text" required className="form-input" value={form.nama_item} onChange={(e) => setForm({ ...form, nama_item: e.target.value })} placeholder="Contoh: Segel, Suhu, dll." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Keterangan</label>
-                <textarea className="form-input min-h-[80px]" value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} placeholder="Keterangan opsional..." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">Urutan Tampilan</label>
-                <input type="number" required className="form-input" value={form.urutan} onChange={(e) => setForm({ ...form, urutan: parseInt(e.target.value) || 0 })} placeholder="Nomor urutan..." />
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={saving}>Batal</button>
-                <button type="submit" className="btn btn-primary min-w-[100px]" disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
       <DeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}

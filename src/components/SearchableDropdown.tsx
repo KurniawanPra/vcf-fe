@@ -11,6 +11,7 @@ interface SearchableDropdownProps {
   required?: boolean;
   id?: string;
   displayField?: "nama" | "nama_transporter" | "nama_supir" | "label" | "display_name" | string;
+  hasError?: boolean;
 }
 
 export default function SearchableDropdown({
@@ -21,7 +22,8 @@ export default function SearchableDropdown({
   placeholder = "Pilih opsi",
   required = false,
   id,
-  displayField = "nama"
+  displayField = "nama",
+  hasError = false
 }: SearchableDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,7 +64,11 @@ export default function SearchableDropdown({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex justify-between w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-blue-500 dark:focus:ring-offset-gray-900"
+          className={`inline-flex justify-between w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-white dark:bg-gray-800 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-blue-500 dark:focus:ring-offset-gray-900 ${
+            hasError
+              ? "border-red-500 bg-red-50 dark:bg-red-500/10 focus:ring-red-500"
+              : "border-gray-300 dark:border-gray-600"
+          }`}
         >
           <span className={selectedOption ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}>
             {selectedOption ? getDisplayText(selectedOption) : placeholder}
