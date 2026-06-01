@@ -11,6 +11,7 @@ import MobileCardSkeleton from "@/components/MobileCardSkeleton";
 import TableRowSkeleton from "@/components/TableRowSkeleton";
 import RegisterButton from "@/components/RegisterButton";
 import ViewVcfButton from "@/components/ViewVcfButton";
+import SearchInput from "@/components/SearchInput";
 
 interface ActivityLog {
   id: number;
@@ -1175,6 +1176,35 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Active Vehicles in Area Panel */}
+          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
+            {/* Soft accent background glow */}
+            <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
+            <div className="flex items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 text-blue-600 dark:text-blue-400 flex items-center justify-center transition-colors text-3xl font-black select-none font-display leading-none">
+                  🚚
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
+                    Kendaraan Di Area
+                    <span className="flex h-2 w-2 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kendaraan aktif di dalam area pabrik saat ini</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <span className="text-4xl font-black text-blue-600 dark:text-blue-400 font-display tracking-tight leading-none">
+                  {stats.active_in_area}
+                </span>
+                <span className="text-[9px] block font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest mt-1 font-display">Unit</span>
+              </div>
+            </div>
+          </div>
+
           {/* Blacklisted Drivers Panel */}
           <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
             {/* Soft accent background glow */}
@@ -1221,21 +1251,14 @@ export default function DashboardPage() {
         {/* Filter & Search Bar */}
         <div className="px-5 py-4 bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Search Input */}
-            <div className="relative w-full sm:w-80">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Cari deskripsi, nama user, target..."
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 transition-colors shadow-2xs"
-              />
-            </div>
+            <SearchInput
+              small
+              placeholder="Cari deskripsi, nama user, target..."
+              value={searchQuery}
+              onChange={(val) => { setSearchQuery(val); setCurrentPage(1); }}
+              className="w-full sm:w-80"
+              style={{ width: "100%" }}
+            />
 
             {/* View Mode Toggle */}
             <div className="flex items-center border border-slate-200 dark:border-slate-700 p-0.5 rounded-lg bg-white dark:bg-slate-800">

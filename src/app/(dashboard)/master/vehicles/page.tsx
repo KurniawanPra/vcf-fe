@@ -13,6 +13,7 @@ import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
 import ModalPortal from "@/components/ModalPortal";
+import SearchInput from "@/components/SearchInput";
 
 interface Vehicle {
   id: number;
@@ -199,14 +200,15 @@ export default function VehiclesPage() {
 
       <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : "9000px", transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1)", opacity: collapsed ? 0 : 1 }}>
         <div className="flex gap-2 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-            </div>
-            <input id="input-search-vehicle" type="text" placeholder="Cari nama atau kode jenis kendaraan..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-11 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none shadow-sm"
-              style={{ background: "var(--bg-secondary)", border: "1.5px solid var(--border)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }} />
-          </div>
+          <SearchInput
+            id="input-search-vehicle"
+            className="max-w-md"
+            h11
+            bgSecondary
+            placeholder="Cari nama atau kode jenis kendaraan..."
+            value={search}
+            onChange={setSearch}
+          />
           <button className="btn btn-secondary" onClick={() => setSearch("")}>Reset</button>
         </div>
 

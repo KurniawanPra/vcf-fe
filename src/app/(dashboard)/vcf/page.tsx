@@ -6,6 +6,7 @@ import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
 import { getStatusLabel, getStatusColor, getActionButtonStyle, getActionLabel} from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
+import SearchInput from "@/components/SearchInput";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
 import MobileCardSkeleton from "@/components/MobileCardSkeleton";
@@ -73,6 +74,9 @@ export default function VcfQuickAccessPage() {
   // Derived stats: count of previous-day unfinished VCFs
   const pendingPrevDays = useMemo(() => vcfs.filter(v => isPreviousDay(v.tanggal)).length, [vcfs]);
   const todayCount = useMemo(() => vcfs.filter(v => !isPreviousDay(v.tanggal)).length, [vcfs]);
+  const wbMasukCount = useMemo(() => vcfs.filter(v => v.status === "bagian1_selesai").length, [vcfs]);
+  const wbKeluarCount = useMemo(() => vcfs.filter(v => v.status === "bagian2_selesai").length, [vcfs]);
+  const mgKeluarCount = useMemo(() => vcfs.filter(v => v.status === "bagian3_selesai").length, [vcfs]);
 
   // Debounce search input
   useEffect(() => {
@@ -188,25 +192,11 @@ export default function VcfQuickAccessPage() {
       <div className="morph-in flex flex-col gap-3 mb-4">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           {/* Search Input */}
-          <div className="flex-1 min-w-0 relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Cari No. Polisi atau Supir..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-              style={{
-                background: "var(--bg-card)",
-                border: "1.5px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
-            />
-          </div>
+          <SearchInput
+            placeholder="Cari No. Polisi atau Supir..."
+            value={search}
+            onChange={setSearch}
+          />
 
           {/* Date Range — Custom Calendar */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -241,21 +231,23 @@ export default function VcfQuickAccessPage() {
         {/* Stat Badges + Action Buttons Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Stat Badges */}
-          <div className="flex items-center gap-2">
-            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]">
-              <p className="text-[9px] font-bold text-secondary uppercase leading-none mb-0.5">Total</p>
-              <p className="text-xl font-bold text-blue-500 leading-none">{vcfs.length}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
+              <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Ditunda</p>
+              <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
             </div>
-            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(16,185,129,0.3)" }}>
-              <p className="text-[9px] font-bold text-emerald-500 uppercase leading-none mb-0.5">Hari Ini</p>
-              <p className="text-xl font-bold text-emerald-500 leading-none">{todayCount}</p>
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.05)" }}>
+              <p className="text-[9px] font-bold text-blue-500 uppercase leading-none mb-0.5">WB Masuk</p>
+              <p className="text-xl font-bold text-blue-500 leading-none">{wbMasukCount}</p>
             </div>
-            {pendingPrevDays > 0 && (
-              <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[70px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
-                <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Tertunda</p>
-                <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
-              </div>
-            )}
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.05)" }}>
+              <p className="text-[9px] font-bold text-violet-500 uppercase leading-none mb-0.5">WB Keluar</p>
+              <p className="text-xl font-bold text-violet-500 leading-none">{wbKeluarCount}</p>
+            </div>
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.05)" }}>
+              <p className="text-[9px] font-bold text-emerald-500 uppercase leading-none mb-0.5">MG Keluar</p>
+              <p className="text-xl font-bold text-emerald-500 leading-none">{mgKeluarCount}</p>
+            </div>
           </div>
 
           {/* Action Buttons */}

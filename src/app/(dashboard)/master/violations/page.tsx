@@ -8,6 +8,7 @@ import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { createPortal } from "react-dom";
 import Pagination from "@/components/Pagination";
+import SearchInput from "@/components/SearchInput";
 
 interface Driver {
   id: number;
@@ -98,16 +99,12 @@ function DriverTable({
     <div>
       {/* Filters */}
       <div className="px-5 py-3 flex flex-wrap items-center gap-3 border-b border-white/5 bg-white/2">
-        <div className="relative">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            type="text" className="form-input h-8 text-xs pl-7 w-44"
-            placeholder="Cari nama / SIM..."
-            value={search} onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          small
+          placeholder="Cari nama / SIM..."
+          value={search}
+          onChange={setSearch}
+        />
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">Tanggal</span>
           <input type="date" className="form-input h-8 text-xs w-34" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
@@ -215,16 +212,12 @@ function ViolationTable({
     <div>
       {/* Filters */}
       <div className="px-5 py-3 flex flex-wrap items-center gap-3 border-b border-white/5 bg-white/2">
-        <div className="relative">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            type="text" className="form-input h-8 text-xs pl-7 w-44"
-            placeholder="Cari driver / BK / jenis..."
-            value={search} onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          small
+          placeholder="Cari driver / BK / jenis..."
+          value={search}
+          onChange={setSearch}
+        />
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">Tanggal</span>
           <input type="date" className="form-input h-8 text-xs w-34" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />

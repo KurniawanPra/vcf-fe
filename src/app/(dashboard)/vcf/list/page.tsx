@@ -11,6 +11,7 @@ import PrintVCF from "../[id]/PrintVCF";
 import PrintAllVCF from "@/components/print/PrintAllVCF";
 import PrintMasterTable from "@/components/print/PrintMasterTable";
 import Pagination from "@/components/Pagination";
+import SearchInput from "@/components/SearchInput";
 import DatePickerModal, { DateRangeTrigger } from "@/components/DatePickerModal";
 import ModalPortal from "@/components/ModalPortal";
 
@@ -531,25 +532,11 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             {/* Search Input */}
             <div className="flex-1 min-w-0">
               <label className="form-label mb-2 block">Pencarian</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Cari No. Urut, No. Polisi, Supir, Transporter..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1.5px solid var(--border)",
-                    color: "var(--text-primary)",
-                  }}
-                />
-              </div>
+              <SearchInput
+                placeholder="Cari No. Urut, No. Polisi, Supir, Transporter..."
+                value={search}
+                onChange={setSearch}
+              />
             </div>
 
             {/* Date Range — Custom Calendar Trigger */}

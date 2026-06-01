@@ -7,6 +7,7 @@ import { isAdmin } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { createPortal } from "react-dom";
+import SearchInput from "@/components/SearchInput";
 
 interface Driver {
   id: number;
@@ -100,25 +101,11 @@ function ViolationTable({
       {/* Filters */}
       <div className="px-5 py-3 flex flex-wrap items-center gap-3 border-b border-white/5 bg-white/2">
         {/* Search Input */}
-        <div className="flex-1 min-w-0 relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Cari No. Polisi atau Supir..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-12 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-            style={{
-              background: "var(--bg-card)",
-              border: "1.5px solid var(--border)",
-              color: "var(--text-primary)",
-            }}
-          />
-        </div>
+        <SearchInput
+          placeholder="Cari No. Polisi atau Supir..."
+          value={search}
+          onChange={setSearch}
+        />
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">Tanggal</span>
           <input type="date" className="form-input h-8 text-xs w-34" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />

@@ -13,6 +13,7 @@ import ImportResultModal from "@/components/ImportResultModal";
 import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
 import ModalPortal from "@/components/ModalPortal";
+import SearchInput from "@/components/SearchInput";
 
 interface Transporter {
   id: number;
@@ -198,17 +199,15 @@ export default function TransportersPage() {
 
       <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : "9000px", transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1)", opacity: collapsed ? 0 : 1 }}>
         <div className="flex flex-wrap gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-            </div>
-            <input id="input-search-transporter" type="text" placeholder="Cari nama atau kode transporter..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-11 pl-11 pr-4 rounded-xl text-sm transition-all focus:outline-none"
-              style={{ background: "var(--bg-secondary)", border: "1.5px solid var(--border)", color: "var(--text-primary)", fontFamily: "'Inter', sans-serif" }}
-              onFocus={(e) => { e.currentTarget.style.border = "1.5px solid rgba(59, 130, 246, 0.5)"; e.currentTarget.style.background = "var(--bg-card-hover)"; }}
-              onBlur={(e) => { e.currentTarget.style.border = "1.5px solid var(--border)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
-            />
-          </div>
+          <SearchInput
+            id="input-search-transporter"
+            className="max-w-md"
+            h11
+            bgSecondary
+            placeholder="Cari nama atau kode transporter..."
+            value={search}
+            onChange={setSearch}
+          />
           <button className="btn btn-secondary" onClick={() => setSearch("")}>Reset</button>
         </div>
 
