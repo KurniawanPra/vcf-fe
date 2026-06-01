@@ -77,7 +77,7 @@ export default function LoginPage() {
             <div className="flex flex-col mb-auto">
               
               {/* ── Plain Left-Aligned Logo with Erratic Liquid Glow ── */}
-              <div className="mb-8 flex justify-start relative w-max">
+              <div className="mb-4 flex justify-start relative w-max">
                 <style dangerouslySetInnerHTML={{__html: `
                   @keyframes liquid-blob-1 {
                     0%   { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(0px, 0px) rotate(0deg) scale(1.1); }
