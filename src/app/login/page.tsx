@@ -77,34 +77,41 @@ export default function LoginPage() {
             <div className="flex flex-col mb-auto">
               
               {/* ── Plain Left-Aligned Logo with Erratic Liquid Glow ── */}
-              <div className="mb-4 flex justify-start relative w-max">
+              <div className="mb-4 flex justify-start relative w-max group cursor-pointer">
                 <style dangerouslySetInnerHTML={{__html: `
                   @keyframes liquid-blob-1 {
-                    0%   { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(0px, 0px) rotate(0deg) scale(1.1); }
-                    25%  { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: translate(15px, -15px) rotate(90deg) scale(1.15); }
-                    50%  { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; transform: translate(-10px, 15px) rotate(180deg) scale(1.05); }
-                    75%  { border-radius: 30% 70% 40% 60% / 60% 40% 50% 50%; transform: translate(-15px, -10px) rotate(270deg) scale(1.2); }
-                    100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(0px, 0px) rotate(360deg) scale(1.1); }
+                    0%   { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: translate(0px, 0px) rotate(0deg) scale(0.92); }
+                    33%  { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: translate(4px, -6px) rotate(120deg) scale(1.02); }
+                    66%  { border-radius: 50% 50% 30% 70% / 40% 60% 40% 60%; transform: translate(-6px, 4px) rotate(240deg) scale(0.88); }
+                    100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: translate(0px, 0px) rotate(360deg) scale(0.92); }
                   }
                   @keyframes liquid-blob-2 {
-                    0%   { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: translate(0px, 0px) rotate(360deg) scale(1.1); }
-                    25%  { border-radius: 30% 70% 70% 30% / 50% 60% 40% 50%; transform: translate(-20px, 10px) rotate(270deg) scale(1.05); }
-                    50%  { border-radius: 50% 50% 30% 70% / 70% 40% 60% 30%; transform: translate(15px, 20px) rotate(180deg) scale(1.2); }
-                    75%  { border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%; transform: translate(10px, -20px) rotate(90deg) scale(1.15); }
-                    100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: translate(0px, 0px) rotate(0deg) scale(1.1); }
+                    0%   { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: translate(0px, 0px) rotate(360deg) scale(0.88); }
+                    50%  { border-radius: 30% 70% 70% 30% / 50% 60% 40% 50%; transform: translate(-8px, 6px) rotate(180deg) scale(1.04); }
+                    100% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: translate(0px, 0px) rotate(0deg) scale(0.88); }
+                  }
+                  @keyframes liquid-blob-3 {
+                    0%   { border-radius: 50% 50% 50% 50%; transform: translate(0px, 0px) rotate(0deg) scale(0.82); }
+                    50%  { border-radius: 40% 60% 40% 60%; transform: translate(3px, -3px) rotate(-180deg) scale(0.92); }
+                    100% { border-radius: 50% 50% 50% 50%; transform: translate(0px, 0px) rotate(-360deg) scale(0.82); }
                   }
                   .animate-liquid-1 {
-                    animation: liquid-blob-1 12s ease-in-out infinite;
+                    animation: liquid-blob-1 10s ease-in-out infinite;
                   }
                   .animate-liquid-2 {
-                    animation: liquid-blob-2 15s ease-in-out infinite;
+                    animation: liquid-blob-2 13s ease-in-out infinite;
+                  }
+                  .animate-liquid-3 {
+                    animation: liquid-blob-3 8s ease-in-out infinite;
                   }
                 `}} />
                 
-                {/* Kabut putih berbentuk liquid ganda & bergerak acak */}
-                <div className="absolute inset-0 bg-white/70 blur-md pointer-events-none animate-liquid-1"></div>
-                <div className="absolute inset-0 bg-white/60 blur-lg pointer-events-none animate-liquid-2 mix-blend-overlay"></div>
-                <div className="absolute inset-0 bg-white/40 blur-xl pointer-events-none scale-125"></div>
+                {/* Interactive liquid backdrop - slightly smaller (inset-2) with gorgeous gradient layers */}
+                <div className="absolute inset-2 pointer-events-none transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-115 group-hover:rotate-180 opacity-80 group-hover:opacity-100">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/90 via-emerald-100/60 to-white/95 blur-md animate-liquid-1"></div>
+                  <div className="absolute inset-0 bg-gradient-to-bl from-emerald-400/40 via-teal-300/35 to-transparent blur-lg animate-liquid-2 mix-blend-screen"></div>
+                  <div className="absolute inset-0 bg-white/45 blur-xl animate-liquid-3"></div>
+                </div>
                 
                 <Image
                   src="/logo_primary.png"
