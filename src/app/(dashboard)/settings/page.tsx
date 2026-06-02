@@ -294,12 +294,6 @@ export default function SettingsPage() {
             {tab.icon}{tab.label}
           </button>
         ))}
-        <button
-          onClick={() => setShowGuideModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all text-text-muted hover:text-text-primary"
-        >
-          {GUIDE_ICON}Panduan Operasional
-        </button>
       </div>
 
       {/* System Settings Tab */}
