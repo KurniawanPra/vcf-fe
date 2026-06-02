@@ -337,7 +337,10 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
         <div className="p-6 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm bg-white dark:bg-bg-card overflow-hidden">
         <div className="px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 flex justify-between items-center">
-          <h3 className="font-bold text-text-primary dark:text-white uppercase tracking-wider text-sm">Hasil Pemeriksaan Weighbridge Masuk</h3>
+          <div className="border-l-4 border-blue-500 pl-4">
+            <h3 className="font-bold text-text-primary dark:text-white uppercase tracking-wider text-sm">Hasil Pemeriksaan Weighbridge Masuk</h3>
+            <p className="text-[10px] text-text-muted mt-0.5">Detail data pemeriksaan weighbridge saat masuk area</p>
+          </div>
           {/* Only admin can edit existing data */}
           {canEdit && (
             <button
@@ -379,8 +382,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
               )}
               {isUnloading && vcfData.segel_masuk && (
                 <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <div className="flex items-center gap-2 mb-2 border-l-2 border-amber-500 pl-2">
                     <p className="form-label text-amber-500 mb-0">Segel Masuk ({vcfData.segel_masuk.jumlah_segel} Unit)</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -442,10 +444,12 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
 
         {/* CHECKLIST — Android section style */}
         <div className="space-y-0.5">
-          <div className="flex items-center gap-2 px-1 mb-3">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-blue-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <span className="text-[11px] font-black uppercase tracking-widest text-blue-500">Pemeriksaan Weighbridge Masuk</span>
-            <span className="ml-auto text-[10px] text-text-muted">{Object.values(pemeriksaan).filter(v => v && v !== '').length}/{pemeriksaanItems.length} terisi</span>
+          <div className="flex items-center justify-between border-l-4 border-blue-500 pl-3 mb-3">
+            <div>
+              <span className="text-[11px] font-black uppercase tracking-widest text-blue-500 block">Pemeriksaan Weighbridge Masuk</span>
+              <span className="text-[10px] text-text-muted">Periksa semua item kelayakan kendaraan</span>
+            </div>
+            <span className="text-[10px] text-text-muted font-mono">{Object.values(pemeriksaan).filter(v => v && v !== '').length}/{pemeriksaanItems.length} terisi</span>
           </div>
           {pemeriksaanItems.map((item) => {
             const options = item.tipe_jawaban && item.tipe_jawaban.includes(',') ? item.tipe_jawaban.split(',').map(o => o.trim()) : null;
@@ -528,8 +532,7 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
                       {/* Read-only reference: always display the incoming seal from the VCF data */}
                       {vcfData?.segel_masuk ? (
                         <div className="mt-3 pt-3 border-t border-amber-500/10 animate-slideDown">
-                          <div className="flex items-center gap-2 mb-2">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-amber-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                          <div className="flex items-center gap-2 mb-2 border-l-2 border-amber-500 pl-2">
                             <span className="text-[10px] uppercase font-black text-amber-500 tracking-widest">Segel Masuk ({vcfData.segel_masuk.jumlah_segel} Unit)</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
@@ -794,14 +797,9 @@ export default function Bagian2Form({ vcfId, canEdit, canFill, vcfData, onSucces
             <div className="bg-white dark:bg-bg-card w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
               {/* Minimalist Header */}
               <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-bg-card">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100 dark:border-white/10">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Edit Security Weighbridge (Masuk)</h2>
-                    <p className="text-slate-400 text-xs font-medium">Perbarui data pemeriksaan fisik kendaraan</p>
-                  </div>
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Edit Security Weighbridge (Masuk)</h2>
+                  <p className="text-slate-400 text-xs font-medium">Perbarui data pemeriksaan fisik kendaraan</p>
                 </div>
                 <button onClick={() => { setIsEditing(false); setError(""); }} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 transition-all">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>

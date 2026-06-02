@@ -130,7 +130,7 @@ function ToastBadge({ toast, onRemove }: { toast: ToastItem; onRemove: (id: stri
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         borderRadius: "16px",
-        border: "1px solid var(--border)",
+        border: `1.5px solid ${cfg.barColor}`,
         boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
         pointerEvents: "all",
         position: "relative",

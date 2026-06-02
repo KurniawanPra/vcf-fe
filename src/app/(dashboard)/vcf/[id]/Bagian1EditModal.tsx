@@ -332,9 +332,8 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
       addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan");
     } else {
       const year = parseInt(tahunKendaraan, 10);
-      const currentYear = new Date().getFullYear();
-      if (isNaN(year) || year > currentYear || year < 1950) {
-        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - " + currentYear + ")", "field-tahun-kendaraan");
+      if (isNaN(year) || year > 2100 || year < 1950) {
+        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - 2100)", "field-tahun-kendaraan");
       }
     }
 
@@ -441,14 +440,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
       <div className="bg-white dark:bg-bg-card w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
         {/* Minimalist Header */}
         <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-bg-card">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100 dark:border-white/10">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-500"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Edit Registrasi VCF</h2>
-              <p className="text-slate-400 text-xs font-medium">Perbarui informasi dasar dan logistik kendaraan</p>
-            </div>
+          <div className="border-l-4 border-blue-500 pl-4">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Edit Registrasi VCF</h2>
+            <p className="text-slate-400 text-xs font-medium">Perbarui informasi dasar dan logistik kendaraan</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 transition-all">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -478,11 +472,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* SECTION 1: DOKUMEN & LOGISTIK */}
             <div className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                </div>
+              <div className="border-l-4 border-blue-500 pl-4 mb-8">
                 <h2 className="text-xl font-bold text-text-primary">Informasi Dasar & Logistik</h2>
+                <p className="text-xs text-text-muted mt-1">Pilih tanggal, jam masuk, tipe kegiatan, dan produk yang diangkut.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -565,17 +557,27 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
 
             {/* SECTION 2: KENDARAAN & SUPIR */}
             <div className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>
-                </div>
+              <div className="border-l-4 border-amber-500 pl-4 mb-8">
                 <h2 className="text-xl font-bold text-text-primary">Kendaraan & Personel</h2>
+                <p className="text-xs text-text-muted mt-1">Pilih transporter, nomor polisi, jenis kendaraan, dan nama pengemudi.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div id="field-transporter">
-                    <SearchableDropdown label="Nama Transporter" options={transporters} value={transporterId} onChange={setTransporterId} placeholder="Pilih Transporter" required displayField="nama_transporter" />
+                    <SearchableDropdown
+                      label="Nama Transporter"
+                      options={transporters}
+                      value={transporterId}
+                      onChange={(val) => {
+                        setTransporterId(val);
+                        setFieldErrors(prev => ({ ...prev, transporter: !val }));
+                      }}
+                      placeholder="Pilih Transporter"
+                      required
+                      displayField="nama_transporter"
+                      hasError={fieldErrors.transporter}
+                    />
                   </div>
                   <div id="field-no-polisi">
                     <label className="form-label">No. Polisi *</label>
@@ -593,7 +595,19 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                 </div>
                 <div className="space-y-4">
                   <div id="field-driver">
-                    <SearchableDropdown label="Nama Supir" options={drivers} value={driverId} onChange={setDriverId} placeholder="Pilih Supir" required displayField="display_name" />
+                    <SearchableDropdown
+                      label="Nama Supir"
+                      options={drivers}
+                      value={driverId}
+                      onChange={(val) => {
+                        setDriverId(val);
+                        setFieldErrors(prev => ({ ...prev, driver: !val }));
+                      }}
+                      placeholder="Pilih Supir"
+                      required
+                      displayField="display_name"
+                      hasError={fieldErrors.driver}
+                    />
                   </div>
                   <div>
                     <label className="form-label">No. SIM</label>
@@ -610,7 +624,7 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
                 <div id="field-tahun-kendaraan" data-field-error={fieldErrors.tahunKendaraan ? "true" : undefined}>
                   <label className="form-label">Tahun Kendaraan</label>
                   <input type="number" className={`form-input ${fieldErrors.tahunKendaraan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`} placeholder="Contoh: 2022" value={tahunKendaraan} onChange={e => { setTahunKendaraan(e.target.value); if (fieldErrors.tahunKendaraan) setFieldErrors(prev => ({ ...prev, tahunKendaraan: false })); }} />
-                  {fieldErrors.tahunKendaraan && <p className="text-[11px] text-red-500 mt-1">Tahun tidak boleh lebih dari {new Date().getFullYear()}</p>}
+                  {fieldErrors.tahunKendaraan && <p className="text-[11px] text-red-500 mt-1">Tahun harus antara 1950 sampai 2100</p>}
                 </div>
                 <div>
                   <label className="form-label">Tujuan</label>
@@ -622,13 +636,10 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
 
             {/* SECTION 3: PEMERIKSAAN KELENGKAPAN */}
             <div id="field-checklist" className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                </div>
-                <div className="flex-1">
+              <div className="flex items-center justify-between border-l-4 border-purple-500 pl-4 mb-8">
+                <div>
                   <h2 className="text-xl font-bold text-text-primary">Pemeriksaan Kelengkapan Supir</h2>
-                  <p className="text-sm text-text-muted">Wajib diisi semua item (Ya/Tidak).</p>
+                  <p className="text-xs text-text-muted mt-1">Verifikasi kepatuhan dan kelengkapan dokumen serta APD pengemudi.</p>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                   {Object.values(checklist).filter((v) => v !== null).length}/{checklistItems.length} terisi
@@ -666,11 +677,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
               </div>
             ) :
             <div className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
-                </div>
+              <div className="border-l-4 border-emerald-500 pl-4 mb-8">
                 <h2 className="text-xl font-bold text-text-primary">Jenis & Detail Muatan</h2>
+                <p className="text-xs text-text-muted mt-1">Pilih item muatan yang dibawa masuk atau diisi ke dalam kendaraan.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -780,13 +789,9 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
             {/* SECTION 4.5: NOMOR SEGEL (UNLOADING ONLY) */}
             {isUnloading && (
               <div id="field-segel" className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                  </div>
+                <div className="border-l-4 border-emerald-500 pl-4 mb-8">
                   <h2 className="text-xl font-bold text-text-primary">Nomor Segel Kendaraan</h2>
+                  <p className="text-xs text-text-muted mt-1">Input jumlah dan nomor segel yang terpasang pada kendaraan (Unloading).</p>
                 </div>
 
                 <div className="space-y-4">
@@ -838,7 +843,10 @@ export default function Bagian1EditModal({ vcfId, onSuccess, onClose }: Props) {
 
             {/* SECTION 5: KETERANGAN */}
             <div className="p-8 border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm mb-6">
-              <label className="form-label mb-3">Keterangan Tambahan (Opsional)</label>
+              <div className="border-l-4 border-slate-500 pl-4 mb-8">
+                <h2 className="text-xl font-bold text-text-primary">Keterangan Tambahan</h2>
+                <p className="text-xs text-text-muted mt-1">Catatan tambahan opsional terkait kendaraan atau pengemudi.</p>
+              </div>
               <textarea className="form-input" rows={4} placeholder="Masukkan catatan jika ada..." value={keterangan} onChange={e => setKeterangan(e.target.value)} />
             </div>
           </form>

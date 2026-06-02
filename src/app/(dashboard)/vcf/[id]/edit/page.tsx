@@ -302,9 +302,8 @@ export default function VcfEditPage() {
       addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan");
     } else {
       const year = parseInt(tahunKendaraan, 10);
-      const currentYear = new Date().getFullYear();
-      if (isNaN(year) || year > currentYear || year < 1950) {
-        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - " + currentYear + ")", "field-tahun-kendaraan");
+      if (isNaN(year) || year > 2100 || year < 1950) {
+        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - 2100)", "field-tahun-kendaraan");
       }
     }
 
@@ -674,7 +673,7 @@ export default function VcfEditPage() {
                 }} 
               />
               {fieldErrors.tahunKendaraan && (
-                <p className="text-[11px] text-red-500 mt-1">Tahun tidak boleh lebih dari {new Date().getFullYear()}</p>
+                <p className="text-[11px] text-red-500 mt-1">Tahun harus antara 1950 sampai 2100</p>
               )}
             </div>
             <div>

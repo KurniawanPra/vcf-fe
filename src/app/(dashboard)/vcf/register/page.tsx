@@ -321,9 +321,8 @@ export default function VcfRegisterPage() {
       addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan", "field-tahun-kendaraan", "Tahun kendaraan wajib diisi.");
     } else {
       const year = parseInt(tahunKendaraan, 10);
-      const currentYear = new Date().getFullYear();
-      if (isNaN(year) || year < 1950 || year > currentYear) {
-        addError("tahunKendaraan", "Informasi Kendaraan", `Tahun Kendaraan (1950 - ${currentYear})`, "field-tahun-kendaraan", `Tahun kendaraan harus antara 1950 sampai ${currentYear}.`);
+      if (isNaN(year) || year < 1950 || year > 2100) {
+        addError("tahunKendaraan", "Informasi Kendaraan", "Tahun Kendaraan (1950 - 2100)", "field-tahun-kendaraan", "Tahun kendaraan harus antara 1950 sampai 2100.");
       }
     }
     // 11. Asal / Tujuan
@@ -606,9 +605,6 @@ export default function VcfRegisterPage() {
             : "bg-bg-secondary text-text-muted border-border hover:border-blue-500/30"
             }`}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
           <span>{showGuide ? "Tutup Panduan" : "Panduan Operasional"}</span>
         </button>
       </div>
@@ -735,11 +731,9 @@ export default function VcfRegisterPage() {
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {/* SECTION 1: DOKUMEN & LOGISTIK */}
         <div className="glass-card p-4 md:p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-            </div>
+          <div className="border-l-4 border-blue-500 pl-4 mb-8">
             <h2 className="text-xl font-bold text-text-primary">Informasi Dasar & Logistik</h2>
+            <p className="text-xs text-text-muted mt-1">Pilih tanggal, jam masuk, tipe kegiatan, dan produk yang diangkut.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -754,13 +748,16 @@ export default function VcfRegisterPage() {
               <label className="form-label">Tanggal *</label>
               <input
                 type="date"
-                className={`form-input text-lg ${fieldErrors.tanggal ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                className={`form-input text-lg ${fieldErrors.tanggal ? '!border-red-500 !bg-red-50 dark:!bg-red-500/10' : ''}`}
                 value={tanggal}
                 onChange={(e) => {
-                  setTanggal(e.target.value);
-                  if (fieldErrors.tanggal) {
-                    setFieldErrors(prev => ({ ...prev, tanggal: false }));
-                  }
+                  const val = e.target.value;
+                  setTanggal(val);
+                  setFieldErrors(prev => ({ ...prev, tanggal: !val }));
+                }}
+                onBlur={(e) => {
+                  const val = e.target.value;
+                  setFieldErrors(prev => ({ ...prev, tanggal: !val }));
                 }}
                 required
               />
@@ -771,16 +768,19 @@ export default function VcfRegisterPage() {
                 <div className="flex items-baseline gap-1 flex-1">
                   <input
                     type="text"
-                    className={`form-input w-full text-lg font-mono transition-all duration-300 ${fieldErrors.jamMasuk ? 'bg-red-50 dark:bg-red-500/10 border-red-500 shadow-lg shadow-red-500/10' : ''}`}
+                    className={`form-input w-full text-lg font-mono transition-all duration-300 ${fieldErrors.jamMasuk ? '!bg-red-50 dark:!bg-red-500/10 !border-red-500 shadow-lg shadow-red-500/10' : ''}`}
                     value={jamMasuk}
                     onChange={(e) => {
                       setIsJamMasukManual(true);
                       let v = e.target.value.replace(/[^\d]/g, "");
                       if (v.length > 4) v = v.slice(0, 4);
-                      setJamMasuk(v.length > 2 ? v.slice(0, 2) + ":" + v.slice(2) : v);
-                      if (fieldErrors.jamMasuk) {
-                        setFieldErrors(prev => ({ ...prev, jamMasuk: false }));
-                      }
+                      const formatted = v.length > 2 ? v.slice(0, 2) + ":" + v.slice(2) : v;
+                      setJamMasuk(formatted);
+                      setFieldErrors(prev => ({ ...prev, jamMasuk: !formatted || !isValidTime24h(formatted) }));
+                    }}
+                    onBlur={(e) => {
+                      const val = e.target.value;
+                      setFieldErrors(prev => ({ ...prev, jamMasuk: !val || !isValidTime24h(val) }));
                     }}
                     placeholder="HH:MM"
                     maxLength={5}
@@ -818,10 +818,9 @@ export default function VcfRegisterPage() {
                 <div
                   className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${isLoading ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'border-slate-100 dark:border-white/5 hover:border-slate-200'}`}
                   onClick={() => {
-                    setTipeKegiatan(tipeKegiatan.startsWith("loading") ? "" : "loading_lokal");
-                    if (fieldErrors.tipeKegiatan) {
-                      setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
-                    }
+                    const val = tipeKegiatan.startsWith("loading") ? "" : "loading_lokal";
+                    setTipeKegiatan(val);
+                    setFieldErrors(prev => ({ ...prev, tipeKegiatan: !val }));
                   }}
                 >
                   <div className="flex items-center gap-3 mb-3">
@@ -834,10 +833,9 @@ export default function VcfRegisterPage() {
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                       {["lokal", "export"].map(t => (
                         <button key={t} type="button" onClick={() => {
-                          setTipeKegiatan(`loading_${t}` as any);
-                          if (fieldErrors.tipeKegiatan) {
-                            setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
-                          }
+                          const val = `loading_${t}` as any;
+                          setTipeKegiatan(val);
+                          setFieldErrors(prev => ({ ...prev, tipeKegiatan: !val }));
                         }} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase ${tipeKegiatan === `loading_${t}` ? 'bg-blue-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
                           {t}
                         </button>
@@ -849,10 +847,9 @@ export default function VcfRegisterPage() {
                 <div
                   className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${isUnloading ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5' : 'border-slate-100 dark:border-white/5 hover:border-slate-200'}`}
                   onClick={() => {
-                    setTipeKegiatan(isUnloading ? "" : "unloading_lokal");
-                    if (fieldErrors.tipeKegiatan) {
-                      setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
-                    }
+                    const val = isUnloading ? "" : "unloading_lokal";
+                    setTipeKegiatan(val);
+                    setFieldErrors(prev => ({ ...prev, tipeKegiatan: !val }));
                   }}
                 >
                   <div className="flex items-center gap-3 mb-3">
@@ -865,10 +862,9 @@ export default function VcfRegisterPage() {
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                       {["lokal", "import"].map(t => (
                         <button key={t} type="button" onClick={() => {
-                          setTipeKegiatan(`unloading_${t}` as any);
-                          if (fieldErrors.tipeKegiatan) {
-                            setFieldErrors(prev => ({ ...prev, tipeKegiatan: false }));
-                          }
+                          const val = `unloading_${t}` as any;
+                          setTipeKegiatan(val);
+                          setFieldErrors(prev => ({ ...prev, tipeKegiatan: !val }));
                         }} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase ${tipeKegiatan === `unloading_${t}` ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
                           {t}
                         </button>
@@ -886,10 +882,9 @@ export default function VcfRegisterPage() {
                   <button
                     key={p.kode} type="button"
                     onClick={() => {
-                      setProdukKode(p.kode);
-                      if (fieldErrors.produk) {
-                        setFieldErrors(prev => ({ ...prev, produk: false }));
-                      }
+                      const val = p.kode;
+                      setProdukKode(val);
+                      setFieldErrors(prev => ({ ...prev, produk: !val }));
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${produkKode === p.kode ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-200' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'}`}
                   >
@@ -899,10 +894,9 @@ export default function VcfRegisterPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setProdukKode("OTHERS");
-                    if (fieldErrors.produk) {
-                      setFieldErrors(prev => ({ ...prev, produk: false }));
-                    }
+                    const val = "OTHERS";
+                    setProdukKode(val);
+                    setFieldErrors(prev => ({ ...prev, produk: !val, produkLainnya: !produkLainnya.trim() }));
                   }}
                   className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${produkKode === "OTHERS" ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-200' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'}`}
                 >
@@ -913,14 +907,17 @@ export default function VcfRegisterPage() {
                 <input
                   id="field-produk-lainnya"
                   type="text"
-                  className={`form-input mt-3 ${fieldErrors.produkLainnya ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                  className={`form-input mt-3 ${fieldErrors.produkLainnya ? '!border-red-500 !bg-red-50 dark:!bg-red-500/10' : ''}`}
                   placeholder="Sebutkan produk lainnya..."
                   value={produkLainnya}
                   onChange={e => {
-                    setProdukLainnya(e.target.value);
-                    if (fieldErrors.produkLainnya) {
-                      setFieldErrors(prev => ({ ...prev, produkLainnya: false }));
-                    }
+                    const val = e.target.value;
+                    setProdukLainnya(val);
+                    setFieldErrors(prev => ({ ...prev, produkLainnya: !val.trim() }));
+                  }}
+                  onBlur={e => {
+                    const val = e.target.value;
+                    setFieldErrors(prev => ({ ...prev, produkLainnya: !val.trim() }));
                   }}
                   required
                 />
@@ -936,13 +933,9 @@ export default function VcfRegisterPage() {
         {/* Segel Input - Only for Unloading flow */}
         {isUnloading && (
           <div id="field-segel" className="glass-card p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
+            <div className="border-l-4 border-emerald-500 pl-4 mb-6">
               <h2 className="text-lg font-bold text-text-primary">Nomor Segel Kendaraan</h2>
+              <p className="text-xs text-text-muted mt-1">Input jumlah dan nomor segel yang terpasang pada kendaraan (Unloading).</p>
             </div>
 
             <div className="space-y-3">
@@ -1004,11 +997,9 @@ export default function VcfRegisterPage() {
           <SectionSkeleton title="Kendaraan & Personel" />
         ) : (
           <div className="glass-card p-4 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>
-              </div>
+            <div className="border-l-4 border-amber-500 pl-4 mb-8">
               <h2 className="text-xl font-bold text-text-primary">Kendaraan & Personel</h2>
+              <p className="text-xs text-text-muted mt-1">Pilih transporter, nomor polisi, jenis kendaraan, dan nama pengemudi.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1020,9 +1011,7 @@ export default function VcfRegisterPage() {
                     value={transporterId}
                     onChange={(val) => {
                       setTransporterId(val);
-                      if (fieldErrors.transporter) {
-                        setFieldErrors(prev => ({ ...prev, transporter: false }));
-                      }
+                      setFieldErrors(prev => ({ ...prev, transporter: !val }));
                     }}
                     placeholder="Pilih Transporter"
                     required
@@ -1034,30 +1023,31 @@ export default function VcfRegisterPage() {
                   <label className="form-label">No. Polisi *</label>
                   <input
                     type="text"
-                    className={`form-input uppercase ${fieldErrors.noPolisi ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                    className={`form-input uppercase ${fieldErrors.noPolisi ? '!border-red-500 !bg-red-50 dark:!bg-red-500/10' : ''}`}
                     placeholder="BK 1234 ABC"
                     value={noPolisi}
                     onChange={e => {
-                      setNoPolisi(e.target.value);
-                      if (fieldErrors.noPolisi) {
-                        setFieldErrors(prev => ({ ...prev, noPolisi: false }));
-                      }
+                      const val = e.target.value;
+                      setNoPolisi(val);
+                      setFieldErrors(prev => ({ ...prev, noPolisi: !val.trim() }));
                     }}
-                    onBlur={e => runViolationCheck(undefined, e.target.value)}
+                    onBlur={e => {
+                      const val = e.target.value;
+                      setFieldErrors(prev => ({ ...prev, noPolisi: !val.trim() }));
+                      runViolationCheck(undefined, val);
+                    }}
                     required
                   />
                 </div>
                 <div id="field-jenis-kendaraan">
                   <label className="form-label">Jenis Kendaraan *</label>
                   <select
-                    className={`form-select uppercase ${fieldErrors.tipeKendaraan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                    className={`form-select uppercase ${fieldErrors.tipeKendaraan ? '!border-red-500 !bg-red-50 dark:!bg-red-500/10' : ''}`}
                     value={tipeKendaraan}
                     onChange={e => {
                       const val = e.target.value;
                       setTipeKendaraan(val as any);
-                      if (fieldErrors.tipeKendaraan) {
-                        setFieldErrors(prev => ({ ...prev, tipeKendaraan: false }));
-                      }
+                      setFieldErrors(prev => ({ ...prev, tipeKendaraan: !val }));
                       // Find matching jenis_kendaraan_id from master data by name/kode
                       const match = jenisKendaraan.find(j =>
                         j.nama?.toLowerCase().includes(val.toLowerCase()) ||
@@ -1069,6 +1059,10 @@ export default function VcfRegisterPage() {
                         // Fallback to first one if no match found (to satisfy backend requirement)
                         setJenisKendaraanId(String(jenisKendaraan[0].id));
                       }
+                    }}
+                    onBlur={e => {
+                      const val = e.target.value;
+                      setFieldErrors(prev => ({ ...prev, tipeKendaraan: !val }));
                     }}
                     required
                   >
@@ -1094,9 +1088,7 @@ export default function VcfRegisterPage() {
                     onChange={(val) => {
                       setDriverId(val);
                       runViolationCheck(val, undefined);
-                      if (fieldErrors.driver) {
-                        setFieldErrors(prev => ({ ...prev, driver: false }));
-                      }
+                      setFieldErrors(prev => ({ ...prev, driver: !val }));
                     }}
                     placeholder="Pilih Supir"
                     required
@@ -1130,32 +1122,42 @@ export default function VcfRegisterPage() {
                 <label className="form-label">Tahun Kendaraan *</label>
                 <input
                   type="number"
-                  className={`form-input ${fieldErrors.tahunKendaraan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                  className={`form-input ${fieldErrors.tahunKendaraan ? '!border-red-500 !bg-red-50 dark:!bg-red-500/10' : ''}`}
                   placeholder="Contoh: 2022"
                   value={tahunKendaraan}
                   onChange={e => {
-                    setTahunKendaraan(e.target.value);
-                    if (fieldErrors.tahunKendaraan) {
-                      setFieldErrors(prev => ({ ...prev, tahunKendaraan: false }));
-                    }
+                    const val = e.target.value;
+                    setTahunKendaraan(val);
+                    const year = parseInt(val, 10);
+                    const isErr = !val || isNaN(year) || year < 1950 || year > 2100;
+                    setFieldErrors(prev => ({ ...prev, tahunKendaraan: isErr }));
+                  }}
+                  onBlur={e => {
+                    const val = e.target.value;
+                    const year = parseInt(val, 10);
+                    const isErr = !val || isNaN(year) || year < 1950 || year > 2100;
+                    setFieldErrors(prev => ({ ...prev, tahunKendaraan: isErr }));
                   }}
                 />
                 {fieldErrors.tahunKendaraan && (
-                  <p className="text-[11px] text-red-500 mt-1">Tahun tidak boleh lebih dari {new Date().getFullYear()}</p>
+                  <p className="text-[11px] text-red-500 mt-1">Tahun harus antara 1950 sampai 2100</p>
                 )}
               </div>
               <div id="field-tujuan">
                 <label className="form-label">{isLoading ? "Tujuan *" : "Asal *"}</label>
                 <input
                   type="text"
-                  className={`form-input ${fieldErrors.tujuan ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''}`}
+                  className={`form-input ${fieldErrors.tujuan ? '!border-red-500 !bg-red-50 dark:!bg-red-500/10' : ''}`}
                   placeholder={isLoading ? "Masukkan tujuan" : "Masukkan asal"}
                   value={tujuan}
                   onChange={e => {
-                    setTujuan(e.target.value);
-                    if (fieldErrors.tujuan) {
-                      setFieldErrors(prev => ({ ...prev, tujuan: false }));
-                    }
+                    const val = e.target.value;
+                    setTujuan(val);
+                    setFieldErrors(prev => ({ ...prev, tujuan: !val.trim() }));
+                  }}
+                  onBlur={e => {
+                    const val = e.target.value;
+                    setFieldErrors(prev => ({ ...prev, tujuan: !val.trim() }));
                   }}
                 />
               </div>
@@ -1167,14 +1169,11 @@ export default function VcfRegisterPage() {
         {masterLoading ? (
           <SectionSkeleton title="Pemeriksaan Kelengkapan Supir" />
         ) : (
-          <div id="field-checklist" className={`glass-card p-4 md:p-8 shadow-sm border transition-all ${fieldErrors.checklist ? 'border-red-500 bg-red-50/5' : ''}`}>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-              </div>
-              <div className="flex-1">
+          <div id="field-checklist" className={`glass-card p-4 md:p-8 shadow-sm border transition-all ${fieldErrors.checklist ? 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-bg-card' : ''}`}>
+            <div className="flex items-center justify-between border-l-4 border-purple-500 pl-4 mb-8">
+              <div>
                 <h2 className="text-xl font-bold text-text-primary">Pemeriksaan Kelengkapan Supir</h2>
-                <p className="text-sm text-text-muted">Wajib diisi semua item (Ya/Tidak).</p>
+                <p className="text-xs text-text-muted mt-1">Verifikasi kepatuhan dan kelengkapan dokumen serta APD pengemudi.</p>
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 {Object.values(checklist).filter((v) => v !== null).length}/{checklistItems.length} terisi
@@ -1255,12 +1254,10 @@ export default function VcfRegisterPage() {
             </div>
           </div>
         ) : (
-          <div id="field-muatan" className={`glass-card p-4 md:p-8 shadow-sm border transition-all ${fieldErrors.muatanDibawa || fieldErrors.muatanDiisi ? 'border-red-500 bg-red-50/5' : ''}`}>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
-              </div>
+          <div id="field-muatan" className={`glass-card p-4 md:p-8 shadow-sm border transition-all ${fieldErrors.muatanDibawa || fieldErrors.muatanDiisi ? 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-bg-card' : ''}`}>
+            <div className="border-l-4 border-emerald-500 pl-4 mb-8">
               <h2 className="text-xl font-bold text-text-primary">Jenis & Detail Muatan</h2>
+              <p className="text-xs text-text-muted mt-1">Pilih item muatan yang dibawa masuk atau diisi ke dalam kendaraan.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -1449,7 +1446,10 @@ export default function VcfRegisterPage() {
 
         {/* SECTION 5: KETERANGAN */}
         <div className="glass-card p-4 md:p-8 shadow-sm">
-          <label className="form-label mb-3">Keterangan Tambahan (Opsional)</label>
+          <div className="border-l-4 border-slate-500 pl-4 mb-8">
+            <h2 className="text-xl font-bold text-text-primary">Keterangan Tambahan</h2>
+            <p className="text-xs text-text-muted mt-1">Catatan tambahan opsional terkait kendaraan atau pengemudi.</p>
+          </div>
           <textarea className="form-input" rows={4} placeholder="Masukkan catatan jika ada..." value={keterangan} onChange={e => setKeterangan(e.target.value)} />
         </div>
 
@@ -1503,9 +1503,12 @@ export default function VcfRegisterPage() {
       {mounted && localToast && (
         createPortal(
           <div className="fixed top-6 right-6 z-[99999] w-full max-w-sm px-4 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className={`bg-white dark:bg-bg-card rounded-2xl shadow-2xl border flex overflow-hidden ${
-              localToast.type === "error" ? "border-red-500/30" : localToast.type === "warning" ? "border-amber-500/30" : "border-emerald-500/30"
-            }`}>
+            <div 
+              className="bg-white dark:bg-bg-card rounded-2xl shadow-2xl flex overflow-hidden"
+              style={{
+                border: `1.5px solid var(--color-${localToast.type === "error" ? "danger" : localToast.type === "warning" ? "warning" : "success"})`
+              }}
+            >
               <div className={`w-12 flex items-center justify-center shrink-0 ${
                 localToast.type === "error" ? "bg-red-500" : localToast.type === "warning" ? "bg-amber-500" : "bg-emerald-500"
               }`}>

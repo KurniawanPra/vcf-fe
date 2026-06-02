@@ -744,16 +744,10 @@ export default function VcfDetailPage() {
         <FormMorph key="info" className="space-y-6">
           {/* Petugas Tracking Card */}
           <div className="glass-card overflow-hidden">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-primary)", color: "white" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
-                  <path d="M2 20c0-2.2 2.69-4 6-4s6 1.8 6 4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Registrasi VCF</h3>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Direkam oleh Petugas Main Gate Masuk</p>
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 justify-between">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <h3 className="font-bold text-base text-text-primary dark:text-white">Registrasi VCF</h3>
+                <p className="text-xs text-text-muted">Direkam oleh Petugas Main Gate Masuk</p>
               </div>
               {canEditRegistrasi && (
                 <button
@@ -787,11 +781,7 @@ export default function VcfDetailPage() {
 
               {/* Logistik Section */}
               <div>
-                <h4 className="text-xs uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="7" width="20" height="14" rx="2" />
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                  </svg>
+                <h4 className="text-xs uppercase tracking-wider font-bold mb-3 border-l-2 border-blue-500 pl-2" style={{ color: "var(--text-muted)" }}>
                   Informasi Logistik
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -810,13 +800,7 @@ export default function VcfDetailPage() {
 
               {/* Kendaraan Section */}
               <div>
-                <h4 className="text-xs uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                    <path d="M6 18.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                    <path d="M6 13.5v-3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" />
-                    <path d="M18 13.5V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v.5" />
-                  </svg>
+                <h4 className="text-xs uppercase tracking-wider font-bold mb-3 border-l-2 border-amber-500 pl-2" style={{ color: "var(--text-muted)" }}>
                   Kendaraan & Supir
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -835,10 +819,7 @@ export default function VcfDetailPage() {
               {/* Segel Masuk Section (Only for Unloading flow) */}
               {vcf.tipe_kegiatan?.includes("unloading") && (
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
+                  <h4 className="text-xs uppercase tracking-wider font-bold mb-3 border-l-2 border-emerald-500 pl-2" style={{ color: "var(--text-muted)" }}>
                     Segel Kendaraan Masuk
                   </h4>
                   {vcf.segel_masuk ? (
@@ -872,22 +853,14 @@ export default function VcfDetailPage() {
               {/* Keterangan Petugas */}
               {vcf.keterangan ? (
                 <div className="p-4 rounded-xl border-l-4" style={{ background: "rgba(59, 130, 246, 0.05)", borderColor: "#60a5fa" }}>
-                  <h4 className="text-xs uppercase tracking-wider font-bold mb-2 flex items-center gap-2" style={{ color: "#60a5fa" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </svg>
+                  <h4 className="text-xs uppercase tracking-wider font-bold mb-2 border-l-2 border-blue-500 pl-2" style={{ color: "#60a5fa" }}>
                     Keterangan dari Petugas Registrasi
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>{vcf.keterangan}</p>
                 </div>
               ) : (
                 <div className="p-4 rounded-xl border-l-4" style={{ background: "rgba(148, 163, 184, 0.05)", borderColor: "#94a3b8" }}>
-                  <h4 className="text-xs uppercase tracking-wider font-bold mb-2 flex items-center gap-2" style={{ color: "#94a3b8" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </svg>
+                  <h4 className="text-xs uppercase tracking-wider font-bold mb-2 border-l-2 border-slate-400 pl-2" style={{ color: "#94a3b8" }}>
                     Keterangan Petugas
                   </h4>
                   <p className="text-sm leading-relaxed italic" style={{ color: "var(--text-muted)" }}>Tidak ada keterangan dari petugas registrasi.</p>
@@ -898,15 +871,10 @@ export default function VcfDetailPage() {
 
           {/* Tracking Timeline - Petugas */}
           <div className="glass-card overflow-hidden">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#60a5fa", color: "white" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 20v-6M6 20V10M18 20V4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Tracking Petugas</h3>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Riwayat penanganan oleh petugas</p>
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 justify-between">
+              <div className="border-l-4 border-slate-500 pl-4">
+                <h3 className="font-bold text-base text-text-primary dark:text-white">Tracking Petugas</h3>
+                <p className="text-xs text-text-muted">Riwayat penanganan oleh petugas</p>
               </div>
             </div>
             <div className="p-6">
@@ -1058,16 +1026,10 @@ export default function VcfDetailPage() {
           {/* Kelengkapan Supir */}
           {vcf.kelengkapan_supir && vcf.kelengkapan_supir.length > 0 && (
             <div className="glass-card overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f59e0b", color: "white" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Pemeriksaan Kelengkapan Supir</h3>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Verifikasi kelengkapan dokumen dan perlengkapan</p>
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 justify-between">
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h3 className="font-bold text-base text-text-primary dark:text-white">Pemeriksaan Kelengkapan Supir</h3>
+                  <p className="text-xs text-text-muted">Verifikasi kelengkapan dokumen dan perlengkapan</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1075,43 +1037,28 @@ export default function VcfDetailPage() {
                   {vcf.kelengkapan_supir.map((ks) => (
                     <div
                       key={ks.id}
-                      className="flex items-center justify-between p-4 rounded-xl border transition-all"
-                      style={{
-                        background: ks.nilai ? "rgba(16,185,129,0.05)" : "rgba(239,68,68,0.05)",
-                        borderColor: ks.nilai ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)",
-                      }}
+                      className={`flex items-center justify-between p-4 rounded-xl border border-l-4 transition-all
+                        ${ks.nilai 
+                          ? 'border-l-emerald-500 border-slate-200 dark:border-white/10 bg-emerald-500/5' 
+                          : 'border-l-rose-500 border-slate-200 dark:border-white/10 bg-rose-500/5'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: ks.nilai ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)" }}
-                        >
-                          {ks.nilai ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                              <line x1="18" y1="6" x2="6" y2="18" />
-                              <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                          )}
-                        </div>
                         <div>
-                          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                          <p className="text-sm font-semibold text-text-primary dark:text-slate-200">
                             {ks.item?.nama_item}
                           </p>
-                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                          <p className="text-xs text-text-muted">
                             Status: <span className="font-medium">{ks.nilai ? "Ya" : "Tidak"}</span>
                           </p>
                         </div>
                       </div>
                       <span
-                        className="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={
-                          ks.nilai
-                            ? { background: "rgba(16,185,129,0.15)", color: "#10b981" }
-                            : { background: "rgba(239,68,68,0.15)", color: "#ef4444" }
-                        }
+                        className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg flex-shrink-0
+                          ${ks.nilai
+                            ? 'bg-emerald-500/10 text-emerald-500'
+                            : 'bg-rose-500/10 text-rose-500'
+                          }`}
                       >
                         {ks.nilai ? "LENGKAP" : "TIDAK"}
                       </span>
@@ -1125,59 +1072,43 @@ export default function VcfDetailPage() {
           {/* Muatan */}
           {((vcf as any).muatan_dibawa?.length > 0 || (vcf as any).muatan_diisi?.length > 0) && (
             <div className="glass-card overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ background: "var(--bg-secondary)" }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#8b5cf6", color: "white" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                    <line x1="12" y1="22.08" x2="12" y2="12" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Jenis & Detail Muatan</h3>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Informasi barang yang dibawa dan diisi</p>
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-slate-50/50 dark:bg-white/5 justify-between">
+                <div className="border-l-4 border-emerald-500 pl-4">
+                  <h3 className="font-bold text-base text-text-primary dark:text-white">Jenis & Detail Muatan</h3>
+                  <p className="text-xs text-text-muted">Informasi barang yang dibawa dan diisi</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {(vcf as any).muatan_dibawa && (vcf as any).muatan_dibawa.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                          <path d="M2 17l10 5 10-5" />
-                          <path d="M2 12l10 5 10-5" />
-                        </svg>
+                      <h4 className="text-xs font-bold uppercase tracking-wider mb-3 border-l-2 border-indigo-500 pl-2" style={{ color: "var(--text-muted)" }}>
                         Muatan Dibawa
                       </h4>
                       <div className="space-y-2">
                         {(vcf as any).muatan_dibawa.map((m: any) => (
                           m.item_muatan_id && (
-                            <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                              style={{
-                                background: m.nilai === '1' ? "rgba(16,185,129,0.05)" : m.nilai === '0' ? "rgba(239,68,68,0.05)" : "var(--bg-secondary)",
-                                borderColor: m.nilai === '1' ? "rgba(16,185,129,0.2)" : m.nilai === '0' ? "rgba(239,68,68,0.2)" : "var(--border)"
-                              }}
+                            <div key={m.id} className={`flex items-center justify-between p-3 rounded-xl border border-l-4 transition-all
+                              ${m.nilai === '1' 
+                                ? 'border-l-emerald-500 border-slate-200 dark:border-white/10 bg-emerald-500/5' 
+                                : m.nilai === '0'
+                                  ? 'border-l-rose-500 border-slate-200 dark:border-white/10 bg-rose-500/5'
+                                  : 'border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5'
+                              }`}
                             >
-                              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{m.item_muatan?.nama_item}</span>
+                              <span className="text-sm font-medium text-text-primary dark:text-slate-300">{m.item_muatan?.nama_item}</span>
                               <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${m.nilai === '1' ? 'bg-emerald-500/15 text-emerald-500' :
                                   m.nilai === '0' ? 'bg-rose-500/15 text-rose-500' :
                                     'bg-blue-500/15 text-blue-500'
-                                }`}>
+                                 }`}>
                                 {m.nilai === "1" ? "YA" : m.nilai === "0" ? "TIDAK" : m.nilai}
                               </span>
                             </div>
                           )
                         ))}
-                        {/* Lainnya - entries without item_muatan_id */}
                         {(vcf as any).muatan_dibawa?.some((m: any) => (!m.item_muatan_id || m.item_muatan_id === null) && m.nilai && m.nilai !== "0") && (
-                          <div className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                            style={{
-                              background: "rgba(59,130,246,0.05)",
-                              borderColor: "rgba(59,130,246,0.2)"
-                            }}
-                          >
-                            <span className="text-sm font-medium italic" style={{ color: "var(--text-primary)" }}>Lainnya</span>
+                          <div className="flex items-center justify-between p-3 rounded-xl border border-l-4 border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5 transition-all">
+                            <span className="text-sm font-medium italic text-text-primary dark:text-slate-300">Lainnya</span>
                             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-500">
                               {(vcf as any).muatan_dibawa.find((m: any) => !m.item_muatan_id || m.item_muatan_id === null)?.nilai}
                             </span>
@@ -1188,41 +1119,33 @@ export default function VcfDetailPage() {
                   )}
                   {(vcf as any).muatan_diisi && (vcf as any).muatan_diisi.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                        </svg>
+                      <h4 className="text-xs font-bold uppercase tracking-wider mb-3 border-l-2 border-purple-500 pl-2" style={{ color: "var(--text-muted)" }}>
                         Muatan Diisi
                       </h4>
                       <div className="space-y-2">
                         {(vcf as any).muatan_diisi.map((m: any) => (
                           m.item_muatan_id && (
-                            <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                              style={{
-                                background: m.nilai === '1' ? "rgba(16,185,129,0.05)" : m.nilai === '0' ? "rgba(239,68,68,0.05)" : "var(--bg-secondary)",
-                                borderColor: m.nilai === '1' ? "rgba(16,185,129,0.2)" : m.nilai === '0' ? "rgba(239,68,68,0.2)" : "var(--border)"
-                              }}
+                            <div key={m.id} className={`flex items-center justify-between p-3 rounded-xl border border-l-4 transition-all
+                              ${m.nilai === '1' 
+                                ? 'border-l-emerald-500 border-slate-200 dark:border-white/10 bg-emerald-500/5' 
+                                : m.nilai === '0'
+                                  ? 'border-l-rose-500 border-slate-200 dark:border-white/10 bg-rose-500/5'
+                                  : 'border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5'
+                              }`}
                             >
-                              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{m.item_muatan?.nama_item}</span>
+                              <span className="text-sm font-medium text-text-primary dark:text-slate-300">{m.item_muatan?.nama_item}</span>
                               <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${m.nilai === '1' ? 'bg-emerald-500/15 text-emerald-500' :
                                   m.nilai === '0' ? 'bg-rose-500/15 text-rose-500' :
                                     'bg-blue-500/15 text-blue-500'
-                                }`}>
+                                 }`}>
                                 {m.nilai === "1" ? "YA" : m.nilai === "0" ? "TIDAK" : m.nilai}
                               </span>
                             </div>
                           )
                         ))}
-                        {/* Lainnya - entries without item_muatan_id */}
                         {(vcf as any).muatan_diisi?.some((m: any) => (!m.item_muatan_id || m.item_muatan_id === null) && m.nilai && m.nilai !== "0") && (
-                          <div className="flex items-center justify-between p-3 rounded-xl border transition-all"
-                            style={{
-                              background: "rgba(59,130,246,0.05)",
-                              borderColor: "rgba(59,130,246,0.2)"
-                            }}
-                          >
-                            <span className="text-sm font-medium italic" style={{ color: "var(--text-primary)" }}>Lainnya</span>
+                          <div className="flex items-center justify-between p-3 rounded-xl border border-l-4 border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5 transition-all">
+                            <span className="text-sm font-medium italic text-text-primary dark:text-slate-300">Lainnya</span>
                             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-500">
                               {(vcf as any).muatan_diisi.find((m: any) => !m.item_muatan_id || m.item_muatan_id === null)?.nilai}
                             </span>

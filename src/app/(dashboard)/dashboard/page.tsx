@@ -1177,15 +1177,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Vehicles in Area Panel */}
+          {/* Active Vehicles in Area Panel */}
           <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
             {/* Soft accent background glow */}
             <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
             <div className="flex items-center justify-between gap-4 relative z-10">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 text-blue-600 dark:text-blue-400 flex items-center justify-center transition-colors text-3xl font-black select-none font-display leading-none">
-                  🚚
-                </div>
-                <div>
+                <div className="pl-1">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
                     Kendaraan Di Area
                     <span className="flex h-2 w-2 relative">
@@ -1211,10 +1209,7 @@ export default function DashboardPage() {
             <div className="absolute right-0 top-0 w-32 h-32 bg-rose-500/[0.03] dark:bg-rose-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
             <div className="flex items-center justify-between gap-4 relative z-10">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 text-rose-600 dark:text-rose-400 flex items-center justify-center transition-colors text-4xl font-black select-none font-display leading-none">
-                  ⊘
-                </div>
-                <div>
+                <div className="pl-1">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
                     Pengemudi Cekal
                     <span className="flex h-2 w-2 relative">
