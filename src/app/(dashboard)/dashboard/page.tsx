@@ -508,6 +508,7 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [testingSpeed, setTestingSpeed] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -547,6 +548,26 @@ export default function DashboardPage() {
       // silent fail
     }
   }, []);
+
+  const handleTestSpeed = useCallback(async () => {
+    if (testingSpeed) return;
+    setTestingSpeed(true);
+    const startTime = performance.now();
+    try {
+      await vcfApi.getStats();
+    } catch {
+      // silent fail
+    }
+    const endTime = performance.now();
+    const duration = Math.round(endTime - startTime);
+    setStats(prev => ({
+      ...prev,
+      system_speed: duration
+    }));
+    setTimeout(() => {
+      setTestingSpeed(false);
+    }, 800);
+  }, [testingSpeed]);
 
   // Fetch Logs Data
   const fetchLogs = useCallback(async (page: number) => {
@@ -1177,58 +1198,105 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Vehicles in Area Panel */}
-          {/* Active Vehicles in Area Panel */}
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
+          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs relative overflow-hidden group transition-all duration-300">
             {/* Soft accent background glow */}
-            <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
-            <div className="flex items-center justify-between gap-4 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="pl-1">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
-                    Kendaraan Di Area
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kendaraan aktif di dalam area pabrik saat ini</p>
-                </div>
+            <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/[0.02] rounded-full blur-xl pointer-events-none" />
+            <div className="flex items-center justify-between gap-3 relative z-10">
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-display">
+                  Kendaraan Di Area
+                  <span className="flex h-1.5 w-1.5 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Aktif di dalam area pabrik saat ini</p>
               </div>
-              <div className="text-center">
-                <span className="text-4xl font-black text-blue-600 dark:text-blue-400 font-display tracking-tight leading-none">
+              
+              <div className="flex flex-col items-center justify-center text-center min-w-[50px] font-display">
+                <span className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight leading-none block">
                   {stats.active_in_area}
                 </span>
-                <span className="text-[9px] block font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest mt-1 font-display">Unit</span>
+                <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 block leading-none">Unit</span>
               </div>
             </div>
           </div>
 
           {/* Blacklisted Drivers Panel */}
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
+          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs relative overflow-hidden group transition-all duration-300">
             {/* Soft accent background glow */}
-            <div className="absolute right-0 top-0 w-32 h-32 bg-rose-500/[0.03] dark:bg-rose-500/[0.02] rounded-full blur-2xl transition-all duration-500 group-hover:scale-125 pointer-events-none" />
-            <div className="flex items-center justify-between gap-4 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="pl-1">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
-                    Pengemudi Cekal
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daftar personel dalam pemblokiran aktif</p>
-                </div>
+            <div className="absolute right-0 top-0 w-24 h-24 bg-rose-500/[0.02] rounded-full blur-xl pointer-events-none" />
+            <div className="flex items-center justify-between gap-3 relative z-10">
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-display">
+                  Pengemudi Cekal
+                  <span className="flex h-1.5 w-1.5 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Daftar pemblokiran aktif saat ini</p>
               </div>
-              <div className="text-center">
-                <span className="text-4xl font-black text-rose-600 dark:text-rose-400 font-display tracking-tight leading-none">
+
+              <div className="flex flex-col items-center justify-center text-center min-w-[50px] font-display">
+                <span className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none block">
                   {stats.blacklist_drivers}
                 </span>
-                <span className="text-[9px] block font-bold text-rose-500 dark:text-rose-400 uppercase tracking-widest mt-1 font-display">Personel</span>
+                <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 block leading-none">Orang</span>
               </div>
             </div>
           </div>
 
+          {/* System Speed Panel */}
+          <button 
+            onClick={handleTestSpeed}
+            disabled={testingSpeed}
+            className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs relative overflow-hidden group transition-all duration-300 flex items-center justify-between gap-3 text-left hover:border-emerald-500/50 dark:hover:border-emerald-800/50 hover:shadow-sm focus:outline-none disabled:cursor-not-allowed select-none w-full"
+          >
+            {/* Soft accent background glow */}
+            <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/[0.02] rounded-full blur-xl pointer-events-none" />
+            <div className="flex items-center justify-between gap-3 relative z-10 w-full">
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-display">
+                  Kecepatan Sistem
+                  <span className="flex h-1.5 w-1.5 relative">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${stats.system_speed < 150 ? 'bg-emerald-400' : 'bg-amber-400'} opacity-75`}></span>
+                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${stats.system_speed < 150 ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Waktu respon database & API</p>
+              </div>
+
+              <div className="flex items-center gap-2.5 font-display">
+                {/* Interactive Speedometer Gauge */}
+                <div className={`relative w-8 h-8 flex items-center justify-center shrink-0 ${testingSpeed ? 'animate-spin' : 'group-hover:scale-110 transition-transform duration-300'}`}>
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="12" fill="none" className="stroke-slate-100 dark:stroke-slate-800/80" strokeWidth="2.5" />
+                    <circle 
+                      cx="16" 
+                      cy="16" 
+                      r="12" 
+                      fill="none" 
+                      className={`${stats.system_speed < 150 ? 'stroke-emerald-500' : stats.system_speed < 300 ? 'stroke-amber-500' : 'stroke-rose-500'} transition-all duration-500`} 
+                      strokeWidth="2.5" 
+                      strokeDasharray={`${2 * Math.PI * 12}`} 
+                      strokeDashoffset={`${2 * Math.PI * 12 * (1 - Math.min(600, stats.system_speed) / 600)}`}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className={`w-1.5 h-1.5 rounded-full ${stats.system_speed < 150 ? 'bg-emerald-500' : 'bg-amber-500'} ${testingSpeed ? 'animate-ping' : ''}`} />
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center text-center min-w-[45px]">
+                  <span className={`text-2xl font-black tracking-tight leading-none block ${testingSpeed ? 'animate-pulse text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {testingSpeed ? "..." : stats.system_speed}
+                  </span>
+                  <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 block leading-none">ms</span>
+                </div>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
