@@ -513,6 +513,7 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
 
   // States for Monthly Line Chart
   const [selectedYear, setSelectedYear] = useState<number>(2026);
@@ -660,6 +661,27 @@ export default function DashboardPage() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isFullscreen]);
+
+  // Listen for browser fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsBrowserFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleBrowserFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }, []);
 
   // Dispatch modal events for layout
   useEffect(() => {
@@ -888,7 +910,31 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <RegisterButton label="Registrasi VCF Baru" />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleBrowserFullscreen}
+            className="flex items-center justify-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl shadow-xs text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:outline-none select-none"
+            title={isBrowserFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}
+          >
+            {isBrowserFullscreen ? (
+              <>
+                <svg className="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 3.75v4.5m0 0H4.5M9 8.25L3.75 3M9 20.25v-4.5m0 0H4.5M9 15.75L3.75 21M15 3.75v4.5m0 0h4.5M15 8.25L20.25 3M15 20.25v-4.5m0 0h4.5M15 15.75L20.25 21" />
+                </svg>
+                <span className="hidden sm:inline">Keluar Layar Penuh</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                </svg>
+                <span className="hidden sm:inline">Layar Penuh</span>
+              </>
+            )}
+          </button>
+          
+          <RegisterButton label="Registrasi VCF Baru" />
+        </div>
       </div>
 
       {/* ── QUICK ACTIONS (Officer Only) ────────── */}
