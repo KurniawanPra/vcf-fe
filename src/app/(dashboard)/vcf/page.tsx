@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
-import { getStatusLabel, getStatusColor, getActionButtonStyle, getActionLabel} from "@/lib/utils";
+import { getStatusLabel, getStatusColor, getActionButtonStyle, getActionLabel } from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
 import SearchInput from "@/components/SearchInput";
 import { useToast, ToastContainer } from "@/components/Toast";
@@ -113,7 +113,7 @@ export default function VcfQuickAccessPage() {
       if (filter) params.status = filter;
       const activeRes = await vcfApi.getList(params);
       const items: VcfSummary[] = activeRes.data.data || activeRes.data;
-      
+
       const allowedStatuses = ["bagian1_selesai", "bagian2_selesai", "bagian3_selesai"];
       const filteredItems = items.filter((v) => allowedStatuses.includes(v.status));
       setVcfs(filteredItems);
@@ -172,11 +172,11 @@ export default function VcfQuickAccessPage() {
       {/* Stage Filters / Tabs */}
       <div className="morph-in flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
         {[
-          { label: "Semua",      stage: "",                    cls: "filter-tab-green" },
-          { label: "Aktif",      stage: "aktif",               cls: "filter-tab-blue" },
-          { label: "WB Masuk",   stage: "bagian1_selesai",     cls: "filter-tab-amber" },
-          { label: "WB Keluar",  stage: "bagian2_selesai",     cls: "filter-tab-violet" },
-          { label: "MG Keluar",  stage: "bagian3_selesai",     cls: "filter-tab-emerald" },
+          { label: "Semua", stage: "", cls: "filter-tab-green" },
+          { label: "Aktif", stage: "aktif", cls: "filter-tab-blue" },
+          { label: "WB Masuk", stage: "bagian1_selesai", cls: "filter-tab-amber" },
+          { label: "WB Keluar", stage: "bagian2_selesai", cls: "filter-tab-violet" },
+          { label: "MG Keluar", stage: "bagian3_selesai", cls: "filter-tab-emerald" },
         ].map((tab) => (
           <button
             key={tab.stage}
@@ -232,6 +232,10 @@ export default function VcfQuickAccessPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Stat Badges */}
           <div className="flex flex-wrap items-center gap-2">
+            <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.05)" }}>
+              <p className="text-[9px] font-bold text-indigo-500 uppercase leading-none mb-0.5">Hari Ini</p>
+              <p className="text-xl font-bold text-indigo-500 leading-none">{todayCount}</p>
+            </div>
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
               <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Ditunda</p>
               <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
@@ -312,41 +316,41 @@ export default function VcfQuickAccessPage() {
                   {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => {
                     const isOverdue = isPreviousDay(vcf.tanggal);
                     return (
-                    <Link
-                      key={vcf.id}
-                      href={`/vcf/${vcf.id}`}
-                      className="block p-4 rounded-xl border transition-all hover:border-blue-500/40 hover:shadow-md group"
-                      style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex flex-col">
-                          <span className="font-mono font-bold text-blue-400 text-sm">{vcf.nomor_urut}</span>
-                          {isOverdue && (
-                            <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                               {new Date(vcf.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                            </span>
-                          )}
+                      <Link
+                        key={vcf.id}
+                        href={`/vcf/${vcf.id}`}
+                        className="block p-4 rounded-xl border transition-all hover:border-blue-500/40 hover:shadow-md group"
+                        style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex flex-col">
+                            <span className="font-mono font-bold text-blue-400 text-sm">{vcf.nomor_urut}</span>
+                            {isOverdue && (
+                              <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                                {new Date(vcf.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                            )}
+                          </div>
+                          <span className={`status-badge text-[9px] ${getStatusColor(vcf.status)}`}>
+                            {getStatusLabel(vcf.status)}
+                          </span>
                         </div>
-                        <span className={`status-badge text-[9px] ${getStatusColor(vcf.status)}`}>
-                          {getStatusLabel(vcf.status)}
-                        </span>
-                      </div>
-                      <div className="mb-3">
-                        <p className="font-bold text-text-primary dark:text-white text-base leading-tight">{vcf.no_polisi}</p>
-                        <div className="flex flex-col mt-0.5">
-                          <span className="text-[11px] text-secondary font-semibold">{vcf.driver?.nama_supir || "—"}</span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{vcf.driver?.no_sim || "—"}</span>
+                        <div className="mb-3">
+                          <p className="font-bold text-text-primary dark:text-white text-base leading-tight">{vcf.no_polisi}</p>
+                          <div className="flex flex-col mt-0.5">
+                            <span className="text-[11px] text-secondary font-semibold">{vcf.driver?.nama_supir || "—"}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{vcf.driver?.no_sim || "—"}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
-                          {vcf.tipe_kegiatan?.replace(/_/g, " ")}
-                        </span>
-                        <span className={`action-btn action-btn-sm ${getActionButtonStyle(vcf.status)}`}>
-                          {getActionLabel(vcf.status)}
-                        </span>
-                      </div>
-                    </Link>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
+                            {vcf.tipe_kegiatan?.replace(/_/g, " ")}
+                          </span>
+                          <span className={`action-btn action-btn-sm ${getActionButtonStyle(vcf.status)}`}>
+                            {getActionLabel(vcf.status)}
+                          </span>
+                        </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -384,44 +388,44 @@ export default function VcfQuickAccessPage() {
                     {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => {
                       const isOverdue = isPreviousDay(vcf.tanggal);
                       return (
-                      <tr key={vcf.id}>
-                        <td>
-                          <div className="flex flex-col">
-                            <span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span>
-                            {isOverdue && (
-                              <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 whitespace-nowrap">
-                                 {new Date(vcf.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="font-semibold whitespace-nowrap">{vcf.no_polisi}</td>
-                        <td className="text-secondary text-sm">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-text-primary dark:text-white">{vcf.driver?.nama_supir || "—"}</span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{vcf.driver?.no_sim || "—"}</span>
-                          </div>
-                        </td>
-                        <td className="text-secondary text-sm">{vcf.transporter?.nama_transporter || "—"}</td>
-                        <td>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
-                            {vcf.tipe_kegiatan?.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`status-badge ${getStatusColor(vcf.status)}`}>
-                            {getStatusLabel(vcf.status)}
-                          </span>
-                        </td>
-                        <td>
-                          <Link
-                            href={`/vcf/${vcf.id}`}
-                            className={`${getActionButtonStyle(vcf.status)}`}
-                          >
-                            {getActionLabel(vcf.status)}
-                          </Link>
-                        </td>
-                      </tr>
+                        <tr key={vcf.id}>
+                          <td>
+                            <div className="flex flex-col">
+                              <span className="font-mono font-bold text-blue-400">{vcf.nomor_urut}</span>
+                              {isOverdue && (
+                                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 whitespace-nowrap">
+                                  {new Date(vcf.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="font-semibold whitespace-nowrap">{vcf.no_polisi}</td>
+                          <td className="text-secondary text-sm">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-text-primary dark:text-white">{vcf.driver?.nama_supir || "—"}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{vcf.driver?.no_sim || "—"}</span>
+                            </div>
+                          </td>
+                          <td className="text-secondary text-sm">{vcf.transporter?.nama_transporter || "—"}</td>
+                          <td>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 uppercase">
+                              {vcf.tipe_kegiatan?.replace(/_/g, " ")}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`status-badge ${getStatusColor(vcf.status)}`}>
+                              {getStatusLabel(vcf.status)}
+                            </span>
+                          </td>
+                          <td>
+                            <Link
+                              href={`/vcf/${vcf.id}`}
+                              className={`${getActionButtonStyle(vcf.status)}`}
+                            >
+                              {getActionLabel(vcf.status)}
+                            </Link>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>
