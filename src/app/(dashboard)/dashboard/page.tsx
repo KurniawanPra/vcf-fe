@@ -182,7 +182,7 @@ function MonthlyLineChart({ data, loading, year, month, isFullscreen }: MonthlyL
     const mouseY = e.clientY - rect.top;
 
     const svgX = (mouseX / rect.width) * width;
-    
+
     if (svgX >= yAxisWidth && svgX <= width - paddingRight) {
       const pctX = (svgX - yAxisWidth) / plotWidth;
       const day = Math.max(1, Math.min(daysInMonth, Math.round(1 + pctX * (daysInMonth - 1))));
@@ -675,7 +675,7 @@ export default function DashboardPage() {
 
   const toggleBrowserFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
@@ -932,7 +932,7 @@ export default function DashboardPage() {
               </>
             )}
           </button>
-          
+
           <RegisterButton label="Registrasi VCF Baru" />
         </div>
       </div>
@@ -1061,12 +1061,12 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                <button 
+                <button
                   onClick={() => setIsFullscreen(true)}
                   className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
                   title="Fullscreen"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
                 </button>
               </div>
             </div>
@@ -1258,7 +1258,7 @@ export default function DashboardPage() {
                 </h3>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Aktif di dalam area pabrik saat ini</p>
               </div>
-              
+
               <div className="flex flex-col items-center justify-center text-center min-w-[50px] font-display">
                 <span className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight leading-none block">
                   {stats.active_in_area}
@@ -1294,7 +1294,7 @@ export default function DashboardPage() {
           </div>
 
           {/* System Speed Panel */}
-          <button 
+          <button
             onClick={handleTestSpeed}
             disabled={testingSpeed}
             className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs relative overflow-hidden group transition-all duration-300 flex items-center justify-between gap-3 text-left hover:border-emerald-500/50 dark:hover:border-emerald-800/50 hover:shadow-sm focus:outline-none disabled:cursor-not-allowed select-none w-full"
@@ -1318,14 +1318,14 @@ export default function DashboardPage() {
                 <div className={`relative w-8 h-8 flex items-center justify-center shrink-0 ${testingSpeed ? 'animate-spin' : 'group-hover:scale-110 transition-transform duration-300'}`}>
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
                     <circle cx="16" cy="16" r="12" fill="none" className="stroke-slate-100 dark:stroke-slate-800/80" strokeWidth="2.5" />
-                    <circle 
-                      cx="16" 
-                      cy="16" 
-                      r="12" 
-                      fill="none" 
-                      className={`${stats.system_speed < 150 ? 'stroke-emerald-500' : stats.system_speed < 300 ? 'stroke-amber-500' : 'stroke-rose-500'} transition-all duration-500`} 
-                      strokeWidth="2.5" 
-                      strokeDasharray={`${2 * Math.PI * 12}`} 
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="12"
+                      fill="none"
+                      className={`${stats.system_speed < 150 ? 'stroke-emerald-500' : stats.system_speed < 300 ? 'stroke-amber-500' : 'stroke-rose-500'} transition-all duration-500`}
+                      strokeWidth="2.5"
+                      strokeDasharray={`${2 * Math.PI * 12}`}
                       strokeDashoffset={`${2 * Math.PI * 12 * (1 - Math.min(600, stats.system_speed) / 600)}`}
                     />
                   </svg>
@@ -1825,7 +1825,7 @@ export default function DashboardPage() {
               <div className="w-2.5 h-2.5 bg-indigo-600 dark:bg-indigo-500 rounded-full animate-pulse" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight font-display flex items-center gap-2">
-                  Volume Transaksi VCF Harian (Layar Penuh)
+                  Volume Transaksi VCF Bulanan
                 </h2>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
                   Volume harian total, selesai, dan reject dalam sebulan
@@ -1895,7 +1895,7 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <button 
+              <button
                 onClick={() => setIsFullscreen(false)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 rounded-lg transition-colors border border-rose-200/40 dark:border-rose-900/30 text-xs font-extrabold"
                 title="Keluar Layar Penuh"
