@@ -992,7 +992,7 @@ export default function DashboardPage() {
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2 font-display">
-                  Volume Transaksi VCF Harian
+                  Volume Transaksi VCF Bulanan
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
                   Volume harian total, selesai, dan reject dalam sebulan
