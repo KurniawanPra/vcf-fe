@@ -63,6 +63,7 @@ export default function VehiclesPage() {
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 300); return () => clearTimeout(t); }, [search]);
+  useEffect(() => { setCurrentPage(1); }, [search]);
   useEffect(() => { fetchData(); }, [fetchData, debouncedSearch]);
 
   // Dispatch modal events for create/edit modal

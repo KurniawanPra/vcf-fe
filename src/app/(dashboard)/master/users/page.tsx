@@ -82,6 +82,7 @@ export default function UsersPage() {
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 300); return () => clearTimeout(t); }, [search]);
+  useEffect(() => { setCurrentPage(1); }, [search, filterRole]);
   useEffect(() => { fetchData(); }, [fetchData, debouncedSearch, filterRole]);
 
   // Dispatch modal events for create/edit modal

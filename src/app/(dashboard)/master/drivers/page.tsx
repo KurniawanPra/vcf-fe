@@ -89,6 +89,10 @@ export default function DriversPage() {
   }, [search]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData, debouncedSearch]);
 

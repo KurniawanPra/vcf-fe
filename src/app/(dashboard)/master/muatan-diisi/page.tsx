@@ -81,6 +81,10 @@ export default function MuatanDiisiPage() {
   }, [search]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData, debouncedSearch]);
 

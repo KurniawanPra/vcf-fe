@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { violationApi, masterApi } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
@@ -8,6 +8,9 @@ import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
 import { createPortal } from "react-dom";
 import SearchInput from "@/components/SearchInput";
+import SearchableDropdown from "@/components/SearchableDropdown";
+import ModalPortal from "@/components/ModalPortal";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 
 interface Driver {
   id: number;
@@ -17,6 +20,7 @@ interface Driver {
 }
 
 interface Violation {
+  [x: string]: any;
   id: number;
   driver_id: number | null;
   no_polisi: string | null;
@@ -29,7 +33,15 @@ interface Violation {
 }
 
 function fmt(d: string) {
-  try { return new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }); } catch { return d; }
+  try {
+    const date = new Date(d);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return d;
+  }
 }
 
 // ─── Collapsible Section ──────────────────────────────────────────────────────
@@ -140,6 +152,7 @@ function ViolationTable({
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Jenis Pelanggaran</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left ">Keterangan</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Tanggal</th>
+                <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Dibuat Oleh</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-right">Aksi</th>
               </tr>
             </thead>
@@ -162,6 +175,7 @@ function ViolationTable({
                   <td className="px-5 py-3 text-sm font-medium text-text-primary max-w-[200px]">{v.jenis_pelanggaran}</td>
                   <td className="px-5 py-3 text-xs text-text-muted max-w-[220px] whitespace-normal break-words" title={v.keterangan ?? ""}>{v.keterangan ?? "—"}</td>
                   <td className="px-5 py-3 text-xs text-text-muted whitespace-nowrap">{fmt(v.tanggal_pelanggaran)}</td>
+                  <td className="px-5 py-3 text-xs text-text-muted whitespace-nowrap">{v.created_by?.nama || v.created_by_user?.nama || "—"}</td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <button onClick={() => onEdit(v)} className="btn-icon btn-icon-edit" title="Edit">
@@ -190,6 +204,13 @@ export default function ViolationsPage() {
 
   const [violations, setViolations] = useState<Violation[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const driverOptions = useMemo(() => [
+    { id: "", display_name: "— Pilih Supir (opsional) —" },
+    ...drivers.map(d => ({
+      id: String(d.id),
+      display_name: d.no_sim ? `${d.nama_supir} - ${d.no_sim}` : d.nama_supir
+    }))
+  ], [drivers]);
   const [loading, setLoading] = useState(true);
 
   // Modal tambah/edit
@@ -197,7 +218,7 @@ export default function ViolationsPage() {
   const [editingViol, setEditingViol] = useState<Violation | null>(null);
   const [form, setForm] = useState({
     driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "",
-    tanggal_pelanggaran: new Date().toISOString().split("T")[0],
+    tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE"),
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -242,7 +263,7 @@ export default function ViolationsPage() {
 
   const openCreate = () => {
     setEditingViol(null);
-    setForm({ driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "", tanggal_pelanggaran: new Date().toISOString().split("T")[0] });
+    setForm({ driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "", tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE") });
     setFormError("");
     setShowModal(true);
   };
@@ -254,7 +275,7 @@ export default function ViolationsPage() {
       no_polisi: v.no_polisi ?? "",
       jenis_pelanggaran: v.jenis_pelanggaran,
       keterangan: v.keterangan ?? "",
-      tanggal_pelanggaran: v.tanggal_pelanggaran?.split("T")[0] ?? "",
+      tanggal_pelanggaran: v.tanggal_pelanggaran ? v.tanggal_pelanggaran.split("T")[0].split(" ")[0] : "",
     });
     setFormError("");
     setShowModal(true);
@@ -287,14 +308,26 @@ export default function ViolationsPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Hapus data pelanggaran ini?")) return;
+  // Confirm delete modal
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmId === null) return;
+    setDeleting(true);
     try {
-      await violationApi.delete(id);
+      await violationApi.delete(deleteConfirmId);
       toast.success("Dihapus", "Data pelanggaran dihapus.");
       fetchAll();
+      setDeleteConfirmId(null);
     } catch (err: any) {
       toast.error("Gagal", getErrorMessage(err, "Gagal menghapus."));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -307,9 +340,6 @@ export default function ViolationsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="page-title flex items-center gap-2">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500">
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
             Pelanggaran
           </h1>
           <p className="page-subtitle">Kelola riwayat pelanggaran driver — Admin only</p>
@@ -320,80 +350,79 @@ export default function ViolationsPage() {
         </button>
       </div>
 
-      {/* Violation history */}
-      <CollapsibleSection
-        title="Daftar Riwayat Semua Pelanggaran"
-        count={violations.length}
-        colorClass="bg-slate-500/10 text-text-muted"
-        defaultOpen={true}
-        loading={false}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>}
-      >
+      {/* Violation history table directly */}
+      <div className="glass-card">
         <ViolationTable
           violations={violations}
           loading={loading}
           onEdit={openEdit}
           onDelete={handleDelete}
         />
-      </CollapsibleSection>
+      </div>
 
-      {/* Add/Edit Modal — portal with full vh blur */}
-      {mounted && showModal && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] flex items-start justify-center pt-10 pb-6 px-4 overflow-y-auto"
-          style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", minHeight: "100vh" }}
-          onClick={() => { if (!saving) setShowModal(false); }}
-        >
-          <div
-            className="bg-white dark:bg-bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-white/10 overflow-hidden my-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-violet-500" />
-            <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-100 dark:border-white/5">
-              <h2 className="font-bold text-base text-text-primary">{editingViol ? "Edit Pelanggaran" : "Tambah Pelanggaran"}</h2>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-xl flex items-center justify-center text-text-muted hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div className="p-6">
-              {formError && <div className="mb-4 p-3 rounded-xl text-sm bg-red-500/10 border border-red-500/20 text-red-500">⚠ {formError}</div>}
-              <form onSubmit={handleSave} className="space-y-4">
-                <div>
-                  <label className="form-label">Driver</label>
-                  <select className="form-select" value={form.driver_id} onChange={e => setForm(p => ({ ...p, driver_id: e.target.value }))}>
-                    <option value="">— Pilih Driver (opsional) —</option>
-                    {drivers.map(d => <option key={d.id} value={d.id}>{d.nama_supir} — {d.no_sim}</option>)}
-                  </select>
+      {showModal && (
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
+                  {editingViol ? "Edit Pelanggaran" : "Tambah Pelanggaran"}
+                </h2>
+                <button onClick={() => setShowModal(false)} style={{ color: "var(--text-muted)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
+              </div>
+              {formError && (
+                <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>
+                  ⚠️ {formError}
                 </div>
-                <div>
+              )}
+              <form onSubmit={handleSave}>
+                <div className="mb-4">
+                  <SearchableDropdown
+                    label="Nama Supir"
+                    options={driverOptions}
+                    value={form.driver_id}
+                    onChange={val => setForm(p => ({ ...p, driver_id: val }))}
+                    placeholder="Pilih Supir"
+                    displayField="display_name"
+                  />
+                </div>
+                <div className="mb-4">
                   <label className="form-label">No. Polisi (BK)</label>
                   <input type="text" className="form-input uppercase" placeholder="BK 1234 ABC (opsional)" value={form.no_polisi} onChange={e => setForm(p => ({ ...p, no_polisi: e.target.value }))} />
                 </div>
-                <div>
+                <div className="mb-4">
                   <label className="form-label">Jenis Pelanggaran *</label>
                   <input type="text" className="form-input" required placeholder="Contoh: Membawa barang terlarang" value={form.jenis_pelanggaran} onChange={e => setForm(p => ({ ...p, jenis_pelanggaran: e.target.value }))} />
                 </div>
-                <div>
+                <div className="mb-4">
                   <label className="form-label">Keterangan</label>
                   <textarea className="form-input resize-none" rows={3} placeholder="Detail pelanggaran..." value={form.keterangan} onChange={e => setForm(p => ({ ...p, keterangan: e.target.value }))} />
                 </div>
-                <div>
+                <div className="mb-6">
                   <label className="form-label">Tanggal Pelanggaran *</label>
                   <input type="date" className="form-input" required value={form.tanggal_pelanggaran} onChange={e => setForm(p => ({ ...p, tanggal_pelanggaran: e.target.value }))} />
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="button" className="btn btn-secondary flex-1" onClick={() => setShowModal(false)} disabled={saving}>Batal</button>
-                  <button type="submit" className="btn btn-primary flex-[2]" disabled={saving}>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
                     {saving ? <><span className="spinner" /> Menyimpan...</> : editingViol ? "Perbarui" : "Simpan"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>,
-        document.body
+        </ModalPortal>
       )}
 
+      <DeleteConfirmModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+        message="Data pelanggaran ini akan dihapus secara permanen dari sistem."
+      />
     </div>
   );
 }

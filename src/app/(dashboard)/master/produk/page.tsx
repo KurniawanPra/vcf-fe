@@ -70,6 +70,10 @@ export default function ProdukPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   useEffect(() => { fetchData(); }, [fetchData, debouncedSearch]);
 
   // Dispatch modal events for create/edit modal

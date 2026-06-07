@@ -893,7 +893,7 @@ export default function DashboardPage() {
       <div className="morph-in flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
-            Dasbor Pemantauan VCF
+            Dashboard Monitoring VCF
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
             <span className="font-medium">
@@ -1105,7 +1105,7 @@ export default function DashboardPage() {
         )}
 
         {/* RIGHT COLUMN: Grouped Breakdown, Blacklist & KPI (2/5 Width) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-3">
 
           {/* KPI Statistics & Stacked Comparison */}
           <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-md space-y-6">
@@ -1119,9 +1119,9 @@ export default function DashboardPage() {
 
               {/* Hari Ini */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center text-xs">
                   <span className="font-extrabold text-slate-700 dark:text-slate-300 font-display">Hari Ini</span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <div className="flex items-center gap-1 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg border border-emerald-100/40 dark:border-emerald-900/20">
                       <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Selesai:</span>
                       <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-display">{stats.completed_today}</span>
@@ -1160,9 +1160,9 @@ export default function DashboardPage() {
 
               {/* Bulan Ini */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center text-xs">
                   <span className="font-extrabold text-slate-700 dark:text-slate-300 font-display">Bulan Ini</span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <div className="flex items-center gap-1 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg border border-emerald-100/40 dark:border-emerald-900/20">
                       <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Selesai:</span>
                       <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-display">{stats.completed_month}</span>
@@ -1201,9 +1201,9 @@ export default function DashboardPage() {
 
               {/* Keseluruhan */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center text-xs">
                   <span className="font-extrabold text-slate-700 dark:text-slate-300 font-display">Keseluruhan</span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <div className="flex items-center gap-1 bg-emerald-50/50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg border border-emerald-100/40 dark:border-emerald-900/20">
                       <span className="text-[9px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Selesai:</span>
                       <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-display">{stats.completed_overall}</span>
@@ -1244,7 +1244,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Vehicles in Area Panel */}
-          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs relative overflow-hidden group transition-all duration-300">
+          <div style={{ marginTop: "14px" }} className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs relative overflow-hidden group transition-all duration-300">
             {/* Soft accent background glow */}
             <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/[0.02] rounded-full blur-xl pointer-events-none" />
             <div className="flex items-center justify-between gap-3 relative z-10">

@@ -75,6 +75,10 @@ export default function ChecklistPage() {
   }, [search]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData, debouncedSearch]);
 

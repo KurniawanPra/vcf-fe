@@ -73,6 +73,10 @@ export default function LogistikPage() {
   }, [search]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData, debouncedSearch]);
 
