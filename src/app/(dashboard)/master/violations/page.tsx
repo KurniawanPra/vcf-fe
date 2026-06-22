@@ -388,6 +388,7 @@ export default function ViolationsPage() {
   const [form, setForm] = useState({
     driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "",
     tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE"),
+    tipe_pelanggaran: "" as "" | "warning" | "blacklist",
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -428,19 +429,21 @@ export default function ViolationsPage() {
 
   const openCreate = () => {
     setEditingViol(null);
-    setForm({ driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "", tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE") });
+    setForm({ driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "", tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE"), tipe_pelanggaran: "" });
     setFormError("");
     setShowModal(true);
   };
 
   const openEdit = (v: Violation) => {
     setEditingViol(v);
+    const driverStatus = v.driver?.status ?? "";
     setForm({
       driver_id: v.driver_id ? String(v.driver_id) : "",
       no_polisi: v.no_polisi ?? "",
       jenis_pelanggaran: v.jenis_pelanggaran,
       keterangan: v.keterangan ?? "",
       tanggal_pelanggaran: v.tanggal_pelanggaran ? v.tanggal_pelanggaran.split("T")[0].split(" ")[0] : "",
+      tipe_pelanggaran: (driverStatus === "warning" || driverStatus === "blacklist") ? driverStatus : "",
     });
     setFormError("");
     setShowModal(true);
@@ -450,6 +453,7 @@ export default function ViolationsPage() {
     e.preventDefault();
     if (!form.jenis_pelanggaran.trim()) { setFormError("Jenis pelanggaran wajib diisi."); return; }
     if (!form.driver_id && !form.no_polisi.trim()) { setFormError("Harus isi driver atau no polisi."); return; }
+    if (form.driver_id && !form.tipe_pelanggaran) { setFormError("Tipe pelanggaran wajib dipilih jika driver dipilih."); return; }
     setSaving(true); setFormError("");
     try {
       const payload = {
@@ -465,6 +469,15 @@ export default function ViolationsPage() {
       } else {
         await violationApi.create(payload);
         toast.success("Disimpan", "Pelanggaran berhasil ditambahkan.");
+      }
+      // Auto-update driver status if driver is selected and tipe is chosen
+      if (form.driver_id && form.tipe_pelanggaran) {
+        try {
+          await violationApi.updateDriverStatus(Number(form.driver_id), form.tipe_pelanggaran);
+          toast.success("Status Driver Diperbarui", `Status driver diubah ke ${form.tipe_pelanggaran}.`);
+        } catch (statusErr: any) {
+          toast.error("Peringatan", "Pelanggaran tersimpan, tapi gagal memperbarui status driver.");
+        }
       }
       setShowModal(false);
       fetchAll();
@@ -656,6 +669,43 @@ export default function ViolationsPage() {
                 <div className="mb-4">
                   <label className="form-label">No. Polisi (BK)</label>
                   <input type="text" className="form-input uppercase" placeholder="BK 1234 ABC (opsional)" value={form.no_polisi} onChange={e => setForm(p => ({ ...p, no_polisi: e.target.value }))} />
+                </div>
+                <div className="mb-4">
+                  <label className="form-label">Tipe Pelanggaran *</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, tipe_pelanggaran: "warning" }))}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border-2 transition-all flex items-center justify-center gap-2 ${
+                        form.tipe_pelanggaran === "warning"
+                          ? "bg-amber-500/15 border-amber-500/40 text-amber-600 shadow-md shadow-amber-500/10"
+                          : "bg-transparent border-white/10 text-text-muted hover:border-amber-500/30 hover:text-amber-600"
+                      }`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                        <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      Warning
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, tipe_pelanggaran: "blacklist" }))}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border-2 transition-all flex items-center justify-center gap-2 ${
+                        form.tipe_pelanggaran === "blacklist"
+                          ? "bg-red-500/15 border-red-500/40 text-red-500 shadow-md shadow-red-500/10"
+                          : "bg-transparent border-white/10 text-text-muted hover:border-red-500/30 hover:text-red-500"
+                      }`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                      </svg>
+                      Blacklist
+                    </button>
+                  </div>
+                  {form.driver_id && !form.tipe_pelanggaran && (
+                    <p className="text-[11px] text-amber-500 mt-1.5">⚠ Pilih tipe pelanggaran agar status driver otomatis terupdate</p>
+                  )}
                 </div>
                 <div className="mb-4">
                   <label className="form-label">Jenis Pelanggaran *</label>

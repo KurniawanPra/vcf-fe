@@ -6,7 +6,7 @@ import { violationApi, masterApi } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/utils";
 import { useToast, ToastContainer } from "@/components/Toast";
-import { createPortal } from "react-dom";
+import Pagination from "@/components/Pagination";
 import SearchInput from "@/components/SearchInput";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import ModalPortal from "@/components/ModalPortal";
@@ -95,6 +95,12 @@ function ViolationTable({
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, dateFrom, dateTo]);
 
   const filtered = violations.filter(v => {
     const q = search.toLowerCase();
@@ -149,6 +155,7 @@ function ViolationTable({
               <tr className="border-b border-white/10 bg-white/5">
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Driver</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">No. Polisi</th>
+                <th className="px-5 py-3 text-xs font-semibold text-secondary text-center">Tipe</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Jenis Pelanggaran</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left ">Keterangan</th>
                 <th className="px-5 py-3 text-xs font-semibold text-secondary text-left">Tanggal</th>
@@ -157,8 +164,15 @@ function ViolationTable({
               </tr>
             </thead>
             <tbody>
-              {filtered.map(v => (
-                <tr key={v.id} className="border-b border-white/5 transition-colors hover:bg-bg-card-hover">
+              {filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(v => {
+                const dStatus = v.driver?.status ?? "normal";
+                const rowCls = dStatus === "blacklist"
+                  ? "bg-red-500/3 hover:bg-red-500/5"
+                  : dStatus === "warning"
+                  ? "bg-amber-500/3 hover:bg-amber-500/5"
+                  : "hover:bg-bg-card-hover";
+                return (
+                <tr key={v.id} className={`border-b border-white/5 transition-colors ${rowCls}`}>
                   <td className="px-5 py-3">
                     {v.driver ? (
                       <div>
@@ -171,6 +185,15 @@ function ViolationTable({
                     {v.no_polisi
                       ? <span className="font-mono text-xs font-bold text-text-primary uppercase bg-slate-500/10 px-2 py-1 rounded-lg">{v.no_polisi}</span>
                       : <span className="text-text-muted text-xs">—</span>}
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    {dStatus === "blacklist" ? (
+                      <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-red-500/15 text-red-500 border border-red-500/20">Blacklist</span>
+                    ) : dStatus === "warning" ? (
+                      <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600 border border-amber-500/20">Warning</span>
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full bg-slate-500/10 text-text-muted">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-sm font-medium text-text-primary max-w-[200px]">{v.jenis_pelanggaran}</td>
                   <td className="px-5 py-3 text-xs text-text-muted max-w-[220px] whitespace-normal break-words" title={v.keterangan ?? ""}>{v.keterangan ?? "—"}</td>
@@ -187,9 +210,13 @@ function ViolationTable({
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
+          <div className="px-6 pb-4">
+            <Pagination currentPage={page} totalItems={filtered.length} itemsPerPage={PAGE_SIZE} onPageChange={(p) => setPage(p)} />
+          </div>
         </div>
       )}
     </div>
@@ -219,6 +246,7 @@ export default function ViolationsPage() {
   const [form, setForm] = useState({
     driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "",
     tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE"),
+    tipe_pelanggaran: "" as "" | "warning" | "blacklist",
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -263,19 +291,21 @@ export default function ViolationsPage() {
 
   const openCreate = () => {
     setEditingViol(null);
-    setForm({ driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "", tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE") });
+    setForm({ driver_id: "", no_polisi: "", jenis_pelanggaran: "", keterangan: "", tanggal_pelanggaran: new Date().toLocaleDateString("sv-SE"), tipe_pelanggaran: "" });
     setFormError("");
     setShowModal(true);
   };
 
   const openEdit = (v: Violation) => {
     setEditingViol(v);
+    const driverStatus = v.driver?.status ?? "";
     setForm({
       driver_id: v.driver_id ? String(v.driver_id) : "",
       no_polisi: v.no_polisi ?? "",
       jenis_pelanggaran: v.jenis_pelanggaran,
       keterangan: v.keterangan ?? "",
       tanggal_pelanggaran: v.tanggal_pelanggaran ? v.tanggal_pelanggaran.split("T")[0].split(" ")[0] : "",
+      tipe_pelanggaran: (driverStatus === "warning" || driverStatus === "blacklist") ? driverStatus : "",
     });
     setFormError("");
     setShowModal(true);
@@ -285,6 +315,7 @@ export default function ViolationsPage() {
     e.preventDefault();
     if (!form.jenis_pelanggaran.trim()) { setFormError("Jenis pelanggaran wajib diisi."); return; }
     if (!form.driver_id && !form.no_polisi.trim()) { setFormError("Harus isi driver atau no polisi."); return; }
+    if (form.driver_id && !form.tipe_pelanggaran) { setFormError("Tipe pelanggaran wajib dipilih jika driver dipilih."); return; }
     setSaving(true); setFormError("");
     try {
       const payload = {
@@ -300,6 +331,15 @@ export default function ViolationsPage() {
       } else {
         await violationApi.create(payload);
         toast.success("Disimpan", "Pelanggaran berhasil ditambahkan.");
+      }
+      // Auto-update driver status if driver is selected and tipe is chosen
+      if (form.driver_id && form.tipe_pelanggaran) {
+        try {
+          await violationApi.updateDriverStatus(Number(form.driver_id), form.tipe_pelanggaran);
+          toast.success("Status Driver Diperbarui", `Status driver diubah ke ${form.tipe_pelanggaran}.`);
+        } catch (statusErr: any) {
+          toast.error("Peringatan", "Pelanggaran tersimpan, tapi gagal memperbarui status driver.");
+        }
       }
       setShowModal(false);
       fetchAll();
@@ -391,6 +431,43 @@ export default function ViolationsPage() {
                 <div className="mb-4">
                   <label className="form-label">No. Polisi (BK)</label>
                   <input type="text" className="form-input uppercase" placeholder="BK 1234 ABC (opsional)" value={form.no_polisi} onChange={e => setForm(p => ({ ...p, no_polisi: e.target.value }))} />
+                </div>
+                <div className="mb-4">
+                  <label className="form-label">Tipe Pelanggaran *</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, tipe_pelanggaran: "warning" }))}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border-2 transition-all flex items-center justify-center gap-2 ${
+                        form.tipe_pelanggaran === "warning"
+                          ? "bg-amber-500/15 border-amber-500/40 text-amber-600 shadow-md shadow-amber-500/10"
+                          : "bg-transparent border-white/10 text-text-muted hover:border-amber-500/30 hover:text-amber-600"
+                      }`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                        <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      Warning
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, tipe_pelanggaran: "blacklist" }))}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border-2 transition-all flex items-center justify-center gap-2 ${
+                        form.tipe_pelanggaran === "blacklist"
+                          ? "bg-red-500/15 border-red-500/40 text-red-500 shadow-md shadow-red-500/10"
+                          : "bg-transparent border-white/10 text-text-muted hover:border-red-500/30 hover:text-red-500"
+                      }`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                      </svg>
+                      Blacklist
+                    </button>
+                  </div>
+                  {form.driver_id && !form.tipe_pelanggaran && (
+                    <p className="text-[11px] text-amber-500 mt-1.5">⚠ Pilih tipe pelanggaran agar status driver otomatis terupdate</p>
+                  )}
                 </div>
                 <div className="mb-4">
                   <label className="form-label">Jenis Pelanggaran *</label>
