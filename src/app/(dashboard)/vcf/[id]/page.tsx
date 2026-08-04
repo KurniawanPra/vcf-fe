@@ -1037,11 +1037,11 @@ export default function VcfDetailPage() {
                   {vcf.kelengkapan_supir.map((ks) => (
                     <div
                       key={ks.id}
-                      className={`flex items-center justify-between p-4 rounded-xl border border-l-4 transition-all
-                        ${ks.nilai 
-                          ? 'border-l-emerald-500 border-slate-200 dark:border-white/10 bg-emerald-500/5' 
-                          : 'border-l-rose-500 border-slate-200 dark:border-white/10 bg-rose-500/5'
-                        }`}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all shadow-sm ${
+                        ks.nilai 
+                          ? 'border-emerald-500/30 dark:border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10' 
+                          : 'border-rose-500/30 dark:border-rose-500/40 bg-rose-500/5 dark:bg-rose-500/10'
+                      }`}
                     >
                       <div className="flex items-center gap-3">
                         <div>
@@ -1088,12 +1088,12 @@ export default function VcfDetailPage() {
                       <div className="space-y-2">
                         {(vcf as any).muatan_dibawa.map((m: any) => (
                           m.item_muatan_id && (
-                            <div key={m.id} className={`flex items-center justify-between p-3 rounded-xl border border-l-4 transition-all
-                              ${m.nilai === '1' 
-                                ? 'border-l-emerald-500 border-slate-200 dark:border-white/10 bg-emerald-500/5' 
+                            <div key={m.id} className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all shadow-sm ${
+                              m.nilai === '1' 
+                                ? 'border-emerald-500/30 dark:border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10' 
                                 : m.nilai === '0'
-                                  ? 'border-l-rose-500 border-slate-200 dark:border-white/10 bg-rose-500/5'
-                                  : 'border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5'
+                                  ? 'border-rose-500/30 dark:border-rose-500/40 bg-rose-500/5 dark:bg-rose-500/10'
+                                  : 'border-blue-500/30 dark:border-blue-500/40 bg-blue-500/5 dark:bg-blue-500/10'
                               }`}
                             >
                               <span className="text-sm font-medium text-text-primary dark:text-slate-300">{m.item_muatan?.nama_item}</span>
@@ -1107,7 +1107,7 @@ export default function VcfDetailPage() {
                           )
                         ))}
                         {(vcf as any).muatan_dibawa?.some((m: any) => (!m.item_muatan_id || m.item_muatan_id === null) && m.nilai && m.nilai !== "0") && (
-                          <div className="flex items-center justify-between p-3 rounded-xl border border-l-4 border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5 transition-all">
+                          <div className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-blue-500/30 dark:border-blue-500/40 bg-blue-500/5 dark:bg-blue-500/10 transition-all shadow-sm">
                             <span className="text-sm font-medium italic text-text-primary dark:text-slate-300">Lainnya</span>
                             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-500">
                               {(vcf as any).muatan_dibawa.find((m: any) => !m.item_muatan_id || m.item_muatan_id === null)?.nilai}
@@ -1125,12 +1125,12 @@ export default function VcfDetailPage() {
                       <div className="space-y-2">
                         {(vcf as any).muatan_diisi.map((m: any) => (
                           m.item_muatan_id && (
-                            <div key={m.id} className={`flex items-center justify-between p-3 rounded-xl border border-l-4 transition-all
-                              ${m.nilai === '1' 
-                                ? 'border-l-emerald-500 border-slate-200 dark:border-white/10 bg-emerald-500/5' 
+                            <div key={m.id} className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all shadow-sm ${
+                              m.nilai === '1' 
+                                ? 'border-emerald-500/30 dark:border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10' 
                                 : m.nilai === '0'
-                                  ? 'border-l-rose-500 border-slate-200 dark:border-white/10 bg-rose-500/5'
-                                  : 'border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5'
+                                  ? 'border-rose-500/30 dark:border-rose-500/40 bg-rose-500/5 dark:bg-rose-500/10'
+                                  : 'border-blue-500/30 dark:border-blue-500/40 bg-blue-500/5 dark:bg-blue-500/10'
                               }`}
                             >
                               <span className="text-sm font-medium text-text-primary dark:text-slate-300">{m.item_muatan?.nama_item}</span>
@@ -1144,7 +1144,7 @@ export default function VcfDetailPage() {
                           )
                         ))}
                         {(vcf as any).muatan_diisi?.some((m: any) => (!m.item_muatan_id || m.item_muatan_id === null) && m.nilai && m.nilai !== "0") && (
-                          <div className="flex items-center justify-between p-3 rounded-xl border border-l-4 border-l-blue-500 border-slate-200 dark:border-white/10 bg-blue-500/5 transition-all">
+                          <div className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-blue-500/30 dark:border-blue-500/40 bg-blue-500/5 dark:bg-blue-500/10 transition-all shadow-sm">
                             <span className="text-sm font-medium italic text-text-primary dark:text-slate-300">Lainnya</span>
                             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-500">
                               {(vcf as any).muatan_diisi.find((m: any) => !m.item_muatan_id || m.item_muatan_id === null)?.nilai}

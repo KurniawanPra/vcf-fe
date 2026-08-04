@@ -142,10 +142,13 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       }
       if (debouncedSearch) params.search = debouncedSearch;
 
-      // Ambil seluruh halaman + relasi detail (segel/beban/keterangan). Endpoint
-      // listing membatasi per_page=500 dan tidak lagi mengirim relasi berat secara
-      // default, jadi "per_page: 10000" yang lama akan terpotong tanpa peringatan.
-      const list = await fetchAllVcfDetailed(params);
+      params.per_page = "10000";
+      const res = await vcfApi.getList(params);
+      const list: any[] = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
 
       if (list.length === 0) {
         alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
@@ -194,7 +197,13 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
         params.status = STAGE_FILTERS[stageFilter];
       }
       if (debouncedSearch) params.search = debouncedSearch;
-      const list = await fetchAllVcfDetailed(params);
+      params.per_page = "1000";
+      const listRes = await vcfApi.getList(params);
+      const list: any[] = Array.isArray(listRes.data?.data)
+        ? listRes.data.data
+        : Array.isArray(listRes.data)
+          ? listRes.data
+          : [];
       if (list.length === 0) {
         alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
         return;
@@ -205,11 +214,8 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
         );
         if (!ok) return;
       }
-      // Batasi request paralel — sebelumnya satu Promise.all untuk ratusan VCF
-      // sekaligus, yang menghabiskan connection pool browser.
-      const details = await mapWithConcurrency(
-        list,
-        (v: any) => vcfApi.getDetail(v.id).then((r) => r.data)
+      const details = await Promise.all(
+        list.map((v: any) => vcfApi.getDetail(v.id).then((r: any) => r.data).catch(() => null))
       );
       const validDetails = details.filter(Boolean);
       if (validDetails.length === 0) {
@@ -228,7 +234,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     if (exportingExcel) return;
     setExportingExcel(true);
     try {
-      const params: Record<string, string> = { per_page: "10000" };
+      const params: Record<string, string> = {};
       if (tanggalDari) params.tanggal_dari = tanggalDari;
       if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
       if (onlyBlacklist) {
@@ -238,6 +244,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       }
       if (debouncedSearch) params.search = debouncedSearch;
 
+      params.per_page = "10000";
       const res = await vcfApi.getList(params);
       const list: any[] = Array.isArray(res.data?.data)
         ? res.data.data
@@ -250,7 +257,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
         return;
       }
 
-      const formattedData = list.map(v => [
+      const formattedData = list.map((v: any) => [
         v.nomor_urut,
         v.tanggal,
         v.jam_masuk?.substring(0, 5) || "-",
