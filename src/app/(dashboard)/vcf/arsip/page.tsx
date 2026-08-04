@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { vcfApi } from "@/lib/api";
+import { fetchAllVcfDetailed, mapWithConcurrency } from "@/lib/vcfBulk";
 import { isAdmin } from "@/lib/auth";
 import { getStatusLabel, getStatusColor, getErrorMessage } from "@/lib/utils";
 import { exportToExcel } from "@/lib/exportUtils";
@@ -72,38 +73,37 @@ function YearCalendar({
   const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       setLoadingStats(true);
       try {
-        // Fetch summary for the whole year in one shot (big per_page, no pagination)
-        const res = await vcfApi.getList({
-          tanggal_dari: `${year}-01-01`,
-          tanggal_sampai: `${year}-12-31`,
-          per_page: "10000",
-        });
-        const raw = res.data;
-        const list: VcfItem[] = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+        // Satu query agregat di server — tidak lagi mengunduh seluruh VCF setahun
+        // beserta relasinya hanya untuk menghitung angka 12 kartu bulan.
+        const res = await vcfApi.getMonthlyStats(year, { signal: controller.signal });
+        const rows: { bulan: number; total: number; selesai: number; reject: number }[] =
+          res.data?.data ?? [];
 
-        // Bucket by month
         const buckets: MonthStat[] = Array.from({ length: 12 }, () => ({ total: 0, selesai: 0, reject: 0 }));
-        list.forEach(v => {
-          const m = new Date(v.tanggal).getMonth();
-          if (m >= 0 && m < 12) {
-            buckets[m].total++;
-            if (v.status === "selesai") buckets[m].selesai++;
-            if (v.status === "reject") buckets[m].reject++;
+        rows.forEach(r => {
+          const idx = Number(r.bulan) - 1; // API mengirim 1–12
+          if (idx >= 0 && idx < 12) {
+            buckets[idx] = {
+              total: Number(r.total) || 0,
+              selesai: Number(r.selesai) || 0,
+              reject: Number(r.reject) || 0,
+            };
           }
         });
-        if (!cancelled) setStats(buckets);
-      } catch {
-        if (!cancelled) setStats(new Array(12).fill({ total: 0, selesai: 0, reject: 0 }));
+        setStats(buckets);
+      } catch (err: any) {
+        if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") return;
+        setStats(Array.from({ length: 12 }, () => ({ total: 0, selesai: 0, reject: 0 })));
       } finally {
-        if (!cancelled) setLoadingStats(false);
+        if (!controller.signal.aborted) setLoadingStats(false);
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => controller.abort();
   }, [year]);
 
   const years = Array.from({ length: 6 }, (_, i) => now.getFullYear() - i);
@@ -276,17 +276,11 @@ function MonthList({
     setFetchingPrintAll(true);
     try {
       const params: Record<string, string> = {
-        per_page: "1000",
         tanggal_dari: firstDay,
         tanggal_sampai: lastDay,
       };
       if (debouncedSearch) params.search = debouncedSearch;
-      const listRes = await vcfApi.getList(params);
-      const list: any[] = Array.isArray(listRes.data?.data)
-        ? listRes.data.data
-        : Array.isArray(listRes.data)
-          ? listRes.data
-          : [];
+      const list = await fetchAllVcfDetailed(params);
       if (list.length === 0) {
         toast.error("Kosong", "Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
         return;
@@ -297,8 +291,10 @@ function MonthList({
         );
         if (!ok) return;
       }
-      const details = await Promise.all(
-        list.map((v) => vcfApi.getDetail(v.id).then((r) => r.data).catch(() => null))
+      // Batasi request paralel — sebelumnya satu Promise.all untuk ratusan VCF.
+      const details = await mapWithConcurrency(
+        list,
+        (v: any) => vcfApi.getDetail(v.id).then(r => r.data)
       );
       const validDetails = details.filter(Boolean);
       if (validDetails.length === 0) {
@@ -307,7 +303,7 @@ function MonthList({
       }
       setPrintingAllVcfs(validDetails);
     } catch (err: any) {
-      toast.error("Gagal", "Gagal memuat data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
+      toast.error("Gagal", "Gagal memuat data VCF: " + getErrorMessage(err, "Terjadi kesalahan."));
     } finally {
       setFetchingPrintAll(false);
     }
@@ -318,18 +314,12 @@ function MonthList({
     setExportingExcel(true);
     try {
       const params: Record<string, string> = {
-        per_page: "10000",
         tanggal_dari: firstDay,
         tanggal_sampai: lastDay,
       };
       if (debouncedSearch) params.search = debouncedSearch;
 
-      const res = await vcfApi.getList(params);
-      const list: any[] = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
+      const list = await fetchAllVcfDetailed(params);
 
       if (list.length === 0) {
         toast.error("Kosong", "Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
@@ -366,7 +356,7 @@ function MonthList({
         `Periode: ${firstDay} s/d ${lastDay}${search ? ` · Pencarian: "${search}"` : ""}`
       );
     } catch (err: any) {
-      toast.error("Gagal", "Gagal memuat data VCF untuk export: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
+      toast.error("Gagal", "Gagal memuat data VCF untuk export: " + getErrorMessage(err, "Terjadi kesalahan."));
     } finally {
       setExportingExcel(false);
     }
@@ -382,7 +372,7 @@ function MonthList({
     setCurrentPage(1);
   }, [debouncedSearch, firstDay, lastDay]);
 
-  const fetchVcfs = useCallback(async () => {
+  const fetchVcfs = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const params: Record<string, string> = {
@@ -392,26 +382,35 @@ function MonthList({
         tanggal_sampai: lastDay,
       };
       if (debouncedSearch) params.search = debouncedSearch;
-      const res = await vcfApi.getList(params);
+      const res = await vcfApi.getList(params, { signal });
       const responseData = res.data;
-      if (responseData.data && Array.isArray(responseData.data)) {
+      if (Array.isArray(responseData?.data)) {
         setVcfs(responseData.data);
         setTotalItems(responseData.total ?? responseData.data.length);
         setLastPage(responseData.last_page ?? 1);
-      } else {
+      } else if (Array.isArray(responseData)) {
         setVcfs(responseData);
         setTotalItems(responseData.length);
         setLastPage(1);
+      } else {
+        setVcfs([]);
+        setTotalItems(0);
+        setLastPage(1);
       }
     } catch (err: any) {
-      toast.error("Gagal", "Gagal mengambil data VCF: " + (err.response?.data?.message || err.message || "Terjadi kesalahan."));
+      // Request dibatalkan karena filter berubah — bukan error yang perlu ditampilkan.
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") return;
+      toast.error("Gagal", "Gagal mengambil data VCF: " + getErrorMessage(err, "Terjadi kesalahan."));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstDay, lastDay, debouncedSearch, currentPage]);
 
   useEffect(() => {
-    fetchVcfs();
+    const controller = new AbortController();
+    fetchVcfs(controller.signal);
+    return () => controller.abort();
   }, [fetchVcfs]);
 
   // Dispatch modal events for PrintVCF

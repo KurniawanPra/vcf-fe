@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { vcfApi } from "@/lib/api";
 import { prefetchMasterData } from "@/lib/masterDataCache";
-import { getStatusLabel, getStatusColor, getActionButtonStyle, getActionLabel } from "@/lib/utils";
+import { getStatusLabel, getStatusColor, getActionButtonStyle, getActionLabel, getErrorMessage } from "@/lib/utils";
 import GuideSection from "@/components/GuideSection";
 import SearchInput from "@/components/SearchInput";
 import { useToast, ToastContainer } from "@/components/Toast";
@@ -70,13 +70,18 @@ export default function VcfQuickAccessPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  // Derived stats: count of previous-day unfinished VCFs
-  const pendingPrevDays = useMemo(() => vcfs.filter(v => isPreviousDay(v.tanggal)).length, [vcfs]);
-  const todayCount = useMemo(() => vcfs.filter(v => !isPreviousDay(v.tanggal)).length, [vcfs]);
-  const wbMasukCount = useMemo(() => vcfs.filter(v => v.status === "bagian1_selesai").length, [vcfs]);
-  const wbKeluarCount = useMemo(() => vcfs.filter(v => v.status === "bagian2_selesai").length, [vcfs]);
-  const mgKeluarCount = useMemo(() => vcfs.filter(v => v.status === "bagian3_selesai").length, [vcfs]);
+  // Angka badge dihitung di server (satu query agregat), bukan dari hasil
+  // unduhan seluruh baris. Sebelumnya halaman ini menarik per_page=9999
+  // lengkap dengan relasi hanya untuk menghitung lima angka ini.
+  const [stats, setStats] = useState({
+    hari_ini: 0,
+    ditunda: 0,
+    wb_masuk: 0,
+    wb_keluar: 0,
+    mg_keluar: 0,
+  });
 
   // Debounce search input
   useEffect(() => {
@@ -101,41 +106,95 @@ export default function VcfQuickAccessPage() {
     };
   }, [showGuide]);
 
-  const fetchActive = useCallback(async () => {
+  const ACTIVE_STATUSES = "bagian1_selesai,bagian2_selesai,bagian3_selesai";
+  const PER_PAGE = 10;
+
+  const fetchActive = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const params: Record<string, any> = {
-        search: debouncedSearch,
-        per_page: 9999,
+        per_page: PER_PAGE,
+        page: currentPage,
         tanggal_dari: tanggalDari,
         tanggal_sampai: tanggalSampai,
       };
-      if (filter) params.status = filter;
-      const activeRes = await vcfApi.getList(params);
-      const items: VcfSummary[] = activeRes.data.data || activeRes.data;
+      if (debouncedSearch) params.search = debouncedSearch;
 
-      const allowedStatuses = ["bagian1_selesai", "bagian2_selesai", "bagian3_selesai"];
-      const filteredItems = items.filter((v) => allowedStatuses.includes(v.status));
-      setVcfs(filteredItems);
+      // Filter tahap dilakukan di server. "aktif" pada tab = ketiga status di
+      // area operasional; tab spesifik mempersempit ke satu status saja.
+      if (filter && filter !== "aktif") {
+        params.status = filter;
+      } else {
+        params.status_in = ACTIVE_STATUSES;
+      }
+
+      const [listRes, statsRes] = await Promise.all([
+        vcfApi.getList(params, { signal }),
+        vcfApi.getOperationalStats(
+          {
+            tanggal_dari: tanggalDari,
+            tanggal_sampai: tanggalSampai,
+            ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          },
+          { signal }
+        ),
+      ]);
+
+      const payload = listRes.data;
+      const items: VcfSummary[] = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload)
+          ? payload
+          : [];
+
+      setVcfs(items);
+      setTotalItems(Number(payload?.total ?? items.length));
+
+      const s = statsRes.data?.data;
+      if (s) {
+        setStats({
+          hari_ini: Number(s.hari_ini) || 0,
+          ditunda: Number(s.ditunda) || 0,
+          wb_masuk: Number(s.wb_masuk) || 0,
+          wb_keluar: Number(s.wb_keluar) || 0,
+          mg_keluar: Number(s.mg_keluar) || 0,
+        });
+      }
     } catch (err: any) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") return;
       console.error("Error fetching VCF data:", err);
+      toast.error("Gagal memuat data", getErrorMessage(err, "Tidak dapat mengambil data VCF."));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [filter, debouncedSearch, tanggalDari, tanggalSampai]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedSearch, tanggalDari, tanggalSampai, currentPage]);
 
   useEffect(() => {
-    setCurrentPage(1);
-    fetchActive();
-    // Prefetch master data in background so register page is instant
-    prefetchMasterData();
+    const controller = new AbortController();
+    fetchActive(controller.signal);
+    return () => controller.abort();
   }, [fetchActive]);
 
-  // Auto-refresh every 30 seconds, but only when not searching
+  // Reset ke halaman 1 saat filter/pencarian/tanggal berubah.
   useEffect(() => {
-    if (debouncedSearch) return; // Don't auto-refresh when user is searching
-    const interval = setInterval(fetchActive, 30000);
-    return () => clearInterval(interval);
+    setCurrentPage(1);
+  }, [filter, debouncedSearch, tanggalDari, tanggalSampai]);
+
+  // Prefetch master data sekali saja agar halaman registrasi terasa instan.
+  useEffect(() => {
+    prefetchMasterData();
+  }, []);
+
+  // Auto-refresh tiap 30 detik, tapi tidak saat pengguna sedang mencari.
+  useEffect(() => {
+    if (debouncedSearch) return;
+    const controller = new AbortController();
+    const interval = setInterval(() => fetchActive(controller.signal), 30000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [fetchActive, debouncedSearch]);
 
   return (
@@ -234,23 +293,23 @@ export default function VcfQuickAccessPage() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.05)" }}>
               <p className="text-[9px] font-bold text-indigo-500 uppercase leading-none mb-0.5">Hari Ini</p>
-              <p className="text-xl font-bold text-indigo-500 leading-none">{todayCount}</p>
+              <p className="text-xl font-bold text-indigo-500 leading-none">{stats.hari_ini}</p>
             </div>
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.05)" }}>
               <p className="text-[9px] font-bold text-amber-500 uppercase leading-none mb-0.5">Ditunda</p>
-              <p className="text-xl font-bold text-amber-500 leading-none">{pendingPrevDays}</p>
+              <p className="text-xl font-bold text-amber-500 leading-none">{stats.ditunda}</p>
             </div>
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.05)" }}>
               <p className="text-[9px] font-bold text-blue-500 uppercase leading-none mb-0.5">WB Masuk</p>
-              <p className="text-xl font-bold text-blue-500 leading-none">{wbMasukCount}</p>
+              <p className="text-xl font-bold text-blue-500 leading-none">{stats.wb_masuk}</p>
             </div>
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.05)" }}>
               <p className="text-[9px] font-bold text-violet-500 uppercase leading-none mb-0.5">WB Keluar</p>
-              <p className="text-xl font-bold text-violet-500 leading-none">{wbKeluarCount}</p>
+              <p className="text-xl font-bold text-violet-500 leading-none">{stats.wb_keluar}</p>
             </div>
             <div className="glass-card flex-1 sm:flex-none h-12 px-2 sm:px-4 flex flex-col items-center justify-center text-center min-w-[80px]" style={{ borderColor: "rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.05)" }}>
               <p className="text-[9px] font-bold text-emerald-500 uppercase leading-none mb-0.5">MG Keluar</p>
-              <p className="text-xl font-bold text-emerald-500 leading-none">{mgKeluarCount}</p>
+              <p className="text-xl font-bold text-emerald-500 leading-none">{stats.mg_keluar}</p>
             </div>
           </div>
 
@@ -313,7 +372,7 @@ export default function VcfQuickAccessPage() {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => {
+                  {vcfs.map((vcf) => {
                     const isOverdue = isPreviousDay(vcf.tanggal);
                     return (
                       <Link
@@ -355,7 +414,7 @@ export default function VcfQuickAccessPage() {
                   })}
                 </div>
                 <div className="px-4 pb-4">
-                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={PER_PAGE} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
               </>
             )}
@@ -385,7 +444,7 @@ export default function VcfQuickAccessPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {vcfs.slice((currentPage - 1) * 10, currentPage * 10).map((vcf) => {
+                    {vcfs.map((vcf) => {
                       const isOverdue = isPreviousDay(vcf.tanggal);
                       return (
                         <tr key={vcf.id}>
@@ -431,7 +490,7 @@ export default function VcfQuickAccessPage() {
                   </tbody>
                 </table>
                 <div className="px-6 pb-4">
-                  <Pagination currentPage={currentPage} totalItems={vcfs.length} itemsPerPage={10} onPageChange={(p) => setCurrentPage(p)} />
+                  <Pagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={PER_PAGE} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
               </>
             )}

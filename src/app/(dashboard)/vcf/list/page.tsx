@@ -90,6 +90,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tanggalDari, setTanggalDari] = useState(getOneMonthAgoWIB);
   const [tanggalSampai, setTanggalSampai] = useState(getTodayWIB);
+  const [onlyBlacklist, setOnlyBlacklist] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -131,25 +132,27 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     if (fetchingPrintHtml) return;
     setFetchingPrintHtml(true);
     try {
-      const params: Record<string, string> = { per_page: "10000" };
+      const params: Record<string, string> = {};
       if (tanggalDari) params.tanggal_dari = tanggalDari;
       if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
-      if (STAGE_FILTERS[stageFilter]) params.status = STAGE_FILTERS[stageFilter];
+      if (onlyBlacklist) {
+        params.only_blacklist = "1";
+      } else if (STAGE_FILTERS[stageFilter]) {
+        params.status = STAGE_FILTERS[stageFilter];
+      }
       if (debouncedSearch) params.search = debouncedSearch;
 
-      const res = await vcfApi.getList(params);
-      const list: any[] = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
+      // Ambil seluruh halaman + relasi detail (segel/beban/keterangan). Endpoint
+      // listing membatasi per_page=500 dan tidak lagi mengirim relasi berat secara
+      // default, jadi "per_page: 10000" yang lama akan terpotong tanpa peringatan.
+      const list = await fetchAllVcfDetailed(params);
 
       if (list.length === 0) {
         alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
         return;
       }
 
-      const formatted = list.map(v => [
+      const formatted = list.map((v: any) => [
         v.nomor_urut,
         v.tanggal,
         v.jam_masuk?.substring(0, 5) || "-",
@@ -182,17 +185,16 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     if (fetchingPrintAll) return;
     setFetchingPrintAll(true);
     try {
-      const params: Record<string, string> = { per_page: "1000" };
+      const params: Record<string, string> = {};
       if (tanggalDari) params.tanggal_dari = tanggalDari;
       if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
-      if (STAGE_FILTERS[stageFilter]) params.status = STAGE_FILTERS[stageFilter];
+      if (onlyBlacklist) {
+        params.only_blacklist = "1";
+      } else if (STAGE_FILTERS[stageFilter]) {
+        params.status = STAGE_FILTERS[stageFilter];
+      }
       if (debouncedSearch) params.search = debouncedSearch;
-      const listRes = await vcfApi.getList(params);
-      const list: any[] = Array.isArray(listRes.data?.data)
-        ? listRes.data.data
-        : Array.isArray(listRes.data)
-          ? listRes.data
-          : [];
+      const list = await fetchAllVcfDetailed(params);
       if (list.length === 0) {
         alert("Tidak ada VCF pada rentang tanggal/filter yang dipilih.");
         return;
@@ -203,8 +205,11 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
         );
         if (!ok) return;
       }
-      const details = await Promise.all(
-        list.map((v) => vcfApi.getDetail(v.id).then((r) => r.data).catch(() => null))
+      // Batasi request paralel — sebelumnya satu Promise.all untuk ratusan VCF
+      // sekaligus, yang menghabiskan connection pool browser.
+      const details = await mapWithConcurrency(
+        list,
+        (v: any) => vcfApi.getDetail(v.id).then((r) => r.data)
       );
       const validDetails = details.filter(Boolean);
       if (validDetails.length === 0) {
@@ -226,7 +231,11 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       const params: Record<string, string> = { per_page: "10000" };
       if (tanggalDari) params.tanggal_dari = tanggalDari;
       if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
-      if (STAGE_FILTERS[stageFilter]) params.status = STAGE_FILTERS[stageFilter];
+      if (onlyBlacklist) {
+        params.only_blacklist = "1";
+      } else if (STAGE_FILTERS[stageFilter]) {
+        params.status = STAGE_FILTERS[stageFilter];
+      }
       if (debouncedSearch) params.search = debouncedSearch;
 
       const res = await vcfApi.getList(params);
@@ -285,7 +294,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
   // Reset ke halaman 1 ketika filter/search berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, tanggalDari, tanggalSampai, stageFilter]);
+  }, [debouncedSearch, tanggalDari, tanggalSampai, onlyBlacklist, stageFilter]);
 
   const fetchVcfs = useCallback(async () => {
     setLoading(true);
@@ -297,7 +306,9 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
       if (tanggalDari) params.tanggal_dari = tanggalDari;
       if (tanggalSampai) params.tanggal_sampai = tanggalSampai;
 
-      if (STAGE_FILTERS[stageFilter]) {
+      if (onlyBlacklist) {
+        params.only_blacklist = "1";
+      } else if (STAGE_FILTERS[stageFilter]) {
         params.status = STAGE_FILTERS[stageFilter];
       }
       if (debouncedSearch) params.search = debouncedSearch;
@@ -319,7 +330,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     } finally {
       setLoading(false);
     }
-  }, [stageFilter, tanggalDari, tanggalSampai, debouncedSearch, currentPage]);
+  }, [onlyBlacklist, stageFilter, tanggalDari, tanggalSampai, debouncedSearch, currentPage]);
 
   useEffect(() => {
     fetchVcfs();
@@ -400,16 +411,19 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
     }
   };
 
-  const stageLabel = stageFilter
-    ? {
-      aktif: "Kendaraan di Area (Aktif)",
-      bagian1_selesai: "Antrian Weighbridge Masuk",
-      bagian2_selesai: "Antrian Main Gate Keluar",
-      bagian3_selesai: "Antrian Main Gate Keluar",
-      selesai: "VCF Selesai",
-      reject: "VCF Ditolak",
-    }[stageFilter] || "Daftar VCF"
-    : "Semua VCF";
+  const stageLabel = onlyBlacklist
+    ? "VCF Terkena Blacklist"
+    : stageFilter
+      ? {
+        aktif: "Kendaraan di Area (Aktif)",
+        bagian1_selesai: "Antrian Weighbridge Masuk",
+        bagian2_selesai: "Antrian Loading/Unloading",
+        loading_unloading_selesai: "Antrian Weighbridge Keluar",
+        bagian3_selesai: "Antrian Main Gate Keluar",
+        selesai: "VCF Selesai",
+        reject: "VCF Ditolak",
+      }[stageFilter] || "Daftar VCF"
+      : "Semua VCF";
 
   const getActionLabel = (vcf: Vcf) => {
     const map: Record<string, string> = {
@@ -539,6 +553,27 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
               />
             </div>
 
+            {/* Checkbox Filter Blacklist */}
+            <div className="flex items-end">
+              <label
+                className="flex items-center gap-2 cursor-pointer select-none h-12 px-4 rounded-xl border transition-all"
+                style={{
+                  borderColor: onlyBlacklist ? "rgba(225, 29, 72, 0.4)" : "var(--border)",
+                  background: onlyBlacklist ? "rgba(225, 29, 72, 0.06)" : "var(--bg-secondary)",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={onlyBlacklist}
+                  onChange={(e) => setOnlyBlacklist(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500 cursor-pointer accent-rose-600"
+                />
+                <span className={`text-xs md:text-sm font-semibold tracking-tight ${onlyBlacklist ? "text-rose-600 dark:text-rose-400 font-bold" : "text-text-primary"}`}>
+                  Hanya VCF Blacklist
+                </span>
+              </label>
+            </div>
+
             {/* Date Range — Custom Calendar Trigger */}
             <div className="md:w-auto" style={{ minWidth: 260 }}>
               <label className="form-label mb-2 block">Rentang Tanggal</label>
@@ -553,6 +588,7 @@ function VcfListContent({ stageFilter }: { stageFilter: string }) {
             <button
               onClick={() => {
                 setSearch("");
+                setOnlyBlacklist(false);
                 setTanggalDari(getOneMonthAgoWIB());
                 setTanggalSampai(getTodayWIB());
               }}

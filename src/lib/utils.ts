@@ -60,17 +60,17 @@ export function getStatusLabel(status: string): string {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    bagian1_selesai: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    bagian2_selesai: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    loading_unloading_proses: "bg-violet-500/20 text-violet-300 border-violet-500/30",
-    loading_unloading_selesai: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    bagian3_selesai: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    weighbridge_keluar: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-    selesai: "bg-green-500/20 text-green-300 border-green-500/30",
-    ditolak: "bg-red-500/20 text-red-400 border-red-500/30",
-    reject: "bg-red-500/20 text-red-400 border-red-500/30",
+    bagian1_selesai: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+    bagian2_selesai: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+    loading_unloading_proses: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20",
+    loading_unloading_selesai: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+    bagian3_selesai: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+    weighbridge_keluar: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+    selesai: "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20",
+    ditolak: "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20",
+    reject: "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20",
   };
-  return colors[status] ?? "bg-gray-500/20 text-gray-300 border-gray-500/30";
+  return colors[status] ?? "bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-500/20";
 }
 
 export function getNextStage(status: string): string | null {

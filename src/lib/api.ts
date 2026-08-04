@@ -52,7 +52,11 @@ export const masterApi = {
   deleteTransporter: (id: number) => api.delete(`/master/transporters/${id}`),
 
   // Drivers
-  getDrivers: (params?: object) => api.get("/master/drivers", { params }),
+  getDrivers: (params?: object, config?: { signal?: AbortSignal }) =>
+    api.get("/master/drivers", { params, ...config }),
+  /** Aggregated driver counts per violation status (normal / warning / blacklist). */
+  getDriverStats: (config?: { signal?: AbortSignal }) =>
+    api.get("/master/drivers/stats", { ...config }),
   createDriver: (data: object) => api.post("/master/drivers", data),
   updateDriver: (id: number, data: object) =>
     api.put(`/master/drivers/${id}`, data),
@@ -125,7 +129,17 @@ export const masterApi = {
 
 // ── VCF Transactions ──────────────────────────────────────────────────────────
 export const vcfApi = {
-  getList: (params?: object) => api.get("/vcf", { params }),
+  getList: (params?: object, config?: { signal?: AbortSignal }) =>
+    api.get("/vcf", { params, ...config }),
+  /** Detail relations (segel, timbangan, beban tambahan) — needed for export/print. */
+  getListDetailed: (params?: object, config?: { signal?: AbortSignal }) =>
+    api.get("/vcf", { params: { ...params, with_detail: 1 }, ...config }),
+  /** Aggregated per-month counts for the Arsip year calendar (1 query, no row transfer). */
+  getMonthlyStats: (year: number, config?: { signal?: AbortSignal }) =>
+    api.get("/vcf/monthly-stats", { params: { year }, ...config }),
+  /** Aggregated status counts for the Operasional VCF badges. */
+  getOperationalStats: (params?: object, config?: { signal?: AbortSignal }) =>
+    api.get("/vcf/operational-stats", { params, ...config }),
   getNextNumber: (params?: object) => api.get("/vcf/next-number", { params }),
   getDetail: (id: number) => api.get(`/vcf/${id}`),
   getStats: () => api.get("/dashboard/stats"),

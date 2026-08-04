@@ -742,7 +742,7 @@ export default function VcfRegisterPage() {
               <div className="text-2xl font-bold text-blue-600 tracking-wider py-2">
                 {nextNumber || "....."}
               </div>
-              <p className="text-xs text-slate-400">Otomatis generate harian</p>
+              <p className="text-xs text-slate-400">Otomatis reset bulanan</p>
             </div>
             <div id="field-tanggal">
               <label className="form-label">Tanggal *</label>

@@ -16,6 +16,7 @@ import { useToast, ToastContainer } from "@/components/Toast";
 import Pagination from "@/components/Pagination";
 import ModalPortal from "@/components/ModalPortal";
 import SearchInput from "@/components/SearchInput";
+import DriverStatusModal from "@/components/DriverStatusModal";
 
 interface Driver {
   id: number;
@@ -66,22 +67,49 @@ export default function DriversPage() {
 
   // Filters
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const fetchData = useCallback(async () => {
+  // Statistik status pelanggaran (dihitung di server, bukan dari halaman aktif).
+  const [stats, setStats] = useState({ normal: 0, warning: 0, blacklist: 0, total: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statusModal, setStatusModal] = useState<"normal" | "warning" | null>(null);
+
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const params: any = {};
-      if (search) params.search = search;
-      const dRes = await masterApi.getDrivers(params);
-      setData(dRes.data.data || dRes.data);
-    } catch {
-      /* ignore */
+      if (debouncedSearch) params.search = debouncedSearch;
+      const dRes = await masterApi.getDrivers(params, { signal });
+      const rows = dRes.data?.data ?? dRes.data;
+      setData(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") return;
+      toast.error("Gagal memuat", getErrorMessage(err, "Tidak dapat mengambil data supir."));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const fetchStats = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const res = await masterApi.getDriverStats({ signal });
+      const s = res.data?.data;
+      if (s) {
+        setStats({
+          normal: Number(s.normal) || 0,
+          warning: Number(s.warning) || 0,
+          blacklist: Number(s.blacklist) || 0,
+          total: Number(s.total) || 0,
+        });
+      }
+    } catch (err: any) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") return;
+      /* kartu statistik bersifat informatif — jangan ganggu alur utama */
+    } finally {
+      if (!signal?.aborted) setStatsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -90,11 +118,25 @@ export default function DriversPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [debouncedSearch]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    return () => controller.abort();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchStats(controller.signal);
+    return () => controller.abort();
+  }, [fetchStats]);
+
+  /** Muat ulang tabel + kartu statistik setelah data berubah. */
+  const refreshAll = useCallback(() => {
     fetchData();
-  }, [fetchData, debouncedSearch]);
+    fetchStats();
+  }, [fetchData, fetchStats]);
 
   // Dispatch modal events for create/edit modal
   useEffect(() => {
@@ -153,7 +195,7 @@ export default function DriversPage() {
     try {
       await violationApi.updateDriverStatus(item.id, newStatus);
       clearMasterDataCache();
-      fetchData();
+      refreshAll();
       toast.success("Status pelanggaran diperbarui", `Status "${item.nama_supir}" diubah ke ${newStatus}.`);
     } catch (err: any) {
       toast.error("Gagal mengubah status", getErrorMessage(err, "Terjadi kesalahan."));
@@ -166,7 +208,7 @@ export default function DriversPage() {
     try {
       await masterApi.updateDriver(item.id, { is_active: !item.is_active });
       clearMasterDataCache();
-      fetchData();
+      refreshAll();
       toast.success("Status diperbarui", `Status supir "${item.nama_supir}" berhasil diubah.`);
     } catch (err: any) {
       toast.error("Gagal mengubah status", getErrorMessage(err, "Terjadi kesalahan."));
@@ -185,7 +227,7 @@ export default function DriversPage() {
       await masterApi.deleteDriver(deleteId);
       clearMasterDataCache();
       setShowDeleteModal(false);
-      fetchData();
+      refreshAll();
       toast.success("Data dihapus", "Data supir berhasil dihapus.");
     } catch (err: any) {
       toast.error("Gagal menghapus", getErrorMessage(err, "Gagal menghapus data supir."));
@@ -210,7 +252,7 @@ export default function DriversPage() {
       }
       clearMasterDataCache();
       setShowModal(false);
-      fetchData();
+      refreshAll();
     } catch (err: any) {
       const msg = getErrorMessage(err, "Gagal menyimpan data.");
       setError(msg);
@@ -310,6 +352,111 @@ export default function DriversPage() {
         transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1)",
         opacity: collapsed ? 0 : 1,
       }}>
+        {/* Kartu statistik status pelanggaran */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          {([
+            {
+              key: "normal" as const,
+              label: "Normal",
+              value: stats.normal,
+              caption: "Tanpa catatan pelanggaran",
+              accent: "#10b981",
+              clickable: true,
+            },
+            {
+              key: "warning" as const,
+              label: "Warning",
+              value: stats.warning,
+              caption: "Dalam peringatan",
+              accent: "#f59e0b",
+              clickable: true,
+            },
+            {
+              key: "blacklist" as const,
+              label: "Blacklist",
+              value: stats.blacklist,
+              caption: "Dilarang masuk area",
+              accent: "#ef4444",
+              clickable: false,
+            },
+          ]).map((card) => {
+            const inner = (
+              <>
+                <div
+                  className="absolute inset-x-0 top-0 h-[3px]"
+                  style={{ background: card.accent, opacity: 0.85 }}
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: card.accent }}
+                    >
+                      {card.label}
+                    </p>
+                    {statsLoading ? (
+                      <div className="h-8 w-14 mt-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                    ) : (
+                      <p
+                        className="text-3xl font-black leading-none mt-1.5 tabular-nums"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {card.value}
+                      </p>
+                    )}
+                    <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>
+                      {card.caption}
+                    </p>
+                  </div>
+
+                  <span
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${card.accent}14`, border: `1px solid ${card.accent}33` }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={card.accent} strokeWidth="2.2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
+                </div>
+
+                {card.clickable && (
+                  <span
+                    className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-transform group-hover:translate-x-0.5"
+                    style={{ color: card.accent }}
+                  >
+                    Lihat detail
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </span>
+                )}
+              </>
+            );
+
+            if (!card.clickable) {
+              return (
+                <div key={card.key} className="glass-card relative overflow-hidden p-4 pt-5">
+                  {inner}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={card.key}
+                type="button"
+                onClick={() => setStatusModal(card.key as "normal" | "warning")}
+                aria-label={`Lihat daftar supir dengan status ${card.label}`}
+                className="glass-card group relative overflow-hidden p-4 pt-5 text-left cursor-pointer transition-all hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2"
+                style={{ boxShadow: "none" }}
+              >
+                {inner}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex flex-wrap gap-4 mb-6">
           <SearchInput
             id="input-search-driver"
@@ -497,6 +644,14 @@ export default function DriversPage() {
         title="Hapus Data Supir"
         message="Apakah Anda yakin ingin menghapus data supir ini secara permanen? Tindakan ini tidak dapat dibatalkan."
       />
+
+      {statusModal && (
+        <DriverStatusModal
+          status={statusModal}
+          total={statusModal === "normal" ? stats.normal : stats.warning}
+          onClose={() => setStatusModal(null)}
+        />
+      )}
     </div>
   );
 }
