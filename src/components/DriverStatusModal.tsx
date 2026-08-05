@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { masterApi } from "@/lib/api";
+import { masterApi, violationApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import ModalPortal from "./ModalPortal";
 import SearchInput from "./SearchInput";
+import { useToast } from "./Toast";
 
 export type DriverStatus = "normal" | "warning" | "blacklist";
 
@@ -18,24 +19,21 @@ interface DriverRow {
   status?: DriverStatus;
 }
 
-const STATUS_META: Record<DriverStatus, { label: string; caption: string; accent: string; ring: string }> = {
+const STATUS_META: Record<DriverStatus, { label: string; caption: string; accent: string }> = {
   normal: {
     label: "Supir Status Normal",
     caption: "Supir tanpa catatan pelanggaran aktif",
     accent: "#10b981",
-    ring: "rgba(16,185,129,0.3)",
   },
   warning: {
     label: "Supir Status Warning",
     caption: "Supir dengan peringatan pelanggaran",
     accent: "#f59e0b",
-    ring: "rgba(245,158,11,0.3)",
   },
   blacklist: {
     label: "Supir Status Blacklist",
     caption: "Supir yang dilarang masuk area",
     accent: "#ef4444",
-    ring: "rgba(239,68,68,0.3)",
   },
 };
 
@@ -44,16 +42,19 @@ interface DriverStatusModalProps {
   /** Jumlah dari kartu statistik — dipakai sebagai label total sebelum data termuat. */
   total?: number;
   onClose: () => void;
+  onStatusUpdated?: () => void;
 }
 
-export default function DriverStatusModal({ status, total, onClose }: DriverStatusModalProps) {
+export default function DriverStatusModal({ status, total, onClose, onStatusUpdated }: DriverStatusModalProps) {
   const meta = STATUS_META[status];
+  const { toast } = useToast();
 
   const [rows, setRows] = useState<DriverRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -85,8 +86,7 @@ export default function DriverStatusModal({ status, total, onClose }: DriverStat
     return () => controller.abort();
   }, [fetchRows]);
 
-  // Kunci scroll body + beri tahu shell bahwa ada modal terbuka (pola yang sama
-  // dipakai modal lain di aplikasi ini), dan tutup dengan tombol Escape.
+  // Kunci scroll body + beri tahu shell bahwa ada modal terbuka, dan tutup dengan tombol Escape.
   useEffect(() => {
     document.body.style.overflow = "hidden";
     window.dispatchEvent(new CustomEvent("modal-open"));
@@ -103,6 +103,20 @@ export default function DriverStatusModal({ status, total, onClose }: DriverStat
     };
   }, [onClose]);
 
+  const handleUpdateStatus = async (driverId: number, driverName: string, newStatus: DriverStatus) => {
+    setUpdatingId(driverId);
+    try {
+      await violationApi.updateDriverStatus(driverId, newStatus);
+      toast.success("Status Diperbarui", `Status supir "${driverName}" berhasil dikembalikan ke Normal.`);
+      setRows((prev) => prev.filter((r) => r.id !== driverId));
+      onStatusUpdated?.();
+    } catch (err: any) {
+      toast.error("Gagal Mengubah Status", getErrorMessage(err, "Terjadi kesalahan saat memperbarui status supir."));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const shownTotal = loading && !rows.length ? total ?? 0 : rows.length;
 
   return (
@@ -114,20 +128,15 @@ export default function DriverStatusModal({ status, total, onClose }: DriverStat
           role="dialog"
           aria-modal="true"
           aria-label={meta.label}
-          style={{ maxWidth: 620 }}
+          style={{ maxWidth: 640 }}
         >
           {/* Header */}
-          <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3 min-w-0">
-              <span
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `${meta.accent}1a`, border: `1px solid ${meta.ring}` }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={meta.accent} strokeWidth="2.2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={meta.accent} strokeWidth="2.2" className="flex-shrink-0">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
               <div className="min-w-0">
                 <h2 className="font-bold text-base leading-tight truncate" style={{ color: "var(--text-primary)" }}>
                   {meta.label}
@@ -217,6 +226,46 @@ export default function DriverStatusModal({ status, total, onClose }: DriverStat
                     >
                       {d.is_active ? "Aktif" : "Nonaktif"}
                     </span>
+
+                    {/* Button Unwarning */}
+                    {status === "warning" && (
+                      <button
+                        type="button"
+                        disabled={updatingId === d.id}
+                        onClick={() => handleUpdateStatus(d.id, d.nama_supir, "normal")}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400 flex items-center gap-1.5 transition-all disabled:opacity-50 flex-shrink-0"
+                        title="Kembalikan status supir ke Normal"
+                      >
+                        {updatingId === d.id ? (
+                          <span className="spinner w-3 h-3 border-2" />
+                        ) : (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        )}
+                        <span>Unwarning</span>
+                      </button>
+                    )}
+
+                    {/* Button Unblacklist */}
+                    {status === "blacklist" && (
+                      <button
+                        type="button"
+                        disabled={updatingId === d.id}
+                        onClick={() => handleUpdateStatus(d.id, d.nama_supir, "normal")}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 flex items-center gap-1.5 transition-all disabled:opacity-50 flex-shrink-0"
+                        title="Kembalikan status supir ke Normal"
+                      >
+                        {updatingId === d.id ? (
+                          <span className="spinner w-3 h-3 border-2" />
+                        ) : (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          </svg>
+                        )}
+                        <span>Unblacklist</span>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -233,3 +282,4 @@ export default function DriverStatusModal({ status, total, onClose }: DriverStat
     </ModalPortal>
   );
 }
+

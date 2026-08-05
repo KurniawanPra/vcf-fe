@@ -72,7 +72,7 @@ export default function DriversPage() {
   // Statistik status pelanggaran (dihitung di server, bukan dari halaman aktif).
   const [stats, setStats] = useState({ normal: 0, warning: 0, blacklist: 0, total: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
-  const [statusModal, setStatusModal] = useState<"normal" | "warning" | null>(null);
+  const [statusModal, setStatusModal] = useState<"normal" | "warning" | "blacklist" | null>(null);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -377,7 +377,7 @@ export default function DriversPage() {
               value: stats.blacklist,
               caption: "Dilarang masuk area",
               accent: "#ef4444",
-              clickable: false,
+              clickable: true,
             },
           ]).map((card) => {
             const inner = (
@@ -409,44 +409,29 @@ export default function DriversPage() {
                     </p>
                   </div>
 
-                  <span
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${card.accent}14`, border: `1px solid ${card.accent}33` }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={card.accent} strokeWidth="2.2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={card.accent} strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
                 </div>
 
-                {card.clickable && (
-                  <span
-                    className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-transform group-hover:translate-x-0.5"
-                    style={{ color: card.accent }}
-                  >
-                    Lihat detail
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-                  </span>
-                )}
+                <span
+                  className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-transform group-hover:translate-x-0.5"
+                  style={{ color: card.accent }}
+                >
+                  Lihat detail
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </span>
               </>
             );
-
-            if (!card.clickable) {
-              return (
-                <div key={card.key} className="glass-card relative overflow-hidden p-4 pt-5">
-                  {inner}
-                </div>
-              );
-            }
 
             return (
               <button
                 key={card.key}
                 type="button"
-                onClick={() => setStatusModal(card.key as "normal" | "warning")}
+                onClick={() => setStatusModal(card.key)}
                 aria-label={`Lihat daftar supir dengan status ${card.label}`}
                 className="glass-card group relative overflow-hidden p-4 pt-5 text-left cursor-pointer transition-all hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2"
                 style={{ boxShadow: "none" }}
@@ -648,8 +633,9 @@ export default function DriversPage() {
       {statusModal && (
         <DriverStatusModal
           status={statusModal}
-          total={statusModal === "normal" ? stats.normal : stats.warning}
+          total={stats[statusModal]}
           onClose={() => setStatusModal(null)}
+          onStatusUpdated={refreshAll}
         />
       )}
     </div>
