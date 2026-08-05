@@ -16,6 +16,7 @@ export default function Pagination({
   className = "",
 }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const safePage = Math.max(1, Math.min(currentPage, totalPages));
 
   if (totalPages <= 1) return null;
 
@@ -25,18 +26,18 @@ export default function Pagination({
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     const pages: (number | "...")[] = [1];
-    if (currentPage > 3) pages.push("...");
-    const start = Math.max(2, currentPage - 1);
-    const end = Math.min(totalPages - 1, currentPage + 1);
+    if (safePage > 3) pages.push("...");
+    const start = Math.max(2, safePage - 1);
+    const end = Math.min(totalPages - 1, safePage + 1);
     for (let i = start; i <= end; i++) pages.push(i);
-    if (currentPage < totalPages - 2) pages.push("...");
+    if (safePage < totalPages - 2) pages.push("...");
     pages.push(totalPages);
     return pages;
   };
 
   const pages = getPages();
-  const from = (currentPage - 1) * itemsPerPage + 1;
-  const to = Math.min(currentPage * itemsPerPage, totalItems);
+  const from = (safePage - 1) * itemsPerPage + 1;
+  const to = Math.min(safePage * itemsPerPage, totalItems);
 
   return (
     <div
@@ -53,14 +54,14 @@ export default function Pagination({
       <div className="flex items-center gap-1">
         {/* Prev */}
         <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          onClick={() => onPageChange(safePage - 1)}
+          disabled={safePage === 1}
           style={{
             width: 32, height: 32, borderRadius: 8, border: "1px solid var(--border)",
             background: "var(--bg-secondary)", color: "var(--text-secondary)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: currentPage === 1 ? "not-allowed" : "pointer",
-            opacity: currentPage === 1 ? 0.4 : 1,
+            cursor: safePage === 1 ? "not-allowed" : "pointer",
+            opacity: safePage === 1 ? 0.4 : 1,
             transition: "all 0.15s",
           }}
           title="Halaman sebelumnya"
@@ -85,19 +86,19 @@ export default function Pagination({
               onClick={() => onPageChange(p as number)}
               style={{
                 width: 32, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 600,
-                border: p === currentPage ? "1px solid rgba(var(--accent-primary-rgb), 0.4)" : "1px solid var(--border)",
-                background: p === currentPage ? "rgba(var(--accent-primary-rgb), 0.1)" : "var(--bg-secondary)",
-                color: p === currentPage ? "var(--accent-primary)" : "var(--text-secondary)",
+                border: p === safePage ? "1px solid rgba(var(--accent-primary-rgb), 0.4)" : "1px solid var(--border)",
+                background: p === safePage ? "rgba(var(--accent-primary-rgb), 0.1)" : "var(--bg-secondary)",
+                color: p === safePage ? "var(--accent-primary)" : "var(--text-secondary)",
                 cursor: "pointer", transition: "all 0.15s",
               }}
               onMouseEnter={(e) => {
-                if (p !== currentPage) {
+                if (p !== safePage) {
                   (e.currentTarget as HTMLElement).style.background = "var(--bg-card-hover)";
                   (e.currentTarget as HTMLElement).style.borderColor = "rgba(var(--accent-primary-rgb), 0.2)";
                 }
               }}
               onMouseLeave={(e) => {
-                if (p !== currentPage) {
+                if (p !== safePage) {
                   (e.currentTarget as HTMLElement).style.background = "var(--bg-secondary)";
                   (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
                 }
@@ -110,14 +111,14 @@ export default function Pagination({
 
         {/* Next */}
         <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(safePage + 1)}
+          disabled={safePage === totalPages}
           style={{
             width: 32, height: 32, borderRadius: 8, border: "1px solid var(--border)",
             background: "var(--bg-secondary)", color: "var(--text-secondary)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-            opacity: currentPage === totalPages ? 0.4 : 1,
+            cursor: safePage === totalPages ? "not-allowed" : "pointer",
+            opacity: safePage === totalPages ? 0.4 : 1,
             transition: "all 0.15s",
           }}
           title="Halaman berikutnya"
