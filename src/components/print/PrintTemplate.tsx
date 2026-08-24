@@ -1,0 +1,257 @@
+"use client";
+
+import React, { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
+import { PRINT_STYLES } from "./PrintElements";
+
+interface PrintTemplateProps {
+  title: string;
+  subtitle?: string;
+  docNo?: string;
+  revNo?: string;
+  effDate?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  isLoading?: boolean;
+  pageNumber?: number;
+  totalPages?: number;
+  settings?: {
+    company_name?: string;
+    company_address?: string;
+    show_qr_signature?: boolean;
+    footer_text?: string;
+    font_family?: string;
+  };
+}
+
+export default function PrintTemplate({
+  title,
+  subtitle,
+  docNo = "FM-BSHS-42/01",
+  revNo = "01",
+  effDate = "13-Mar-25",
+  onClose,
+  children,
+  isLoading = false,
+  pageNumber = 1,
+  totalPages = 1,
+  settings = {},
+}: PrintTemplateProps) {
+  const printRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  const {
+    company_name = "PT. INDUSTRI NABATI LESTARI",
+    company_address = "Komp.KEK Sei Mangkei, Kav.2-3, Kec. Bosar Maligas, Kab. Simalungun, Sumatera Utara, 21183",
+    show_qr_signature = true,
+    footer_text = "Dilarang memberikan uang / barang kepada petugas. Apabila terbukti melakukan hal tersebut maka akan dikenakan sanksi keras dan tidak diperbolehkan memasuki area",
+    font_family = "Arial, sans-serif",
+  } = settings;
+
+  const handlePrint = () => {
+    const html = printRef.current?.innerHTML;
+    if (!html) return;
+    const w = window.open("", "_blank");
+    if (!w) return;
+
+    w.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            @page { size: A4 portrait; margin: 0; }
+            body { 
+              font-family: ${font_family}; 
+              font-size: 7.5px; 
+              color: #000; 
+              margin: 0; 
+              padding: 0;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              line-height: 1.2;
+            }
+            * { box-sizing: border-box; }
+            table { border-collapse: collapse; width: 100%; table-layout: fixed; margin-bottom: 0 !important; }
+            th, td { border: 1px solid #000; padding: 1.5px 4px; vertical-align: middle; font-size: 7.5px; word-wrap: break-word; line-height: 1.2; }
+            img { max-width: 100%; height: auto; }
+            .no-print { display: none !important; }
+            .print-wrap { padding: 5mm 7mm !important; }
+            span { font-size: 7.5px !important; }
+            div { line-height: 1.2; }
+            svg { max-width: 40px !important; max-height: 40px !important; width: 40px !important; height: 40px !important; }
+          </style>
+        </head>
+        <body>
+          <div class="print-wrap" style="padding: 6mm 8mm;">
+            ${html}
+          </div>
+        </body>
+      </html>
+    `);
+
+    // Register onload BEFORE closing the document to avoid race conditions
+    const doPrint = () => {
+      setTimeout(() => {
+        w.print();
+        w.close();
+      }, 500);
+    };
+
+    if (w.document.readyState === 'complete') {
+      doPrint();
+    } else {
+      w.onload = doPrint;
+      // Fallback
+      setTimeout(doPrint, 2000);
+    }
+
+    w.document.close();
+  };
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <>
+      {/* Fixed Backdrop */}
+      <div 
+        className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm" 
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+        }}
+        onClick={onClose} 
+      />
+
+      {/* Scrollable Container */}
+      <div 
+        className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-auto flex justify-center py-4 sm:py-10 pointer-events-none"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+        }}
+      >
+        <div style={{
+          width: "210mm",
+          minWidth: "210mm",
+          height: "fit-content",
+          background: "#fff",
+          flexShrink: 0,
+          pointerEvents: "auto",
+        }}
+          className="print-preview-container shadow-2xl">
+
+        {/* Toolbar (Hidden in Print) */}
+        <div className="no-print" style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 24px",
+          background: "#1e293b",
+          color: "#fff"
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>{title}</div>
+            {subtitle && <div style={{ fontSize: 10, opacity: 0.7 }}>{subtitle}</div>}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={handlePrint}
+              disabled={isLoading}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Memuat..." : "PRINT"}
+            </button>
+            <button
+              onClick={onClose}
+              className="btn btn-secondary btn-sm"
+            >
+              CLOSE
+            </button>
+          </div>
+        </div>
+
+        {/* Print Content Area */}
+        <div ref={printRef} style={{ padding: "8mm 10mm", background: "#fff", color: "#000" }}>
+
+          {/* ── SHARED HEADER ── */}
+          <table style={{ width: "100%", marginBottom: 0, borderCollapse: "collapse" }}>
+            <colgroup>
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "47%" }} />
+              <col style={{ width: "19%" }} />
+              <col style={{ width: "19%" }} />
+            </colgroup>
+            <tbody>
+              {/* Row 1–4: Logo + Company Info + Doc metadata */}
+              <tr>
+                <td rowSpan={4} style={{ ...PRINT_STYLES.CELL, padding: 0, position: "relative" }}>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Image src="/logo.png" width={60} height={60} style={{ display: "block" }} alt="VCF Logo" />
+                  </div>
+                </td>
+                <td rowSpan={3} style={{ ...PRINT_STYLES.CELL, textAlign: "center", verticalAlign: "middle", padding: "4px 6px" }}>
+                  <div style={{ fontWeight: "bold", fontSize: 11, letterSpacing: 0.3, textDecoration: "underline" }}>{company_name}</div>
+                  <div style={{ fontSize: 9, marginTop: 1 }}>PABRIK MINYAK GORENG</div>
+                  <div style={{ fontSize: 8, marginTop: 2, lineHeight: 1.4 }}>
+                    {company_address}
+                  </div>
+                </td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>No. Dokumen</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8, fontWeight: "bold" }}>{docNo}</td>
+              </tr>
+              <tr>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>Tgl berlaku</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>{effDate}</td>
+              </tr>
+              <tr>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>No. Revisi</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>{revNo}</td>
+              </tr>
+              <tr>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, textAlign: "center", verticalAlign: "middle", fontWeight: "bold", fontSize: 10, padding: "5px 4px", borderTop: "1px solid #000" }}>
+                  {title.toUpperCase()}
+                </td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>Halaman</td>
+                <td style={{ ...PRINT_STYLES.CELL_CENTER, fontSize: 8 }}>{pageNumber} dari {totalPages}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Dynamic Content */}
+          {children}
+
+          {/* Shared Footer */}
+          <div style={{ marginTop: 8, borderTop: "1px solid #000", paddingTop: 4, textAlign: "center" }}>
+            <div style={{ fontSize: 7, fontStyle: "italic", lineHeight: 1.5 }}>
+              {footer_text}
+            </div>
+            <div style={{ fontWeight: "bold", fontSize: 8, marginTop: 2, letterSpacing: 0.3 }}>
+              {company_name}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+  , document.body);
+}
